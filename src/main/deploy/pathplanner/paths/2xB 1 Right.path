@@ -1,0 +1,116 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.5467141162514837,
+        "y": 2.5986476868327397
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.364663677654993,
+        "y": 2.706432774552037
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.7,
+        "y": 1.0155043859649118
+      },
+      "prevControl": {
+        "x": 7.542298086586268,
+        "y": 0.37647333220457635
+      },
+      "nextControl": {
+        "x": 7.866118421052631,
+        "y": 1.6886403508771926
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.943048245614035,
+        "y": 3.188771929824561
+      },
+      "prevControl": {
+        "x": 7.9285368226073025,
+        "y": 2.3712951004453493
+      },
+      "nextControl": {
+        "x": 7.971896929824563,
+        "y": 4.813914473684212
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.038,
+        "y": 2.856
+      },
+      "prevControl": {
+        "x": 5.086249728377192,
+        "y": 1.9520590384622523
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Shooting Pose Right"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.0817051509769038,
+      "rotationDegrees": -90.0
+    },
+    {
+      "waypointRelativePos": 2.5201919232306995,
+      "rotationDegrees": 0.0
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Intake",
+      "minWaypointRelativePos": 1.4,
+      "maxWaypointRelativePos": 2.0614973262032077,
+      "constraints": {
+        "maxVelocity": 2.0,
+        "maxAcceleration": 4.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Spin up shooter",
+      "waypointRelativePos": 2.5309336332958314,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.1,
+    "maxAcceleration": 4.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 55.0
+  },
+  "reversed": false,
+  "folder": "Right Paths (make these)",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -8.184049272496772
+  },
+  "useDefaultConstraints": true
+}

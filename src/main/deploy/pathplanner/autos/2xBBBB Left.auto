@@ -1,0 +1,47 @@
+{
+  "version" : "2025.0",
+  "command" : {
+    "type" : "sequential",
+    "data" : {
+      "commands" : [ {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "path",
+        "data" : {
+          "pathName" : "2xB 1 Left"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Auto shoot full hopper"
+        }
+      }, {
+        "type" : "path",
+        "data" : {
+          "pathName" : "2xB 2 Left"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Auto shoot full hopper"
+        }
+      } ]
+    }
+  },
+  "resetOdom" : false,
+  "folder" : "Left Autos (auto generated)",
+  "choreoAuto" : false
+}

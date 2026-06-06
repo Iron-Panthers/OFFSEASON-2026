@@ -1,0 +1,180 @@
+{
+<<<<<<< HEAD
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.374567022538553,
+        "y": 7.494211150652433
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.192265717674969,
+        "y": 8.397983392645315
+      },
+      "isLocked": false,
+      "linkedName": "Shooting Pose 2 Left"
+=======
+  "version" : "2025.0",
+  "waypoints" : [ {
+    "anchor" : {
+      "x" : 3.038,
+      "y" : 5.354000000000001
+>>>>>>> f0bfdb6d0cc246d211ea374a4d8feeb1ff36cdfb
+    },
+    "prevControl" : null,
+    "nextControl" : {
+      "x" : 3.8556986951364163,
+      "y" : 6.257772241992884
+    },
+    "isLocked" : false,
+    "linkedName" : "Shooting Pose Left"
+  }, {
+    "anchor" : {
+      "x" : 6.225753262158957,
+      "y" : 5.525278766310796
+    },
+    "prevControl" : {
+      "x" : 5.999810201660736,
+      "y" : 5.686666666666668
+    },
+<<<<<<< HEAD
+    {
+      "anchor": {
+        "x": 3.374567022538553,
+        "y": 7.494211150652433
+      },
+      "prevControl": {
+        "x": 2.513831553973903,
+        "y": 7.97837485172005
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Shooting Pose 2 Left"
+=======
+    "nextControl" : {
+      "x" : 6.585672652809943,
+      "y" : 5.268193487274376
+    },
+    "isLocked" : false,
+    "linkedName" : null
+  }, {
+    "anchor" : {
+      "x" : 6.107402135231317,
+      "y" : 4.0297508896797165
+    },
+    "prevControl" : {
+      "x" : 5.838422301304865,
+      "y" : 3.6531791221826815
+    },
+    "nextControl" : {
+      "x" : 6.258010070154326,
+      "y" : 4.240601998571932
+    },
+    "isLocked" : false,
+    "linkedName" : null
+  }, {
+    "anchor" : {
+      "x" : 6.225753262158957,
+      "y" : 5.6543890865954936
+    },
+    "prevControl" : {
+      "x" : 6.83902728351127,
+      "y" : 5.514519572953738
+    },
+    "nextControl" : {
+      "x" : 5.349686831575123,
+      "y" : 5.854193711114615
+    },
+    "isLocked" : false,
+    "linkedName" : null
+  }, {
+    "anchor" : {
+      "x" : 3.374567022538553,
+      "y" : 7.494211150652433
+    },
+    "prevControl" : {
+      "x" : 1.5807225780941088,
+      "y" : 6.4662778173190985
+    },
+    "nextControl" : null,
+    "isLocked" : false,
+    "linkedName" : "Shooting Pose 2 Left"
+  } ],
+  "rotationTargets" : [ {
+    "waypointRelativePos" : 0.42204724409448785,
+    "rotationDegrees" : 0.0
+  }, {
+    "waypointRelativePos" : 1.801065719360589,
+    "rotationDegrees" : 270.0
+  } ],
+  "constraintZones" : [ {
+    "name" : "Intake",
+    "minWaypointRelativePos" : 1.3275401069518729,
+    "maxWaypointRelativePos" : 2.2,
+    "constraints" : {
+      "maxVelocity" : 2.0,
+      "maxAcceleration" : 4.0,
+      "maxAngularVelocity" : 540.0,
+      "maxAngularAcceleration" : 720.0,
+      "nominalVoltage" : 12.0,
+      "unlimited" : false
+>>>>>>> f0bfdb6d0cc246d211ea374a4d8feeb1ff36cdfb
+    }
+  }, {
+    "name" : "Constraints Zone",
+    "minWaypointRelativePos" : 0,
+    "maxWaypointRelativePos" : 0.38470191226096234,
+    "constraints" : {
+      "maxVelocity" : 2.0,
+      "maxAcceleration" : 7.0,
+      "maxAngularVelocity" : 540.0,
+      "maxAngularAcceleration" : 720.0,
+      "nominalVoltage" : 12.0,
+      "unlimited" : false
+    }
+  } ],
+  "pointTowardsZones" : [ ],
+  "eventMarkers" : [ {
+    "name" : "Intake off",
+    "waypointRelativePos" : 2.8,
+    "endWaypointRelativePos" : null,
+    "command" : null
+  }, {
+    "name" : "Spin up shooter",
+    "waypointRelativePos" : 3.0,
+    "endWaypointRelativePos" : null,
+    "command" : null
+  } ],
+  "globalConstraints" : {
+    "maxVelocity" : 3.1,
+    "maxAcceleration" : 4.0,
+    "maxAngularVelocity" : 540.0,
+    "maxAngularAcceleration" : 720.0,
+    "nominalVoltage" : 12.0,
+    "unlimited" : false
+  },
+<<<<<<< HEAD
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -67.0
+  },
+  "reversed": false,
+  "folder": "Left Paths (auto generated)",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -67.0
+=======
+  "goalEndState" : {
+    "velocity" : 0,
+    "rotation" : -67.0
+  },
+  "reversed" : false,
+  "folder" : "Left Paths (auto generated)",
+  "idealStartingState" : {
+    "velocity" : 0,
+    "rotation" : 125.0
+>>>>>>> f0bfdb6d0cc246d211ea374a4d8feeb1ff36cdfb
+  },
+  "useDefaultConstraints" : true
+}

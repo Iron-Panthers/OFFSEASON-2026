@@ -1,0 +1,25 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "Smart zero"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Auto shoot full hopper"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": false,
+  "folder": "Right Autos (make these)",
+  "choreoAuto": false
+}

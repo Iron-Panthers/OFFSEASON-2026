@@ -1,0 +1,76 @@
+{
+  "name": "FRC 2026 Robot",
+  "isFTC": "false",
+  "rotations": [
+    {
+      "axis": "x",
+      "degrees": 90
+    },
+    {
+      "axis": "z",
+      "degrees": 90
+    }
+  ],
+  "position": [
+    0,
+    0,
+    0
+  ],
+  "cameras": [
+    {
+      "name": "test",
+      "rotations": [
+        {
+          "axis": "z",
+          "degrees": 180
+        }
+      ],
+      "position": [
+        -0.25,
+        0,
+        0.5
+      ],
+      "resolution": [
+        1920,
+        1080
+      ],
+      "fov": 60
+    }
+  ],
+  "components": [
+    {
+      "zeroedRotations": [ 
+        {
+          "axis": "x",
+          "degrees": 90
+        },
+        {
+          "axis": "z",
+          "degrees": 0
+        }
+      ],
+      "zeroedPosition": [
+        0,
+        -0.25375,
+        -0.195806
+      ]
+    },
+    {
+      "zeroedRotations": [
+        {
+          "axis": "x",
+          "degrees": 90
+        },
+        {
+          "axis": "z",
+          "degrees": 0
+        }
+      ],
+      "zeroedPosition": [
+        0,
+        0.241249,
+        -0.513944
+      ]
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.6656702253855284,
+        "y": 7.612562277580073
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.401361445783133,
+        "y": 7.540734939759037
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.604866666666666,
+        "y": 7.238644444444445
+      },
+      "prevControl": {
+        "x": 7.091719068307111,
+        "y": 7.545722855688848
+      },
+      "nextControl": {
+        "x": 8.172772756030053,
+        "y": 6.898797390272836
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.068444444444445,
+        "y": 4.870366666666667
+      },
+      "prevControl": {
+        "x": 8.079203637801504,
+        "y": 7.119038078291814
+      },
+      "nextControl": {
+        "x": 8.062756766639865,
+        "y": 3.681642005509281
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.685978647686834,
+        "y": 3.201162514827995
+      },
+      "prevControl": {
+        "x": 6.576933333333334,
+        "y": 5.13871391854488
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Shooting Pose Right 2"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.1,
+      "rotationDegrees": 306.0
+    },
+    {
+      "waypointRelativePos": 1.9,
+      "rotationDegrees": 270.0
+    },
+    {
+      "waypointRelativePos": 2.4,
+      "rotationDegrees": 239.99999999999997
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0,
+      "maxWaypointRelativePos": 1.626546681664772,
+      "constraints": {
+        "maxVelocity": 4.0,
+        "maxAcceleration": 8.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    },
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 1.5725534308211366,
+      "maxWaypointRelativePos": 2.1124859392575943,
+      "constraints": {
+        "maxVelocity": 1.5,
+        "maxAcceleration": 4.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Intake down",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Intake stow",
+      "waypointRelativePos": 0.013498312710901192,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Intake down",
+      "waypointRelativePos": 0.12148481439820491,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Spin up shooter",
+      "waypointRelativePos": 2.6726659167604505,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.1,
+    "maxAcceleration": 4.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 22.0
+  },
+  "reversed": false,
+  "folder": "Left Paths (auto generated)",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}

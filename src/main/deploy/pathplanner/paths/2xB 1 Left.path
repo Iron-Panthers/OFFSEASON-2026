@@ -1,0 +1,104 @@
+{
+  "version" : "2025.0",
+  "waypoints" : [ {
+    "anchor" : {
+      "x" : 3.5467141162514837,
+      "y" : 5.471352313167261
+    },
+    "prevControl" : null,
+    "nextControl" : {
+      "x" : 6.364663677654993,
+      "y" : 5.363567225447963
+    },
+    "isLocked" : false,
+    "linkedName" : null
+  }, {
+    "anchor" : {
+      "x" : 7.7,
+      "y" : 7.054495614035089
+    },
+    "prevControl" : {
+      "x" : 7.542298086586268,
+      "y" : 7.693526667795424
+    },
+    "nextControl" : {
+      "x" : 7.866118421052631,
+      "y" : 6.381359649122808
+    },
+    "isLocked" : false,
+    "linkedName" : null
+  }, {
+    "anchor" : {
+      "x" : 7.943048245614035,
+      "y" : 4.881228070175439
+    },
+    "prevControl" : {
+      "x" : 7.9285368226073025,
+      "y" : 5.6987048995546505
+    },
+    "nextControl" : {
+      "x" : 7.971896929824563,
+      "y" : 3.256085526315788
+    },
+    "isLocked" : false,
+    "linkedName" : null
+  }, {
+    "anchor" : {
+      "x" : 3.038,
+      "y" : 5.214
+    },
+    "prevControl" : {
+      "x" : 5.086249728377192,
+      "y" : 6.117940961537748
+    },
+    "nextControl" : null,
+    "isLocked" : false,
+    "linkedName" : "Shooting Pose Left"
+  } ],
+  "rotationTargets" : [ {
+    "waypointRelativePos" : 1.0817051509769038,
+    "rotationDegrees" : 90.0
+  }, {
+    "waypointRelativePos" : 2.5201919232306995,
+    "rotationDegrees" : 0.0
+  } ],
+  "constraintZones" : [ {
+    "name" : "Intake",
+    "minWaypointRelativePos" : 1.4,
+    "maxWaypointRelativePos" : 2.0614973262032077,
+    "constraints" : {
+      "maxVelocity" : 2.0,
+      "maxAcceleration" : 4.0,
+      "maxAngularVelocity" : 540.0,
+      "maxAngularAcceleration" : 720.0,
+      "nominalVoltage" : 12.0,
+      "unlimited" : false
+    }
+  } ],
+  "pointTowardsZones" : [ ],
+  "eventMarkers" : [ {
+    "name" : "Spin up shooter",
+    "waypointRelativePos" : 2.5309336332958314,
+    "endWaypointRelativePos" : null,
+    "command" : null
+  } ],
+  "globalConstraints" : {
+    "maxVelocity" : 3.1,
+    "maxAcceleration" : 4.0,
+    "maxAngularVelocity" : 540.0,
+    "maxAngularAcceleration" : 720.0,
+    "nominalVoltage" : 12.0,
+    "unlimited" : false
+  },
+  "goalEndState" : {
+    "velocity" : 0,
+    "rotation" : -55.0
+  },
+  "reversed" : false,
+  "folder" : "Left Paths (auto generated)",
+  "idealStartingState" : {
+    "velocity" : 0,
+    "rotation" : 8.184049272496736
+  },
+  "useDefaultConstraints" : true
+}

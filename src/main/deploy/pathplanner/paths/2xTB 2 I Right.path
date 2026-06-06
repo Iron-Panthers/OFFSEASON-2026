@@ -1,0 +1,165 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.038,
+        "y": 2.856
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.675824436536181,
+        "y": 1.9199501779359442
+      },
+      "isLocked": false,
+      "linkedName": "Shooting Pose Right"
+    },
+    {
+      "anchor": {
+        "x": 4.515041518386715,
+        "y": 0.5651601423487547
+      },
+      "prevControl": {
+        "x": 2.086107448066271,
+        "y": 0.565160142348755
+      },
+      "nextControl": {
+        "x": 5.3650177935943075,
+        "y": 0.5651601423487547
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.999810201660737,
+        "y": 0.9632502965599041
+      },
+      "prevControl": {
+        "x": 5.913736654804271,
+        "y": 0.5866785290628707
+      },
+      "nextControl": {
+        "x": 6.380814408037527,
+        "y": 2.630143699458342
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.570047449584817,
+        "y": 3.3840688018979836
+      },
+      "prevControl": {
+        "x": 5.408034264098819,
+        "y": 3.0693568974955254
+      },
+      "nextControl": {
+        "x": 7.602930011862397,
+        "y": 3.6638078291814953
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.635207591933572,
+        "y": 2.286631079478054
+      },
+      "prevControl": {
+        "x": 8.047825948038591,
+        "y": 2.655161867679458
+      },
+      "nextControl": {
+        "x": 6.802866931299657,
+        "y": 1.5432245994294012
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.038,
+        "y": 2.856
+      },
+      "prevControl": {
+        "x": 6.365622775800711,
+        "y": 2.597779359430605
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Shooting Pose Right"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.9236234458259289,
+      "rotationDegrees": 180.0
+    },
+    {
+      "waypointRelativePos": 2.15,
+      "rotationDegrees": -90.0
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "Intake",
+      "minWaypointRelativePos": 2.35,
+      "maxWaypointRelativePos": 3.2,
+      "constraints": {
+        "maxVelocity": 2.0,
+        "maxAcceleration": 4.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
+  "pointTowardsZones": [
+    {
+      "fieldPosition": {
+        "x": 7.0,
+        "y": 2.7
+      },
+      "rotationOffset": -90.0,
+      "minWaypointRelativePos": 2.3397075365579214,
+      "maxWaypointRelativePos": 4.566929133858248,
+      "name": "Point Towards Zone"
+    }
+  ],
+  "eventMarkers": [
+    {
+      "name": "Spin up shooter",
+      "waypointRelativePos": 4.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Intake mid",
+      "waypointRelativePos": 4.4544431946006995,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.1,
+    "maxAcceleration": 4.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 55.0
+  },
+  "reversed": false,
+  "folder": "Right Paths (make these)",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 55.0
+  },
+  "useDefaultConstraints": true
+}

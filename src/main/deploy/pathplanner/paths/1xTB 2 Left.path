@@ -1,0 +1,63 @@
+{
+  "version" : "2025.0",
+  "waypoints" : [ {
+    "anchor" : {
+      "x" : 2.686,
+      "y" : 4.869
+    },
+    "prevControl" : null,
+    "nextControl" : {
+      "x" : 2.828302494707578,
+      "y" : 5.0745480479109455
+    },
+    "isLocked" : false,
+    "linkedName" : "Shooting Pose 2 Left"
+  }, {
+    "anchor" : {
+      "x" : 3.038,
+      "y" : 5.223890875954924
+    },
+    "prevControl" : {
+      "x" : 2.843434055622471,
+      "y" : 5.066906503202473
+    },
+    "nextControl" : null,
+    "isLocked" : false,
+    "linkedName" : "Shooting Pose Left"
+  } ],
+  "rotationTargets" : [ ],
+  "constraintZones" : [ {
+    "name" : "Constraints Zone",
+    "minWaypointRelativePos" : 0,
+    "maxWaypointRelativePos" : 1.0,
+    "constraints" : {
+      "maxVelocity" : 4.0,
+      "maxAcceleration" : 15.0,
+      "maxAngularVelocity" : 540.0,
+      "maxAngularAcceleration" : 720.0,
+      "nominalVoltage" : 12.0,
+      "unlimited" : false
+    }
+  } ],
+  "pointTowardsZones" : [ ],
+  "eventMarkers" : [ ],
+  "globalConstraints" : {
+    "maxVelocity" : 3.1,
+    "maxAcceleration" : 4.0,
+    "maxAngularVelocity" : 540.0,
+    "maxAngularAcceleration" : 720.0,
+    "nominalVoltage" : 12.0,
+    "unlimited" : false
+  },
+  "goalEndState" : {
+    "velocity" : 0,
+    "rotation" : -55.0
+  },
+  "reversed" : false,
+  "folder" : "Left Paths (auto generated)",
+  "idealStartingState" : {
+    "velocity" : 0,
+    "rotation" : -27.088351095441226
+  },
+  "useDefaultConstraints" : true
+}
