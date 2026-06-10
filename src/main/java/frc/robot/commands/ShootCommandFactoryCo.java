@@ -49,19 +49,48 @@ public class ShootCommandFactoryCo {
             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
             setJustShootCommand(false)),
         Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
+
         Commands.parallel(
-            Commands.run(
-                () -> {
-                  while (intakeController.getTargetState() == IntakeState.SHOOTING_STOW) {
-                    intakeController.setTargetState(IntakeState.MID);
-                    new WaitCommand(0.1);
-                    intakeController.setTargetState(IntakeState.SHOOT);
-                    new WaitCommand(0.2);
-                  }
-                }),
+            Commands.sequence(
+                Commands.runOnce(() -> intakeController.setTargetState(IntakeState.MID)),
+                new WaitCommand(0.1),
+                Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
+                new WaitCommand(0.2)
+                )
+                .repeatedly()
+                .until(() ->
+                    intakeController.getTargetState() == IntakeState.SHOOTING_STOW),
+              
             Commands.run(() -> {
-                
-            })));
+                shooterController.setTargetState(
+                    (shooterController.getTargetState() == ShooterState.TOTAL_SPIN_UP
+                                || shooterController.getTargetState()
+                                    == ShooterState.SHOOT)
+                            && shooterController.flywheelsUpToSpeed()
+                            && (matchTimerUpdater.isOurHubActive()
+                                || matchTimerUpdater.getTimeUntilOurHubShifts() <= 2
+                                || matchTimerUpdater.getTimeUntilOurHubShifts()
+                                    >= 24) // time correct
+                            && ((getHeadingError.get().getDegrees() < 4
+                                    || getHeadingError.get().getDegrees() > 356)
+                                || justShoot) // angle correct
+                        ? ShooterState.SHOOT
+                        : ShooterState.TOTAL_SPIN_UP);        
+            }).repeatedly(),
+            
+            Commands.sequence(
+                    Commands.waitUntil(() -> shooterController.getTargetState()
+                                                == ShooterState.SHOOT),
+                    Commands.runOnce(() -> time = Timer.getFPGATimestamp()),
+                    Commands.waitUntil(() ->
+                                                ((SmartDashboard.getNumber(
+                                                            "Intake Rack In Time", 1.5)
+                                                        + time)
+                                                    < Timer.getFPGATimestamp())),
+                    intakeController.setTargetStateCommand(
+                                            IntakeState.SHOOTING_STOW)
+            ).repeatedly()
+        ));
   }
 
   /** Command to bind to onFalse – runs when the button is released. */
