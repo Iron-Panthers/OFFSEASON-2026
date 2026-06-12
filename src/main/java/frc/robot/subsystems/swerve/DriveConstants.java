@@ -76,7 +76,6 @@ public class DriveConstants {
             Units.inchesToMeters(34),
             3.75, // 3.75,
             10,
-            // TODO: make it actually max acceleration in m/s^2
             6); // (multiply by max velocity to get m/s^2)
       };
 
@@ -321,12 +320,9 @@ public class DriveConstants {
 
   public static final PIDAutoAlignControllerConstants PID_AUTOALIGN_CONSTANTS =
       switch (getRobotType()) {
-        case COMP -> new PIDAutoAlignControllerConstants(
-            8, 0, 0, 3, 3, 0.03); /*FIXME: tune these constants*/
-        case VISION -> new PIDAutoAlignControllerConstants(
-            8, 0, 0, 3, 3, 0.01); /*FIXME: tune these constants*/
-        case ALPHA -> new PIDAutoAlignControllerConstants(
-            7, 0, 0, 1, 1, 0.01); /* FIXME: tune these constants */
+        case COMP -> new PIDAutoAlignControllerConstants(8, 0, 0, 3, 3, 0.03);
+        case VISION -> new PIDAutoAlignControllerConstants(8, 0, 0, 3, 3, 0.01);
+        case ALPHA -> new PIDAutoAlignControllerConstants(7, 0, 0, 1, 1, 0.01);
         case SIM -> new PIDAutoAlignControllerConstants(7, 0.0, 0.0, 3, 4, 0.01);
         default -> new PIDAutoAlignControllerConstants(0, 0, 0, 0, 0, 0.01);
       };

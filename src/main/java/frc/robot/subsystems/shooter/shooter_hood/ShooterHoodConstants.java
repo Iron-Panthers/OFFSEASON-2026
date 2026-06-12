@@ -12,7 +12,6 @@ import frc.robot.subsystems.can_watchdog.CANWatchdogConstants.CAN;
 
 public class ShooterHoodConstants {
   public static final ShooterHoodConfig SHOOTER_HOOD_CONFIG =
-      // TODO update the id's and info
       switch (Constants.getRobotType()) {
         case COMP -> new ShooterHoodConfig(
             // reduction between sensor and mechanism
@@ -23,7 +22,6 @@ public class ShooterHoodConstants {
         default -> new ShooterHoodConfig(0, 1);
       };
 
-  // TODO update all the PID information
   public static final PIDGains GAINS =
       switch (Constants.getRobotType()) {
         case COMP -> new PIDGains(1000, 0, 0, 0, 5.1282, 0, 0.8);
@@ -31,7 +29,6 @@ public class ShooterHoodConstants {
         default -> new PIDGains(0, 0, 0, 0, 0, 0, 0);
       };
 
-  // TODO update Motion Magic
   public static final MotionMagicConfig MOTION_MAGIC_CONFIG =
       switch (Constants.getRobotType()) {
         case COMP -> new MotionMagicConfig(6, 1);
@@ -55,12 +52,10 @@ public class ShooterHoodConstants {
   /** Distance from center of hood rotation to hood end */
   public static final double SHOOTER_HOOD_LENGTH = 10; // in inches
 
-  // TODO Update Limits
   public static final double UPPER_VOLT_LIMIT = 6;
   public static final double LOWER_VOLT_LIMIT = -6;
   public static final double SUPPLY_CURRENT_LIMIT = 20;
 
-  // TODO Change Limits
   public static final double ZEROING_VOLTS = -3;
   public static final double ZEROING_OFFSET = 0; // offset in degrees
   public static final double ZEROING_VOLTAGE_THRESHOLD = 5;
@@ -92,7 +87,6 @@ public class ShooterHoodConstants {
       double maxAngleRads,
       boolean simulatedGravity) {}
 
-  // TODO Add in phhysical constants
   public static final ShooterHoodPhysicalConstants PHYSICAL_CONSTANTS =
       switch (Constants.getRobotType()) {
         case SIM -> new ShooterHoodPhysicalConstants(

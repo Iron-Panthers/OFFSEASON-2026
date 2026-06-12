@@ -60,7 +60,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     encoder = new CANcoder(config.encoderID());
 
     // Drive Config
-    driveConfig.CurrentLimits.SupplyCurrentLimit = DRIVE_CURRENT_LIMIT_AMPS; // TODO: Make constant
+    driveConfig.CurrentLimits.SupplyCurrentLimit = DRIVE_CURRENT_LIMIT_AMPS;
     driveConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
     driveConfig.Feedback.SensorToMechanismRatio = MODULE_CONSTANTS.driveReduction();
@@ -73,7 +73,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     tryUntilOk(5, () -> driveTalon.setPosition(0.0, 0.25));
 
     // Steer Config
-    steerConfig.CurrentLimits.SupplyCurrentLimit = STEER_CURRENT_LIMIT_AMPS; // TODO: Make constant
+    steerConfig.CurrentLimits.SupplyCurrentLimit = STEER_CURRENT_LIMIT_AMPS;
     steerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
     steerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;

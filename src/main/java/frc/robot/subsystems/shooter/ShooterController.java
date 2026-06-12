@@ -25,7 +25,6 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ShooterController extends SubsystemBase {
   public enum ShooterState {
-    // TO-DO: update states
     /** idle: no spin */
     IDLE(
         ShooterHoodTarget.STOW,

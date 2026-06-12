@@ -12,10 +12,10 @@ import org.littletonrobotics.junction.Logger;
 public class ShooterHood extends GenericSuperstructure<ShooterHood.ShooterHoodTarget>
     implements LoggableMechanism3d {
   public enum ShooterHoodTarget implements GenericSuperstructure.PositionTarget {
-    STOW(0, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT), // need to update
-    SHOOT_TEMP(12, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT), // need to update
+    STOW(0, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT),
+    SHOOT_TEMP(12, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT),
     PASS(32, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT),
-    DEFAULT_SHOOT(14, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT); // might need to update?
+    DEFAULT_SHOOT(14, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT);
 
     private double position; // in rotations
     private double supplyCurrentLimit;
@@ -82,7 +82,6 @@ public class ShooterHood extends GenericSuperstructure<ShooterHood.ShooterHoodTa
     this.loggableMechanism3dParent = parent;
   }
 
-  // TODO make sure logic is correct for getting Display Pose3D
   @AutoLogOutput(key = "Shooter/Shooter Hood/Display Pose3d")
   @Override
   public Pose3d getDisplayPose3d() {
@@ -102,4 +101,4 @@ public class ShooterHood extends GenericSuperstructure<ShooterHood.ShooterHoodTa
                     : positionTarget.position))
         < ShooterHoodConstants.POSITION_TARGET_EPSILON;
   }
-} // close class
+}

@@ -115,7 +115,6 @@ public class VisionConstants {
 
   public static final List<TagCountDeviation> TAG_COUNT_DEVIATIONS =
       switch (getRobotType()) {
-          // TODO: tune these?
         default -> List.of(
             // 1 tag
             new TagCountDeviation(
