@@ -112,19 +112,19 @@ public class RobotContainer {
   private final CommandXboxController driverA = new CommandXboxController(0);
   private final CommandXboxController driverB = new CommandXboxController(1);
 
-  private Drive swerve;
-  private Vision vision;
-  private RGB rgb;
   private CANWatchdog canWatchdog;
+  private Drive swerve;
   private IntakeRack intakeRack;
   private IntakeRollers intakeRollers;
   private IntakeController intakeController;
+  private RGB rgb;
   private Serializer serializer;
+  private ShooterAccelerator shooterAccelerator;
+  private ShooterController shooterController;
   private ShooterFlywheel shooterFlywheels;
   private ShooterHood shooterHood;
-  private ShooterController shooterController;
   private ShooterOmniwheel shooterOmniwheel;
-  private ShooterAccelerator shooterAccelerator;
+  private Vision vision;
 
   public RobotContainer() {
 
@@ -149,10 +149,10 @@ public class RobotContainer {
           // // rgb = new RGB(new RGBIOAddressableLED());
           // // rgb = new RGB(new RGBIOCANdle());
           // // canWatchdog = new CANWatchdog(new CANWatchdogIOComp(), rgb);
+          shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOTalonFX());
           shooterFlywheels = new ShooterFlywheel(new ShooterFlywheelIOTalonFX());
           shooterHood = new ShooterHood(new ShooterHoodIOTalonFX());
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOTalonFX());
-          shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOTalonFX());
           serializer = new Serializer(new SerializerIOTalonFX());
         }
         case VISION -> {
@@ -200,37 +200,24 @@ public class RobotContainer {
 
           serializer = new Serializer(new SerializerSim());
 
+          shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOSim());
           shooterFlywheels = new ShooterFlywheel(new ShooterFlywheelIOSim());
           shooterHood = new ShooterHood(new ShooterHoodIOSim());
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOSim());
-          shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOSim());
         }
       }
     }
 
-    // SWERVE
-    if (swerve == null)
-      swerve =
-          new Drive(
-              new GyroIO() {},
-              new ModuleIO() {},
-              new ModuleIO() {},
-              new ModuleIO() {},
-              new ModuleIO() {});
-
-    // VISION
-    if (vision == null) vision = new Vision(new VisionIO() {}, new VisionIO() {});
-
     // CAN WATCHDOG
     if (canWatchdog == null) canWatchdog = new CANWatchdog(new CANWatchdogIO() {}, rgb);
-
-    // RGB
-    if (rgb == null) rgb = new RGB(new RGBIO() {});
 
     // INTAKE
     if (intakeRack == null) intakeRack = new IntakeRack(new IntakeRackIO() {});
     if (intakeRollers == null) intakeRollers = new IntakeRollers(new IntakeRollersIO() {});
     intakeController = new IntakeController(intakeRack, intakeRollers);
+
+    // RGB
+    if (rgb == null) rgb = new RGB(new RGBIO() {});
 
     // SERIALIZER
     if (serializer == null) serializer = new Serializer(new SerializerIO() {});
@@ -246,6 +233,18 @@ public class RobotContainer {
     shooterController =
         new ShooterController(
             shooterFlywheels, shooterHood, shooterOmniwheel, shooterAccelerator, serializer);
+    // SWERVE
+    if (swerve == null)
+      swerve =
+          new Drive(
+              new GyroIO() {},
+              new ModuleIO() {},
+              new ModuleIO() {},
+              new ModuleIO() {},
+              new ModuleIO() {});
+
+    // VISION
+    if (vision == null) vision = new Vision(new VisionIO() {}, new VisionIO() {});
 
     // init shooter with testing values
     RobotState.getInstance()
@@ -271,7 +270,6 @@ public class RobotContainer {
   /** Use this method to define the named commands for all of the autos */
   private void nameCommands() {
     // Register Command Names in this method
-
     new EventTrigger("Intake down")
         .onTrue(
             new InstantCommand(
@@ -279,6 +277,8 @@ public class RobotContainer {
                   intakeController.setTargetState(IntakeState.INTAKE);
                   shooterController.setTargetState(ShooterState.INTAKE);
                 }));
+    new EventTrigger("Intake off")
+        .onTrue(new InstantCommand(() -> intakeController.setTargetState(IntakeState.IDLE)));
     new EventTrigger("Intake stow")
         .onTrue(
             new InstantCommand(() -> intakeController.setTargetState(IntakeState.SHOOTING_STOW)));
@@ -288,10 +288,36 @@ public class RobotContainer {
                 () -> {
                   shooterController.setTargetState(ShooterState.COMPACT_SPIN_UP);
                 }));
-    new EventTrigger("Intake off")
-        .onTrue(new InstantCommand(() -> intakeController.setTargetState(IntakeState.IDLE)));
-
-    NamedCommands.registerCommand("Smart zero", new InstantCommand(() -> swerve.smartZeroGyro()));
+    NamedCommands.registerCommand(
+        "Align to shoot", new AlignToShootCommand(swerve, shooterController));
+    NamedCommands.registerCommand(
+        "Align and auto shoot full hopper",
+        new AlignToShootPoseCommand(swerve, true)
+            .withDeadline(
+                new AutoShootCommand(
+                    swerve, shooterController, intakeController, matchTimerUpdater, true)));
+    NamedCommands.registerCommand(
+        "Align and auto shoot full hopper (no intake)",
+        new AlignToShootPoseCommand(swerve, true)
+            .withDeadline(new WaitUntilCommand(() -> !RobotState.getInstance().isUnderTrench()))
+            .andThen(
+                (new AlignToShootCommand(swerve, shooterController))
+                    .withDeadline(
+                        new WaitCommand(0.2)
+                            .andThen(
+                                new AutoShootCommand(
+                                    swerve,
+                                    shooterController,
+                                    intakeController,
+                                    matchTimerUpdater,
+                                    false)))));
+    NamedCommands.registerCommand(
+        "Auto shoot full hopper",
+        new AutoShootCommand(swerve, shooterController, intakeController, matchTimerUpdater, true));
+    NamedCommands.registerCommand(
+        "Auto shoot full hopper (no intake)",
+        new AutoShootCommand(
+            swerve, shooterController, intakeController, matchTimerUpdater, false));
     NamedCommands.registerCommand(
         "Intake down",
         intakeController
@@ -300,14 +326,9 @@ public class RobotContainer {
     // probably have to change this, come back later
     NamedCommands.registerCommand(
         "Intake stow", intakeController.setTargetStateCommand(IntakeState.SHOOTING_STOW));
-    NamedCommands.registerCommand(
-        "Spin up shooter", shooterController.setTargetStateCommand(ShooterState.COMPACT_SPIN_UP));
+    NamedCommands.registerCommand("Smart zero", new InstantCommand(() -> swerve.smartZeroGyro()));
     NamedCommands.registerCommand(
         "Shoot", shooterController.setTargetStateCommand(ShooterState.SHOOT));
-    NamedCommands.registerCommand(
-        "Stop shooting", shooterController.setTargetStateCommand(ShooterState.FLYWHEEL_SPIN_UP));
-    NamedCommands.registerCommand(
-        "Align to shoot", new AlignToShootCommand(swerve, shooterController));
     NamedCommands.registerCommand(
         "Shoot full hopper",
         new InstantCommand(
@@ -332,35 +353,6 @@ public class RobotContainer {
             .andThen(
                 new InstantCommand(
                     () -> shooterController.setTargetStateCommand(ShooterState.FLYWHEEL_SPIN_UP))));
-
-    NamedCommands.registerCommand(
-        "Auto shoot full hopper",
-        new AutoShootCommand(swerve, shooterController, intakeController, matchTimerUpdater, true));
-    NamedCommands.registerCommand(
-        "Align and auto shoot full hopper",
-        new AlignToShootPoseCommand(swerve, true)
-            .withDeadline(
-                new AutoShootCommand(
-                    swerve, shooterController, intakeController, matchTimerUpdater, true)));
-    NamedCommands.registerCommand(
-        "Align and auto shoot full hopper (no intake)",
-        new AlignToShootPoseCommand(swerve, true)
-            .withDeadline(new WaitUntilCommand(() -> !RobotState.getInstance().isUnderTrench()))
-            .andThen(
-                (new AlignToShootCommand(swerve, shooterController))
-                    .withDeadline(
-                        new WaitCommand(0.2)
-                            .andThen(
-                                new AutoShootCommand(
-                                    swerve,
-                                    shooterController,
-                                    intakeController,
-                                    matchTimerUpdater,
-                                    false)))));
-    NamedCommands.registerCommand(
-        "Auto shoot full hopper (no intake)",
-        new AutoShootCommand(
-            swerve, shooterController, intakeController, matchTimerUpdater, false));
     NamedCommands.registerCommand(
         "Shoot preloaded hopper",
         new AlignToPoseCommand(swerve, () -> RobotState.getInstance().getShootingPose(), true, true)
@@ -376,6 +368,10 @@ public class RobotContainer {
             .andThen(
                 new InstantCommand(
                     () -> shooterController.setTargetStateCommand(ShooterState.FLYWHEEL_SPIN_UP))));
+    NamedCommands.registerCommand(
+        "Spin up shooter", shooterController.setTargetStateCommand(ShooterState.COMPACT_SPIN_UP));
+    NamedCommands.registerCommand(
+        "Stop shooting", shooterController.setTargetStateCommand(ShooterState.FLYWHEEL_SPIN_UP));
   }
 
   private void configureBindings() {
@@ -426,10 +422,7 @@ public class RobotContainer {
 
     // driverA.leftStick().whileTrue(new PassToPoseCommand(swerve));
     // driverA.rightStick().onTrue(new HappyBirthdayCommand());
-    driverA
-        .povLeft()
-        .onTrue(
-            new InstantCommand(() -> intakeController.setTargetState(IntakeState.SHOOTING_STOW)));
+
     // ZERO GYRO
     driverA
         .start()
@@ -437,10 +430,6 @@ public class RobotContainer {
             swerve.zeroGyroCommand().alongWith(new InstantCommand(() -> defaultZeroing = true)));
     // SMART ZERO GYRO
     // driverA.x().onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
-    // INTAKE
-    driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
-    // STOW ROBOT
-    driverA.y().onTrue(new StowCommand(intakeController, shooterController));
 
     // SHOOTING COMMAND
     ShootCommandFactory shootCommand =
@@ -452,8 +441,31 @@ public class RobotContainer {
     driverA.a().whileTrue(shootCommand.whileHeld());
     driverA.a().onFalse(shootCommand.onRelease());
 
-    // DEFENSE MODE
-    driverA.povUp().whileTrue(new RunCommand(() -> swerve.setDefenseMode(), swerve));
+    // INTAKE
+    driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
+
+    // ALIGN TO SHOOT
+    driverA
+        .leftBumper()
+        .whileTrue(
+            new AlignToShootCommand(swerve, shooterController).alongWith(shootCommand.whileHeld()))
+        .onFalse(shootCommand.onRelease());
+
+    // DEFAULT TRENCH SHOOT
+    driverA
+        .povDown()
+        .whileTrue(
+            new StartEndCommand(
+                () -> {
+                  shooterController.setTargetState(ShooterState.TRENCH_SHOOT);
+                  intakeController.setTargetState(IntakeState.IDLE);
+                },
+                () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)));
+
+    driverA
+        .povLeft()
+        .onTrue(
+            new InstantCommand(() -> intakeController.setTargetState(IntakeState.SHOOTING_STOW)));
 
     // PASS
     driverA
@@ -461,6 +473,20 @@ public class RobotContainer {
         .whileTrue(new PassToPoseCommand(swerve).alongWith(shootCommand.whileHeldPassing()));
 
     driverA.povRight().onFalse(shootCommand.onRelease());
+
+    // DEFENSE MODE
+    driverA.povUp().whileTrue(new RunCommand(() -> swerve.setDefenseMode(), swerve));
+
+    // DEFAULT SHOOT
+    driverA
+        .rightBumper()
+        .whileTrue(
+            new StartEndCommand(
+                () -> {
+                  shooterController.setTargetState(ShooterState.DEFAULT_SHOOT);
+                  intakeController.setTargetState(IntakeState.IDLE);
+                },
+                () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)));
 
     // DEFENSE POSE SHOOT
     driverA
@@ -476,27 +502,8 @@ public class RobotContainer {
                         .andThen(shootCommand.whileHeld())))
         .onFalse(shootCommand.onRelease());
 
-    // DEFAULT SHOOT
-    driverA
-        .rightBumper()
-        .whileTrue(
-            new StartEndCommand(
-                () -> {
-                  shooterController.setTargetState(ShooterState.DEFAULT_SHOOT);
-                  intakeController.setTargetState(IntakeState.IDLE);
-                },
-                () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)));
-
-    // DEFAULT TRENCH SHOOT
-    driverA
-        .povDown()
-        .whileTrue(
-            new StartEndCommand(
-                () -> {
-                  shooterController.setTargetState(ShooterState.TRENCH_SHOOT);
-                  intakeController.setTargetState(IntakeState.IDLE);
-                },
-                () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)));
+    // STOW ROBOT
+    driverA.y().onTrue(new StowCommand(intakeController, shooterController));
 
     // ARC ALIGN
     // driverA
@@ -519,13 +526,6 @@ public class RobotContainer {
     //
     // shooterController.setTargetStateCommand(ShooterState.TOTAL_SPIN_UP))));
 
-    // ALIGN TO SHOOT
-    driverA
-        .leftBumper()
-        .whileTrue(
-            new AlignToShootCommand(swerve, shooterController).alongWith(shootCommand.whileHeld()))
-        .onFalse(shootCommand.onRelease());
-
     driverB
         .b()
         .onTrue(shootCommand.setJustShootCommand(true))
@@ -533,6 +533,8 @@ public class RobotContainer {
   }
 
   private void configureDriverBButtons() {
+    driverB.a().onTrue(intakeController.setTargetStateCommand(IntakeState.SHOOTING_STOW));
+
     driverB
         .leftBumper()
         .onTrue(
@@ -540,24 +542,23 @@ public class RobotContainer {
                 .setTargetStateCommand(IntakeState.REVERSE)
                 .alongWith(shooterController.setTargetStateCommand(ShooterState.REVERSE)));
 
-    driverB
-        .x()
-        .onTrue(
-            shooterController
-                .setStoppedCommand(true)
-                .alongWith(intakeController.setStoppedCommand(true)));
-    driverB.a().onTrue(intakeController.setTargetStateCommand(IntakeState.SHOOTING_STOW));
-
-    driverB.rightBumper().onTrue(intakeController.setTargetStateCommand(IntakeState.INTAKE));
-
     driverB.povLeft().onTrue(intakeController.zeroCommand());
     driverB.povLeft().onFalse(intakeController.stopZeroingCommand());
 
     driverB.povDown().onTrue(shooterController.zeroCommand());
     driverB.povDown().onFalse(shooterController.stopZeroingCommand());
 
+    driverB.rightBumper().onTrue(intakeController.setTargetStateCommand(IntakeState.INTAKE));
+
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));
+
+    driverB
+        .x()
+        .onTrue(
+            shooterController
+                .setStoppedCommand(true)
+                .alongWith(intakeController.setStoppedCommand(true)));
 
     driverB.y().onTrue(intakeController.setTargetStateCommand(IntakeState.INTAKE_SLOW));
   }
