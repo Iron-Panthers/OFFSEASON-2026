@@ -444,23 +444,15 @@ public class RobotContainer {
     driverA.y().onTrue(new StowCommand(intakeController, shooterController));
 
     // SHOOTING COMMAND
-    ShootCommandFactory shootCommand =
-        new ShootCommandFactory(
-            shooterController,
-            intakeController,
-            matchTimerUpdater,
-            swerve::getShootingError); // TODO: Change degrees in fromDegrees
-    driverA.a().whileTrue(shootCommand.whileHeld());
-    driverA.a().onFalse(shootCommand.onRelease());
 
-    ShootCommandFactoryCo shootCommandV2 =
+    ShootCommandFactoryCo shootCommand =
         new ShootCommandFactoryCo(
             shooterController,
             intakeController,
             matchTimerUpdater,
             swerve::getShootingError);
-    driverA.a().whileTrue(shootCommandV2.whileHeld());
-    driverA.a().onFalse(shootCommandV2.onRelease());
+    driverA.a().whileTrue(shootCommand.whileHeld());
+    driverA.a().onFalse(shootCommand.onRelease());
 
     // DEFENSE MODE
     driverA.povUp().whileTrue(new RunCommand(() -> swerve.setDefenseMode(), swerve));

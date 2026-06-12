@@ -48,9 +48,10 @@ public class ShootCommandFactoryCo {
         Commands.parallel(
             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
             setJustShootCommand(false)),
-        Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
+        
 
         Commands.parallel(
+          Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
             Commands.sequence(
                 Commands.runOnce(() -> intakeController.setTargetState(IntakeState.MID)),
                 new WaitCommand(0.1),
@@ -61,7 +62,7 @@ public class ShootCommandFactoryCo {
                 .until(() ->
                     intakeController.getTargetState() == IntakeState.SHOOTING_STOW),
               
-            Commands.run(() -> {
+            Commands.runOnce(() -> {
                 shooterController.setTargetState(
                     (shooterController.getTargetState() == ShooterState.TOTAL_SPIN_UP
                                 || shooterController.getTargetState()
@@ -76,7 +77,7 @@ public class ShootCommandFactoryCo {
                                 || justShoot) // angle correct
                         ? ShooterState.SHOOT
                         : ShooterState.TOTAL_SPIN_UP);        
-            }),
+            }).repeatedly(),
             
             Commands.sequence(
                     Commands.waitUntil(() -> shooterController.getTargetState()
