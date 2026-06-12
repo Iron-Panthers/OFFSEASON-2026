@@ -37,6 +37,7 @@ import frc.robot.commands.FieldAxisAssistCommand;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.PassToPoseCommand;
 import frc.robot.commands.ShootCommandFactory;
+import frc.robot.commands.ShootCommandFactoryCo;
 import frc.robot.commands.StowCommand;
 import frc.robot.commands.VibrateHIDCommand;
 import frc.robot.commands.VisionTuningCommands;
@@ -451,6 +452,15 @@ public class RobotContainer {
             swerve::getShootingError); // TODO: Change degrees in fromDegrees
     driverA.a().whileTrue(shootCommand.whileHeld());
     driverA.a().onFalse(shootCommand.onRelease());
+
+    ShootCommandFactoryCo shootCommandV2 =
+        new ShootCommandFactoryCo(
+            shooterController,
+            intakeController,
+            matchTimerUpdater,
+            swerve::getShootingError);
+    driverA.a().whileTrue(shootCommandV2.whileHeld());
+    driverA.a().onFalse(shootCommandV2.onRelease());
 
     // DEFENSE MODE
     driverA.povUp().whileTrue(new RunCommand(() -> swerve.setDefenseMode(), swerve));

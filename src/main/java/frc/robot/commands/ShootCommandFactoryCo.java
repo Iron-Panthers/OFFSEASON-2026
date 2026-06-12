@@ -76,7 +76,7 @@ public class ShootCommandFactoryCo {
                                 || justShoot) // angle correct
                         ? ShooterState.SHOOT
                         : ShooterState.TOTAL_SPIN_UP);        
-            }).repeatedly(),
+            }),
             
             Commands.sequence(
                     Commands.waitUntil(() -> shooterController.getTargetState()
@@ -85,17 +85,22 @@ public class ShootCommandFactoryCo {
                     Commands.waitUntil(() ->
                                                 ((SmartDashboard.getNumber(
                                                             "Intake Rack In Time", 1.5)
-                                                        + time)
-                                                    < Timer.getFPGATimestamp())),
+                                                        + time))
+                                                    < Timer.getFPGATimestamp()),
                     intakeController.setTargetStateCommand(
                                             IntakeState.SHOOTING_STOW)
+                    .withDeadline(Commands.waitUntil(
+                       () ->
+                      shooterController.getTargetState()
+                        == ShooterState.TOTAL_SPIN_UP
+                    ))
             ).repeatedly()
         ));
   }
 
   /** Command to bind to onFalse – runs when the button is released. */
   public Command onRelease() {
-    return new InstantCommand(
+    return Commands.runOnce(
         () -> {
           if (shooterController.getTargetState() == ShooterState.SHOOT) {
             shooterController.setTargetState(ShooterState.COMPACT_SPIN_UP);
@@ -105,22 +110,22 @@ public class ShootCommandFactoryCo {
 
   /** Command to bind to whileTrue – repeats while the button is held. */
   public Command whileHeldPassing() {
-    return new InstantCommand(
-            () -> {
-              shooterController.setTargetState(
-                  (shooterController.getTargetState() == ShooterState.PASS_SPIN_UP
-                              || shooterController.getTargetState() == ShooterState.PASS)
-                          && shooterController.flywheelsUpToSpeed() // time correct
-                      ? ShooterState.PASS
-                      : ShooterState.PASS_SPIN_UP);
-            })
-        .repeatedly()
-        .alongWith(
-            new WaitCommand(1.5)
-                .andThen(intakeController.setTargetStateCommand(IntakeState.SHOOTING_STOW)));
+    return Commands.run(() -> {
+      shooterController.setTargetState(
+          (shooterController.getTargetState() == ShooterState.PASS_SPIN_UP
+              || shooterController.getTargetState() == ShooterState.PASS)
+              && shooterController.flywheelsUpToSpeed()
+              ? ShooterState.PASS
+              : ShooterState.PASS_SPIN_UP);
+  })
+  .alongWith(
+      Commands.waitSeconds(1.5)
+          .andThen(
+              intakeController.setTargetStateCommand(
+                  IntakeState.SHOOTING_STOW)));
   }
 
   public Command setJustShootCommand(boolean justShoot) {
-    return new InstantCommand(() -> this.justShoot = justShoot);
+    return Commands.runOnce(() -> this.justShoot = justShoot);
   }
 }
