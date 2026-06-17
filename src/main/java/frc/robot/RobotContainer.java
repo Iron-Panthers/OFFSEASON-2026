@@ -14,6 +14,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
@@ -463,18 +464,20 @@ public class RobotContainer {
     driverA.povRight().onFalse(shootCommand.onRelease());
 
     // DEFENSE POSE SHOOT
-    driverA
-        .x()
-        .whileTrue(
-            new AlignToShootPoseCommand(swerve, true)
-                .alongWith(
-                    (new WaitUntilCommand(() -> swerve.almostReachedAutoAlignTarget())
-                        .andThen(
-                            shooterController.setTargetStateCommand(ShooterState.TOTAL_SPIN_UP))))
-                .alongWith(
-                    new WaitUntilCommand(() -> swerve.reachedAutoAlignTarget())
-                        .andThen(shootCommand.whileHeld())))
-        .onFalse(shootCommand.onRelease());
+    // driverA
+    //     .x()
+    //     .whileTrue(
+    //         new AlignToShootPoseCommand(swerve, true)
+    //             .alongWith(
+    //                 (new WaitUntilCommand(() -> swerve.almostReachedAutoAlignTarget())
+    //                     .andThen(
+    //                         shooterController.setTargetStateCommand(ShooterState.TOTAL_SPIN_UP))))
+    //             .alongWith(
+    //                 new WaitUntilCommand(() -> swerve.reachedAutoAlignTarget())
+    //                     .andThen(shootCommand.whileHeld())))
+    //     .onFalse(shootCommand.onRelease());
+
+    driverA.x().onTrue(new InstantCommand(() -> swerve.setCenterOfRotation(new Translation2d(0, 1))));
 
     // DEFAULT SHOOT
     driverA
