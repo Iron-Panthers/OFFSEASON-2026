@@ -139,35 +139,11 @@ public class Drive extends SubsystemBase {
           }
         }
         isFromTeleop = true;
-
-        // //do math about rotating around center 
-        // // input point is Translation2d 
-        // // input omega radians per second is from target speeds
-        // double r = centerOfRotation.getNorm(); 
-        // double v = targetSpeeds.omegaRadiansPerSecond * r;
-        // // add output x and y to targetspeeds and set orps to new 
-        // //ChassisSpeeds vSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(new ChassisSpeeds(v *(Math.sin(centerOfRotation.getAngle().getRadians())), -v * (Math.cos(centerOfRotation.getAngle().getRadians())),0), fieldRelativeYaw);
-        // ChassisSpeeds vSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(new ChassisSpeeds(-targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getY(), targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getX(), 0.0), fieldRelativeYaw);
-        // targetSpeeds = targetSpeeds.plus(vSpeeds);
-
-        double omega = targetSpeeds.omegaRadiansPerSecond; // rad/s
-        // short-circuit when no rotation or no center set
-        if (Math.abs(omega) > 1e-9 && centerOfRotation.getNorm() > 1e-9) {
-          // tangential velocity of robot center due to rotation about centerOfRotation:
-          // robot-relative vx = -omega * r_y
-          // robot-relative vy =  omega * r_x
-          double robotRelVx = -omega * centerOfRotation.getY();
-          double robotRelVy = omega * centerOfRotation.getX();
-
-          // convert robot-relative linear velocity into field-relative using current yaw
-          ChassisSpeeds rotationSpeedsField =
-              // ChassisSpeeds.fromRobotRelativeSpeeds(
-                  new ChassisSpeeds(robotRelVx, robotRelVy, 0.0);//, fieldRelativeYaw);
-
-          // add tangential velocity to the commanded (field-relative) translation velocities
-          targetSpeeds = targetSpeeds.plus(rotationSpeedsField);
+        
+        ChassisSpeeds vSpeeds = new ChassisSpeeds(-targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getY(), targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getX(), 0.0);
+        targetSpeeds = targetSpeeds.plus(vSpeeds);
         }
-      }
+        
       case TRAJECTORY -> {
         Logger.recordOutput(
             "Swerve/Distance From Setpoint",

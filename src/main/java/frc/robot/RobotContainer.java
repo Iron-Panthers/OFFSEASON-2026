@@ -477,7 +477,7 @@ public class RobotContainer {
     //                     .andThen(shootCommand.whileHeld())))
     //     .onFalse(shootCommand.onRelease());
 
-    driverA.x().onTrue(new InstantCommand(() -> swerve.setCenterOfRotation(new Translation2d(0, 1))));
+    driverA.x().onTrue(new InstantCommand(() -> swerve.setCenterOfRotation(new Translation2d(0, -1))));
 
     // DEFAULT SHOOT
     driverA
