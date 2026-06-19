@@ -125,6 +125,7 @@ public class RobotContainer {
   private ShooterController shooterController;
   private ShooterOmniwheel shooterOmniwheel;
   private ShooterAccelerator shooterAccelerator;
+  private DoubleArmMechanism doubleArmMechanism;
 
   public RobotContainer() {
 
@@ -438,7 +439,9 @@ public class RobotContainer {
     // SMART ZERO GYRO
     // driverA.x().onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
     // INTAKE
-    driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
+    // driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
+    driverA.b().onTrue(
+        new InstantCommand(() -> doubleArmMechanism.setTargetPosition(1.0, 1.0)));
     // STOW ROBOT
     driverA.y().onTrue(new StowCommand(intakeController, shooterController));
 
