@@ -139,11 +139,15 @@ public class Drive extends SubsystemBase {
           }
         }
         isFromTeleop = true;
-        
-        ChassisSpeeds vSpeeds = new ChassisSpeeds(-targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getY(), targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getX(), 0.0);
+
+        ChassisSpeeds vSpeeds =
+            new ChassisSpeeds(
+                -targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getY(),
+                targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getX(),
+                0.0);
         targetSpeeds = targetSpeeds.plus(vSpeeds);
-        }
-        
+      }
+
       case TRAJECTORY -> {
         Logger.recordOutput(
             "Swerve/Distance From Setpoint",
