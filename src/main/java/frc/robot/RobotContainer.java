@@ -37,7 +37,6 @@ import frc.robot.commands.FieldAxisAssistCommand;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.PassToPoseCommand;
 import frc.robot.commands.ShootCommandFactory;
-import frc.robot.commands.ShootCommandFactoryCo;
 import frc.robot.commands.StowCommand;
 import frc.robot.commands.VibrateHIDCommand;
 import frc.robot.commands.VisionTuningCommands;
@@ -445,12 +444,9 @@ public class RobotContainer {
 
     // SHOOTING COMMAND
 
-    ShootCommandFactoryCo shootCommand =
-        new ShootCommandFactoryCo(
-            shooterController,
-            intakeController,
-            matchTimerUpdater,
-            swerve::getShootingError);
+    ShootCommandFactory shootCommand =
+        new ShootCommandFactory(
+            shooterController, intakeController, matchTimerUpdater, swerve::getShootingError);
     driverA.a().whileTrue(shootCommand.whileHeld());
     driverA.a().onFalse(shootCommand.onRelease());
 
