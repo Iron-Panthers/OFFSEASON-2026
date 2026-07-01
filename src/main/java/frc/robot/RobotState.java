@@ -118,6 +118,14 @@ public class RobotState {
     poseEstimator.resetPose(pose);
   }
 
+  /* In inches because we are imperial... */
+  @AutoLogOutput(key = "Robot State/Error")
+  public double alignError() {
+    return lastApproachPose.getTranslation().getDistance(estimatedPose.getTranslation())
+        * 100
+        / 2.54;
+  }
+
   @AutoLogOutput(key = "Robot State/Estimated Pose")
   public Pose2d getEstimatedPose() {
     return estimatedPose;
@@ -132,14 +140,6 @@ public class RobotState {
             ChassisSpeeds.fromRobotRelativeSpeeds(robotSpeeds, estimatedPose.getRotation())
                 .vyMetersPerSecond)
         .rotateBy(Rotation2d.kPi);
-  }
-
-  /* In inches because we are imperial... */
-  @AutoLogOutput(key = "Robot State/Error")
-  public double alignError() {
-    return lastApproachPose.getTranslation().getDistance(estimatedPose.getTranslation())
-        * 100
-        / 2.54;
   }
 
   private Pose2d translateByVector(Pose2d pose, double mag, Rotation2d theta) {
@@ -320,10 +320,10 @@ public class RobotState {
       Translation2d robotVelocity = new Translation2d(filteredVx, filteredVy);
 
       // Log the raw and filtered velocities for tuning
-      Logger.recordOutput("Shooting Predictor/Raw Vx", rawSpeeds.vxMetersPerSecond);
-      Logger.recordOutput("Shooting Predictor/Raw Vy", rawSpeeds.vyMetersPerSecond);
       Logger.recordOutput("Shooting Predictor/Filtered Vx", filteredVx);
       Logger.recordOutput("Shooting Predictor/Filtered Vy", filteredVy);
+      Logger.recordOutput("Shooting Predictor/Raw Vx", rawSpeeds.vxMetersPerSecond);
+      Logger.recordOutput("Shooting Predictor/Raw Vy", rawSpeeds.vyMetersPerSecond);
 
       // Get the initial important things
       Pose3d robotPose3d = new Pose3d(getEstimatedPose());
@@ -386,15 +386,15 @@ public class RobotState {
                   + baselineVerticalVelocity * baselineVerticalVelocity);
       double adjustedShooterSpeed = baseline.shooterSpeed * (newExitSpeed / staticExitSpeed);
 
-      Logger.recordOutput("Shooting Predictor/Distance", distance);
-      Logger.recordOutput("Shooting Predictor/Baseline Vh", baselineVelocity);
-      Logger.recordOutput("Shooting Predictor/Baseline Vv", baselineVerticalVelocity);
-      Logger.recordOutput("Shooting Predictor/Shot Horizontal Speed", shotHorizontalSpeed);
-      Logger.recordOutput("Shooting Predictor/Turret Angle", turretAngle);
       Logger.recordOutput("Shooting Predictor/Adjusted Hood Angle", adjustedHoodAngle);
       Logger.recordOutput("Shooting Predictor/Adjusted Shooter Speed", adjustedShooterSpeed);
+      Logger.recordOutput("Shooting Predictor/Baseline Vh", baselineVelocity);
+      Logger.recordOutput("Shooting Predictor/Baseline Vv", baselineVerticalVelocity);
+      Logger.recordOutput("Shooting Predictor/Distance", distance);
+      Logger.recordOutput("Shooting Predictor/Shot Horizontal Speed", shotHorizontalSpeed);
       Logger.recordOutput("Shooting Predictor/Shooter Offset Y", shooterOffsetY);
       Logger.recordOutput("Shooting Predictor/Shooter Angle Offset", shooterAngleOffset);
+      Logger.recordOutput("Shooting Predictor/Turret Angle", turretAngle);
 
       return new TargetShootingState(
           turretAngle, Degrees.of(adjustedHoodAngle), MetersPerSecond.of(adjustedShooterSpeed));
