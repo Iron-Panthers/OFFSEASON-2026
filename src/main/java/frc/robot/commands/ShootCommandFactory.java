@@ -4,9 +4,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.subsystems.elastic_updater.ElasticUpdater;
 import frc.robot.subsystems.intake.IntakeController;
 import frc.robot.subsystems.intake.IntakeController.IntakeState;
@@ -44,82 +43,57 @@ public class ShootCommandFactory {
 
   /** Command to bind to whileTrue – repeats while the button is held. */
   public Command whileHeld() {
-    return new InstantCommand(() -> intakeController.setTargetState(IntakeState.SHOOT))
-        .alongWith(setJustShootCommand(false))
-        .andThen(
-            // Jittering that stops when intake goes in
-            (((new WaitUntilCommand(() -> shooterController.getTargetState() == ShooterState.SHOOT)
-                            .andThen(
-                                new InstantCommand(
-                                    () -> intakeController.setTargetState(IntakeState.MID)))
-                            .andThen(new WaitCommand(0.1))
-                            .andThen(() -> intakeController.setTargetState(IntakeState.SHOOT)))
-                        .andThen(
-                            new WaitCommand(0.2)
-                                .andThen(
-                                    new InstantCommand(
-                                        () -> intakeController.setTargetState(IntakeState.MID)))
-                                .andThen(new WaitCommand(0.1))
-                                .andThen(() -> intakeController.setTargetState(IntakeState.SHOOT)))
-                        .andThen(
-                            new WaitCommand(0.2)
-                                .andThen(
-                                    new InstantCommand(
-                                        () -> intakeController.setTargetState(IntakeState.MID)))
-                                .andThen(new WaitCommand(0.1))
-                                .andThen(() -> intakeController.setTargetState(IntakeState.SHOOT))))
-                    .withDeadline(
-                        new WaitUntilCommand(
-                            () -> intakeController.getTargetState() == IntakeState.SHOOTING_STOW)))
-                .alongWith(
-                    // deciding to shoot or not
-                    new InstantCommand(
-                            () -> {
-                              shooterController.setTargetState(
-                                  (shooterController.getTargetState() == ShooterState.TOTAL_SPIN_UP
-                                              || shooterController.getTargetState()
-                                                  == ShooterState.SHOOT)
-                                          && shooterController.flywheelsUpToSpeed()
-                                          && (matchTimerUpdater.isOurHubActive()
-                                              || matchTimerUpdater.getTimeUntilOurHubShifts() <= 2
-                                              || matchTimerUpdater.getTimeUntilOurHubShifts()
-                                                  >= 24) // time correct
-                                          && ((getHeadingError.get().getDegrees() < 4
-                                                  || getHeadingError.get().getDegrees() > 356)
-                                              || justShoot) // angle correct
-                                      ? ShooterState.SHOOT
-                                      : ShooterState.TOTAL_SPIN_UP);
-                            })
-                        .repeatedly()
-                        // automatically putting intake rack in (if button not pressed)
-                        .alongWith(
-                            (new WaitUntilCommand(
-                                        () ->
-                                            shooterController.getTargetState()
-                                                == ShooterState.SHOOT)
-                                    .andThen(
-                                        new InstantCommand(() -> time = Timer.getFPGATimestamp()))
-                                    .andThen(
-                                        new WaitUntilCommand(
-                                            () ->
-                                                ((SmartDashboard.getNumber(
-                                                            "Intake Rack In Time", 1.5)
-                                                        + time)
-                                                    < Timer.getFPGATimestamp())))
-                                    .andThen(
-                                        intakeController.setTargetStateCommand(
-                                            IntakeState.SHOOTING_STOW))
-                                    .withDeadline(
-                                        new WaitUntilCommand(
-                                            () ->
-                                                (shooterController.getTargetState()
-                                                    == ShooterState.TOTAL_SPIN_UP))))
-                                .repeatedly())));
+    return Commands.sequence(
+        Commands.parallel(
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
+            setJustShootCommand(false)),
+        Commands.parallel(
+            Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
+            Commands.sequence(
+                    Commands.runOnce(() -> intakeController.setTargetState(IntakeState.MID)),
+                    new WaitCommand(0.1),
+                    Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
+                    new WaitCommand(0.2))
+                .repeatedly()
+                .until(() -> intakeController.getTargetState() == IntakeState.SHOOTING_STOW),
+            Commands.runOnce(
+                    () -> {
+                      shooterController.setTargetState(
+                          (shooterController.getTargetState() == ShooterState.TOTAL_SPIN_UP
+                                      || shooterController.getTargetState() == ShooterState.SHOOT)
+                                  && shooterController.flywheelsUpToSpeed()
+                                  && (matchTimerUpdater.isOurHubActive()
+                                      || matchTimerUpdater.getTimeUntilOurHubShifts() <= 2
+                                      || matchTimerUpdater.getTimeUntilOurHubShifts()
+                                          >= 24) // time correct
+                                  && ((getHeadingError.get().getDegrees() < 4
+                                          || getHeadingError.get().getDegrees() > 356)
+                                      || justShoot) // angle correct
+                              ? ShooterState.SHOOT
+                              : ShooterState.TOTAL_SPIN_UP);
+                    })
+                .repeatedly(),
+            Commands.sequence(
+                    Commands.waitUntil(
+                        () -> shooterController.getTargetState() == ShooterState.SHOOT),
+                    Commands.runOnce(() -> time = Timer.getFPGATimestamp()),
+                    Commands.waitUntil(
+                        () ->
+                            ((SmartDashboard.getNumber("Intake Rack In Time", 1.5) + time))
+                                < Timer.getFPGATimestamp()),
+                    intakeController
+                        .setTargetStateCommand(IntakeState.SHOOTING_STOW)
+                        .withDeadline(
+                            Commands.waitUntil(
+                                () ->
+                                    shooterController.getTargetState()
+                                        == ShooterState.TOTAL_SPIN_UP)))
+                .repeatedly()));
   }
 
   /** Command to bind to onFalse – runs when the button is released. */
   public Command onRelease() {
-    return new InstantCommand(
+    return Commands.runOnce(
         () -> {
           if (shooterController.getTargetState() == ShooterState.SHOOT) {
             shooterController.setTargetState(ShooterState.COMPACT_SPIN_UP);
@@ -129,22 +103,21 @@ public class ShootCommandFactory {
 
   /** Command to bind to whileTrue – repeats while the button is held. */
   public Command whileHeldPassing() {
-    return new InstantCommand(
+    return Commands.run(
             () -> {
               shooterController.setTargetState(
                   (shooterController.getTargetState() == ShooterState.PASS_SPIN_UP
                               || shooterController.getTargetState() == ShooterState.PASS)
-                          && shooterController.flywheelsUpToSpeed() // time correct
+                          && shooterController.flywheelsUpToSpeed()
                       ? ShooterState.PASS
                       : ShooterState.PASS_SPIN_UP);
             })
-        .repeatedly()
         .alongWith(
-            new WaitCommand(1.5)
+            Commands.waitSeconds(1.5)
                 .andThen(intakeController.setTargetStateCommand(IntakeState.SHOOTING_STOW)));
   }
 
   public Command setJustShootCommand(boolean justShoot) {
-    return new InstantCommand(() -> this.justShoot = justShoot);
+    return Commands.runOnce(() -> this.justShoot = justShoot);
   }
 }

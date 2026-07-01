@@ -432,12 +432,10 @@ public class RobotContainer {
     // driverA.x().onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
 
     // SHOOTING COMMAND
+
     ShootCommandFactory shootCommand =
         new ShootCommandFactory(
-            shooterController,
-            intakeController,
-            matchTimerUpdater,
-            swerve::getShootingError); // TODO: Change degrees in fromDegrees
+            shooterController, intakeController, matchTimerUpdater, swerve::getShootingError);
     driverA.a().whileTrue(shootCommand.whileHeld());
     driverA.a().onFalse(shootCommand.onRelease());
 
