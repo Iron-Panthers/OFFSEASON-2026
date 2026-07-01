@@ -56,8 +56,7 @@ public class ShootCommandFactoryCo {
                 Commands.runOnce(() -> intakeController.setTargetState(IntakeState.MID)),
                 new WaitCommand(0.1),
                 Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
-                new WaitCommand(0.2)
-                )
+                new WaitCommand(0.2))
                 .repeatedly()
                 .until(() ->
                     intakeController.getTargetState() == IntakeState.SHOOTING_STOW),
@@ -83,10 +82,8 @@ public class ShootCommandFactoryCo {
                     Commands.waitUntil(() -> shooterController.getTargetState()
                                                 == ShooterState.SHOOT),
                     Commands.runOnce(() -> time = Timer.getFPGATimestamp()),
-                    Commands.waitUntil(() ->
-                                                ((SmartDashboard.getNumber(
-                                                            "Intake Rack In Time", 1.5)
-                                                        + time))
+                    Commands.waitUntil(() -> 
+                              ((SmartDashboard.getNumber("Intake Rack In Time", 1.5) + time))
                                                     < Timer.getFPGATimestamp()),
                     intakeController.setTargetStateCommand(
                                             IntakeState.SHOOTING_STOW)
