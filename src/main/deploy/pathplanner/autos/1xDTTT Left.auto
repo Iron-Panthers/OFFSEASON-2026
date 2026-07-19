@@ -13,7 +13,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2xTT 1 Left"
+            "pathName": "xD"
           }
         },
         {
@@ -56,6 +56,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Left Autos (auto generated)",
+  "folder": null,
   "choreoAuto": false
 }
