@@ -1,0 +1,147 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.891008303677343,
+        "y": 7.246619217081851
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.840650592672414,
+        "y": 7.370481097341955
+      },
+      "isLocked": false,
+      "linkedName": "Trench Shooting Pose Left"
+    },
+    {
+      "anchor": {
+        "x": 7.6775708288433915,
+        "y": 6.921297817887932
+      },
+      "prevControl": {
+        "x": 7.296498069324714,
+        "y": 7.131076183099857
+      },
+      "nextControl": {
+        "x": 8.113688349548648,
+        "y": 6.681217627822962
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.043575790229886,
+        "y": 4.143630679777299
+      },
+      "prevControl": {
+        "x": 8.552933755608713,
+        "y": 4.453056338754294
+      },
+      "nextControl": {
+        "x": 7.576830381196121,
+        "y": 3.8600913703304602
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.189473049119971,
+        "y": 5.05920303520115
+      },
+      "prevControl": {
+        "x": 7.3505709829624735,
+        "y": 4.38224320849446
+      },
+      "nextControl": {
+        "x": 5.338549692438937,
+        "y": 5.555320469647988
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.3116763200431034,
+        "y": 5.728956481232041
+      },
+      "prevControl": {
+        "x": 3.7709052484032055,
+        "y": 5.248856081685232
+      },
+      "nextControl": {
+        "x": 2.898380870599857,
+        "y": 6.1610357736170975
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.891008303677343,
+        "y": 7.246619217081851
+      },
+      "prevControl": {
+        "x": 2.785168765714799,
+        "y": 6.922265007632903
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Trench Shooting Pose Left"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.18112334470304972,
+      "rotationDegrees": -89.74035653916424
+    },
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": -147.1911237067998
+    },
+    {
+      "waypointRelativePos": 1.1256207363563406,
+      "rotationDegrees": 100.22755329804485
+    },
+    {
+      "waypointRelativePos": 1.9972349016853936,
+      "rotationDegrees": 46.05916090183563
+    },
+    {
+      "waypointRelativePos": 2.6856252508025684,
+      "rotationDegrees": -25.321943314507518
+    },
+    {
+      "waypointRelativePos": 3.112020967094703,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 3.5558474618780096,
+      "rotationDegrees": 0.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.1,
+    "maxAcceleration": 4.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -77.00538320808346
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -77.00538320808346
+  },
+  "useDefaultConstraints": true
+}
