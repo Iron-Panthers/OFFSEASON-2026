@@ -11,9 +11,59 @@
           }
         },
         {
-          "type": "path",
+          "type": "race",
           "data": {
-            "pathName": "xD"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "2xTT 1 Right"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Check If Off"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Translate To Shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Smart zero"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Align and auto shoot full hopper (no intake)"
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "2xTT 2 Right"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Translate To Shoot"
           }
         },
         {
@@ -31,31 +81,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2xTT 2 Left"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Smart zero"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Align and auto shoot full hopper (no intake)"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "xT  Left"
+            "pathName": "xT  Right"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Right Autos (make these)",
   "choreoAuto": false
 }

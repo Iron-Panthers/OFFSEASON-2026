@@ -110,15 +110,13 @@ public abstract class BaseHeadingController {
   // Pass headingController into robotContainer into Drive to pass lambda
   // lambda should call getError
   // pass lambda into commandFactory for shootCommandFactory
+
   public Rotation2d getError() {
     Rotation2d error =
         Rotation2d.fromDegrees(
             (Math.abs(targetHeading.getDegrees() - headingSupplier.get().getDegrees()) + 360)
                 % 360);
     Logger.recordOutput("Swerve/Heading Controller/Heading Error", error);
-    Logger.recordOutput(
-        "Swerve/Heading Controller/Absolute Error",
-        error.getDegrees() > 180 ? error.getDegrees() - 360 : error.getDegrees());
     return error;
   }
 }

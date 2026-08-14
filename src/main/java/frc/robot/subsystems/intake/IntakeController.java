@@ -16,12 +16,8 @@ import org.littletonrobotics.junction.Logger;
 public class IntakeController extends SubsystemBase {
   public enum IntakeState {
     STOW(IntakeRackTarget.STOW, IntakeRollersTarget.IDLE),
-    SHOOTING_STOW(IntakeRackTarget.SHOOTING_STOW, IntakeRollersTarget.IDLE),
-    SHOOT(IntakeRackTarget.INTAKE, IntakeRollersTarget.INTAKE_SLOW),
-    MID(IntakeRackTarget.MIDDLE, IntakeRollersTarget.INTAKE_SLOW),
     IDLE(IntakeRackTarget.INTAKE, IntakeRollersTarget.IDLE),
     INTAKE(IntakeRackTarget.INTAKE, IntakeRollersTarget.INTAKE),
-    INTAKE_SLOW(IntakeRackTarget.INTAKE, IntakeRollersTarget.INTAKE_SLOW),
     REVERSE(IntakeRackTarget.INTAKE, IntakeRollersTarget.EJECT),
     ZEROING(IntakeRackTarget.STOW, IntakeRollersTarget.IDLE);
 
@@ -64,11 +60,10 @@ public class IntakeController extends SubsystemBase {
       // if else set control mode to zero
     } else if (intakeRack.getControlMode() == GenericSuperstructure.ControlMode.ZEROING) {
       intakeRollers.setVelocityTarget(targetState.getIntakeRollersTarget());
-    } else if (intakeRack.getPosition() < 1.5 && targetState == IntakeState.INTAKE) {
+    } else if (intakeRack.getPosition() < 7 && targetState == IntakeState.INTAKE) {
       intakeRollers.setVelocityTarget(IntakeRollersTarget.IDLE);
       intakeRack.setPositionTarget(targetState.getIntakeRackTarget());
-    } else if ((targetState == IntakeState.STOW || targetState == IntakeState.SHOOTING_STOW)
-        && !intakeRack.reachedTarget()) {
+    } else if (targetState == IntakeState.STOW && !intakeRack.reachedTarget()) {
       intakeRollers.setVelocityTarget(IntakeRollersTarget.INTAKE);
       intakeRack.setPositionTarget(targetState.getIntakeRackTarget());
     } else {
@@ -117,10 +112,6 @@ public class IntakeController extends SubsystemBase {
 
   public Command stopZeroingCommand() {
     return new InstantCommand(() -> intakeRack.endZeroing());
-  }
-
-  public void stopZeroing() {
-    intakeRack.endZeroing();
   }
 
   public void setIntakeRackActive(boolean isActive) {

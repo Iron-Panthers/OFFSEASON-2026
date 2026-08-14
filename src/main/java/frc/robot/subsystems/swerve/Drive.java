@@ -61,9 +61,6 @@ public class Drive extends SubsystemBase {
   private ChassisSpeeds targetSpeeds = new ChassisSpeeds();
   private ChassisSpeeds trajectorySpeeds = new ChassisSpeeds();
 
-  @AutoLogOutput(key = "Swerve/Center of Rotation")
-  private Translation2d centerOfRotation = new Translation2d();
-
   private double speedMagnitude =
       Math.hypot(targetSpeeds.vxMetersPerSecond, targetSpeeds.vyMetersPerSecond);
 
@@ -139,15 +136,7 @@ public class Drive extends SubsystemBase {
           }
         }
         isFromTeleop = true;
-
-        ChassisSpeeds vSpeeds =
-            new ChassisSpeeds(
-                -targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getY(),
-                targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getX(),
-                0.0);
-        targetSpeeds = targetSpeeds.plus(vSpeeds);
       }
-
       case TRAJECTORY -> {
         Logger.recordOutput(
             "Swerve/Distance From Setpoint",
@@ -191,8 +180,6 @@ public class Drive extends SubsystemBase {
             }
           }
           isFromTeleop = false;
-        } else if (headingController != null) {
-          targetSpeeds.omegaRadiansPerSecond = headingController.update();
         }
       }
       case AXIS_ASSIST -> {
@@ -360,9 +347,7 @@ public class Drive extends SubsystemBase {
     if (headingController == null) {
       headingController =
           new TeleopHeadingController(
-              () -> fieldRelativeYaw,
-              RobotState.getInstance().calculateTargetShootingState().drivebaseYaw(),
-              HEADING_CONTROLLER_CONSTANTS);
+              () -> fieldRelativeYaw, new Rotation2d(), HEADING_CONTROLLER_CONSTANTS);
     }
     headingController.setScoped(scoped);
   }
@@ -491,6 +476,10 @@ public class Drive extends SubsystemBase {
     }
   }
 
+  public ChassisSpeeds getTargetSpeed() {
+    return targetSpeeds;
+  }
+
   public boolean reachedAutoAlignTarget() {
     if (driveMode != DriveModes.AUTO_ALIGN) {
       return false;
@@ -509,17 +498,5 @@ public class Drive extends SubsystemBase {
     for (Module module : modules) {
       module.setNeutralMode(value);
     }
-  }
-
-  public boolean getIsScoped() {
-    return isScoped;
-  }
-
-  public void setCenterOfRotation(Translation2d centerOfRotation) {
-    this.centerOfRotation = centerOfRotation;
-  }
-
-  public Translation2d getCenterOfRotation() {
-    return centerOfRotation;
   }
 }

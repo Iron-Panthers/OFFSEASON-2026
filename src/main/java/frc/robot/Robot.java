@@ -19,6 +19,7 @@ import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Threads;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -44,7 +45,10 @@ public class Robot extends LoggedRobot {
     Pathfinding.setPathfinder(new LocalADStarAK());
 
     PathPlannerLogging.setLogTargetPoseCallback(
-        (pose) -> Logger.recordOutput("Path Planner/Target Pose", pose));
+        (pose) -> {
+          RobotState.getInstance().setPathPlannerTargetPose(pose); // Don't kill me Nora
+          Logger.recordOutput("PathPlanner/TargetPose", pose);
+        });
     PathPlannerLogging.setLogCurrentPoseCallback(
         (pose) -> Logger.recordOutput("Path Planner/Current Pose", pose));
     PathPlannerLogging.setLogActivePathCallback(
@@ -80,6 +84,7 @@ public class Robot extends LoggedRobot {
       case SIM:
         // Running a physics simulator, log to NT
         Logger.addDataReceiver(new NT4Publisher());
+        // Logger.addDataReceiver(new WPILOGWriter("C:\\Users\\esori\\Downloads"));
         break;
 
       case REPLAY:
@@ -103,6 +108,8 @@ public class Robot extends LoggedRobot {
 
     CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
     CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
+
+    SmartDashboard.putData(CommandScheduler.getInstance());
   }
 
   /** This function is called periodically during all modes. */

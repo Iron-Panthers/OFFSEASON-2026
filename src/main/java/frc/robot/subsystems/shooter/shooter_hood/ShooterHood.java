@@ -14,7 +14,7 @@ public class ShooterHood extends GenericSuperstructure<ShooterHood.ShooterHoodTa
   public enum ShooterHoodTarget implements GenericSuperstructure.PositionTarget {
     STOW(0, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT), // need to update
     SHOOT_TEMP(12, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT), // need to update
-    PASS(32, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT),
+    PASS(34, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT),
     DEFAULT_SHOOT(14, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT); // might need to update?
 
     private double position; // in rotations
@@ -61,6 +61,18 @@ public class ShooterHood extends GenericSuperstructure<ShooterHood.ShooterHoodTa
         "Shooter/Shooter Hood/Position Target Rotations", // TODO: add naming convention to notion
         // doc
         getPositionTarget().getPosition());
+  }
+
+  /**
+   * Function returns if the subsystem has reached its position target
+   *
+   * @return whether the subsystem has reached its position target
+   */
+
+  // TODO fix the logic for reaching Target Position on Shooter
+  public boolean reachedTarget() {
+    return Math.abs(super.getPosition() - (super.getPositionTarget().getPosition()))
+        <= super.getPositionTarget().getEpsilon();
   }
 
   @Override
