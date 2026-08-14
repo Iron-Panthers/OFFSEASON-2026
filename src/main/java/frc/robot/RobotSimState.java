@@ -5,8 +5,10 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
@@ -17,9 +19,11 @@ import edu.wpi.first.wpilibj.Timer;
 import frc.robot.Constants.RobotType;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.utility.FuelSim;
+import java.util.ArrayList;
+import java.util.List;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
-import org.ironmaple.simulation.seasonspecific.rebuilt2026.*;
+import org.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -29,6 +33,7 @@ public class RobotSimState {
 
   private int fuelCount = START_FUEL_CAPACITY;
   private boolean intakeActive = false;
+  List<SwerveDriveSimulation> obstacles = new ArrayList<SwerveDriveSimulation>();
 
   private RobotSimState() {
     // init the arena (drive sim only, no game piece placement)
@@ -69,6 +74,20 @@ public class RobotSimState {
     fuelSim.spawnStartingFuel();
     fuelSim.setLoggingFrequency(20);
     fuelSim.start();
+
+    // opponent simulation
+
+    addObstacleToSim(new Pose2d(new Translation2d(7.840, 3.922), new Rotation2d()));
+  }
+
+  public List<Pose2d> getObstaclePositions() {
+    return obstacles.stream().map((obstacle) -> obstacle.getSimulatedDriveTrainPose()).toList();
+  }
+
+  public void addObstacleToSim(Pose2d pose) {
+    SwerveDriveSimulation obstacle = new SwerveDriveSimulation(DriveConstants.obstacleConfig, pose);
+    obstacles.add(obstacle);
+    SimulatedArena.getInstance().addDriveTrainSimulation(obstacle);
   }
 
   // Singleton instance
@@ -123,7 +142,8 @@ public class RobotSimState {
     if (fuelCount <= 0) return; // no fuel to shoot
     fuelCount--;
 
-    // Build a transform that includes the shooter's position and combines the hood pitch with the
+    // Build a transform that includes the shooter's position and combines the hood
+    // pitch with the
     // shooter's yaw
     Transform3d shooterOffset =
         new Transform3d(

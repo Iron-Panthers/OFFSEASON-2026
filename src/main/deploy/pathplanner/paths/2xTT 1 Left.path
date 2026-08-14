@@ -2,28 +2,28 @@
   "version" : "2025.0",
   "waypoints" : [ {
     "anchor" : {
-      "x" : 4.37,
-      "y" : 7.442
+      "x" : 4.343,
+      "y" : 7.462000000000001
     },
     "prevControl" : null,
     "nextControl" : {
-      "x" : 4.918613285883749,
-      "y" : 7.409722419928825
+      "x" : 4.803244444444444,
+      "y" : 7.451366666666667
     },
     "isLocked" : false,
     "linkedName" : null
   }, {
     "anchor" : {
-      "x" : 6.03208778173191,
-      "y" : 7.246619217081851
+      "x" : 5.806144721233689,
+      "y" : 7.461803084223015
     },
     "prevControl" : {
-      "x" : 5.225148279952552,
-      "y" : 7.42952550415184
+      "x" : 5.145888888888888,
+      "y" : 7.53198888888889
     },
     "nextControl" : {
-      "x" : 7.048611354517573,
-      "y" : 7.016207207250433
+      "x" : 6.8426150445746305,
+      "y" : 7.35162533176358
     },
     "isLocked" : false,
     "linkedName" : null
@@ -78,12 +78,12 @@
       "y" : 6.997866666666667
     },
     "prevControl" : {
-      "x" : 6.801764880804862,
-      "y" : 6.634854542896021
+      "x" : 6.817629110702981,
+      "y" : 6.642463960287434
     },
     "nextControl" : {
-      "x" : 6.4516963226571775,
-      "y" : 7.408007117437723
+      "x" : 6.483973902728352,
+      "y" : 7.300415183867142
     },
     "isLocked" : false,
     "linkedName" : null
@@ -93,8 +93,8 @@
       "y" : 7.246619217081851
     },
     "prevControl" : {
-      "x" : 4.751743772241993,
-      "y" : 7.257378410438909
+      "x" : 4.837817319098459,
+      "y" : 7.3972479240806654
     },
     "nextControl" : null,
     "isLocked" : false,
@@ -105,7 +105,7 @@
     "rotationDegrees" : 90.0
   }, {
     "waypointRelativePos" : 2.1,
-    "rotationDegrees" : 90.0
+    "rotationDegrees" : 65.0
   }, {
     "waypointRelativePos" : 4.25196850393701,
     "rotationDegrees" : -90.0
@@ -118,8 +118,8 @@
     "minWaypointRelativePos" : 0,
     "maxWaypointRelativePos" : 2.4172313649564448,
     "constraints" : {
-      "maxVelocity" : 5.0,
-      "maxAcceleration" : 6.5,
+      "maxVelocity" : 4.0,
+      "maxAcceleration" : 8.0,
       "maxAngularVelocity" : 540.0,
       "maxAngularAcceleration" : 720.0,
       "nominalVoltage" : 12.0,
@@ -130,7 +130,7 @@
     "minWaypointRelativePos" : 2.409486931268149,
     "maxWaypointRelativePos" : 3.2,
     "constraints" : {
-      "maxVelocity" : 1.5,
+      "maxVelocity" : 2.0,
       "maxAcceleration" : 4.0,
       "maxAngularVelocity" : 540.0,
       "maxAngularAcceleration" : 720.0,

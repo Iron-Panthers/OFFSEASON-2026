@@ -51,7 +51,7 @@ public class IntakeRackConstants {
   // CURRENT LIMITS
   public static final double UPPER_VOLT_LIMIT = 12;
   public static final double LOWER_VOLT_LIMIT = -12;
-  public static final double SUPPLY_CURRENT_LIMIT = 27;
+  public static final double SUPPLY_CURRENT_LIMIT = 35;
 
   // ZEROING CONSTANTS
   public static final double ZEROING_VOLTS = -3;
