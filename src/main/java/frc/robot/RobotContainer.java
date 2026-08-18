@@ -38,7 +38,6 @@ import frc.robot.commands.FieldAxisAssistCommand;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.PassToPoseCommand;
 import frc.robot.commands.ShootCommandFactory;
-import frc.robot.commands.StowCommand;
 import frc.robot.commands.VibrateHIDCommand;
 import frc.robot.commands.VisionTuningCommands;
 import frc.robot.commands.WaitUnitlRobotStuckCommand;
@@ -474,7 +473,12 @@ public class RobotContainer {
     // INTAKE
     driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
     // STOW ROBOT
-    driverA.y().onTrue(new StowCommand(intakeController, shooterController));
+    // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
+    driverA
+        .y()
+        .onTrue(
+            new AlignToPoseCommand(
+                swerve, new Pose2d(3.8, 0.8, new Rotation2d()), true, true, true));
 
     // SHOOTING COMMAND
     ShootCommandFactory shootCommand =

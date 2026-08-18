@@ -68,7 +68,7 @@ public class AlignToPoseCommand extends Command {
   @Override
   public void initialize() {
     currentApproachPose = approachPose.get();
-    drive.setTargetPosition(currentApproachPose); // :)
+    drive.setTargetPosition(currentApproachPose);
     try {
       poseAlignCommand =
           new VelocityClamp(drive)
