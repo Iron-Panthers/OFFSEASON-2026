@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(./gradlew compileJava:*)",
-      "Bash(./gradlew build:*)"
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew spotlessApply:*)",
+      "Bash(./gradlew simulateJava:*)",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew mirrorAutos:*)",
+      "Bash(python scripts/wpilog_to_csv.py:*)"
     ]
   }
 }

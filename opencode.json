@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["CLAUDE.md"],
+  "permission": {
+    "bash": {
+      "./gradlew compileJava*": "allow",
+      "./gradlew build*": "allow",
+      "./gradlew spotlessApply*": "allow",
+      "./gradlew simulateJava*": "allow",
+      "./gradlew test*": "allow",
+      "./gradlew mirrorAutos*": "allow",
+      "python scripts/wpilog_to_csv.py*": "allow",
+      "*": "ask"
+    }
+  }
+}

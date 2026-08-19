@@ -209,8 +209,34 @@ test {
 }
 
 // Simulation configuration (e.g. environment variables).
-wpi.sim.addGui().defaultEnabled = true
+// Pass -Pheadless to suppress the GUI window (used by AI tooling and CI).
+// Pass -Pai.logging to write a .wpilog to build/ai-logs/ for AI log analysis.
+if (!project.hasProperty('headless')) {
+    wpi.sim.addGui().defaultEnabled = true
+}
 wpi.sim.addDriverstation()
+
+// Inject JVM system properties when AI logging is requested.
+// Usage: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
+tasks.withType(JavaExec).configureEach {
+    if (project.hasProperty('ai.logging') || project.hasProperty('aiLogging')) {
+        jvmArgs '-Dai.logging=true'
+        jvmArgs "-Dai.log.dir=${buildDir}/ai-logs"
+    }
+    if (project.hasProperty('auto.name')) {
+        jvmArgs "-Dai.auto.name=${project.getProperty('auto.name')}"
+    }
+    if (project.hasProperty('teleop.duration')) {
+        jvmArgs "-Dai.teleop.duration=${project.getProperty('teleop.duration')}"
+    }
+    if (project.hasProperty('teleop.buttons')) {
+        jvmArgs "-Dai.teleop.buttons=${project.getProperty('teleop.buttons')}"
+    }
+    if (project.hasProperty('teleop.axes')) {
+        jvmArgs "-Dai.teleop.axes=${project.getProperty('teleop.axes')}"
+    }
+}
+
 
 // Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
 // in order to make them all available at runtime. Also adding the manifest so WPILib
