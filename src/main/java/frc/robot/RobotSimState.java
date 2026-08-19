@@ -77,7 +77,9 @@ public class RobotSimState {
 
     // opponent simulation
 
-    addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
+    // To go left, (6.17, 5.881)
+    // To go right, (6.17, 3.5). Probably
+    addObstacleToSim(new Pose2d(new Translation2d(6.17, 5.881), new Rotation2d()));
   }
 
   public List<Pose2d> getObstaclePositions() {

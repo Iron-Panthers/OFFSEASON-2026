@@ -193,10 +193,13 @@ public class RobotState {
 
     if (stayOnCurrentSide) {
       // add a dynamic obstacle that covers half of the field
+      // Blue left: both field splitting lines must be right
+      // Blue right: both field splitting lines must be left
+      // Test red side
       if (stayOnRightSide ^ isAllianceRed()) {
         combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
       } else {
-        combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
+        combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
       }
     }
 
@@ -525,7 +528,7 @@ public class RobotState {
     if (RobotBase.isReal()) {
       return alliance.get() == DriverStation.Alliance.Red;
     }
-    return false;
+    return true;
   }
 
   public boolean isUnderTrench() {

@@ -32,7 +32,7 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                                 .getTranslation()
                                 .getDistance(
                                     RobotState.getInstance().getEstimatedPose().getTranslation())
-                            > 1.4
+                            > 1.6
                         && !swerve.isPIDAutoAlign())
             .andThen(
                 new InstantCommand(
@@ -55,16 +55,15 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                               .getTranslation()
                               .plus(
                                   new Translation2d(
-                                      (swerve.getTargetSpeed().vxMetersPerSecond)
+                                      (swerve.getTargetSpeed().vyMetersPerSecond)
                                           * distanceAway
                                           / (speed),
-                                      -(swerve.getTargetSpeed().vyMetersPerSecond)
+                                      (swerve.getTargetSpeed().vxMetersPerSecond)
                                           * distanceAway
                                           / (speed)));
                       Logger.recordOutput(
                           "PathPlanner/Other Robot Position",
                           new Pose2d(otherRobotTranslation2d, Rotation2d.kZero));
-
                       Translation2d lowerBound = otherRobotTranslation2d.minus(halfWidth);
                       Translation2d upperBound = otherRobotTranslation2d.plus(halfWidth);
 
