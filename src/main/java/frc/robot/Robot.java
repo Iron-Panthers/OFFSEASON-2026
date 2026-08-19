@@ -23,6 +23,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import java.io.File;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -83,6 +84,12 @@ public class Robot extends LoggedRobot {
       case SIM:
         // Running a physics simulator, log to NT
         Logger.addDataReceiver(new NT4Publisher());
+        if (Boolean.getBoolean("ai.logging")) {
+          // Headless AI testing: also write a .wpilog for offline analysis.
+          String logDir = System.getProperty("ai.log.dir", "build/ai-logs");
+          new File(logDir).mkdirs();
+          Logger.addDataReceiver(new WPILOGWriter(logDir));
+        }
         break;
 
       case REPLAY:
@@ -106,6 +113,36 @@ public class Robot extends LoggedRobot {
 
     CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
     CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
+
+    // Headless AI testing never has a real/virtual DS to enable the robot, so nothing would ever
+    // leave disabledPeriodic(). Enable it ourselves: autonomous when an auto name is specified,
+    // otherwise teleop (so the AI teleop input thread in teleopInit() can take over).
+    String aiAutoName = System.getProperty("ai.auto.name");
+    boolean aiLogging = Boolean.getBoolean("ai.logging");
+    if (Constants.getRobotMode() == Constants.Mode.SIM && (aiAutoName != null || aiLogging)) {
+      startAiEnableThread(aiAutoName != null);
+    }
+  }
+
+  /**
+   * Enables the robot via DriverStationSim for headless AI testing, since no real/virtual driver
+   * station is attached to do so.
+   */
+  private void startAiEnableThread(boolean autonomous) {
+    new Thread(
+            () -> {
+              try {
+                Thread.sleep(250); // let HAL/subsystem init settle before enabling
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+              }
+              DriverStationSim.setAutonomous(autonomous);
+              DriverStationSim.setEnabled(true);
+              DriverStationSim.setDsAttached(true);
+              DriverStationSim.notifyNewData();
+            })
+        .start();
   }
 
   /** This function is called periodically during all modes. */
