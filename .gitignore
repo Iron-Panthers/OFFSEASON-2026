@@ -185,3 +185,9 @@ compile_commands.json
 
 # Eclipse generated file for annotation processors
 .factorypath
+
+
+# opencode — generated skill files (auto-synced from .claude/commands/ by plugin)
+.opencode/skills/
+# opencode — plugin dependencies
+.opencode/node_modules/
