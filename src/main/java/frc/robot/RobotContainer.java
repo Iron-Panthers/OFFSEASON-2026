@@ -440,15 +440,15 @@ public class RobotContainer {
     ShootCommandFactory shootCommand =
         new ShootCommandFactory(
             shooterController, intakeController, matchTimerUpdater, swerve::getShootingError);
-    driverA.a().whileTrue(shootCommand.whileHeld());
-    driverA.a().onFalse(shootCommand.onRelease());
+    driverA.leftBumper().whileTrue(shootCommand.whileHeld());
+    driverA.leftBumper().onFalse(shootCommand.onRelease());
 
     // INTAKE
     driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
 
     // ALIGN TO SHOOT
     driverA
-        .leftBumper()
+        .a()
         .whileTrue(
             new AlignToShootCommand(swerve, shooterController).alongWith(shootCommand.whileHeld()))
         .onFalse(shootCommand.onRelease());

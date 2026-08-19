@@ -144,7 +144,7 @@ public class DriveConstants {
               CAN.at(2, "BR Drive"),
               CAN.at(1, "BR Steer"),
               25,
-              new Rotation2d(1.377515),
+              new Rotation2d(1.540),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive)
         };
