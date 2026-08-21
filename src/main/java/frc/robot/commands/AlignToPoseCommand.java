@@ -7,10 +7,14 @@ package frc.robot.commands;
 import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.RobotContainer;
+import frc.robot.RobotSimState;
 import frc.robot.RobotState;
 import frc.robot.subsystems.swerve.Drive;
 import frc.robot.subsystems.swerve.DriveConstants;
 import java.util.function.Supplier;
+
+import org.littletonrobotics.junction.Logger;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
 public class AlignToPoseCommand extends Command {
@@ -51,6 +55,8 @@ public class AlignToPoseCommand extends Command {
     this(drive, approachPose, underTrench, endOnAccurate);
     this.stayOnCurrentSide = true;
     this.stayOnRightSide = stayOnRightSide;
+    Logger.recordOutput(
+        "Autochooser", stayOnRightSide);
   }
 
   public AlignToPoseCommand(

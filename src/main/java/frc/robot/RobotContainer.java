@@ -9,6 +9,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.events.EventTrigger;
+import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -370,7 +371,6 @@ public class RobotContainer {
             .andThen(
                 new InstantCommand(
                     () -> shooterController.setTargetStateCommand(ShooterState.IDLE))));
-    NamedCommands.registerCommand("Check If Off", new WaitUnitlRobotStuckCommand(swerve));
     Supplier<Pose2d> shootingPoseSupplier =
         () ->
             (autoChooser == null ? false : autoChooser.get().getName().contains("Right"))
@@ -379,6 +379,7 @@ public class RobotContainer {
                     3.891,
                     FlippingUtil.fieldSizeY - 0.823,
                     new Rotation2d((-77.005) * Math.PI / 180));
+    NamedCommands.registerCommand("Check If Off", new WaitUnitlRobotStuckCommand(swerve, shootingPoseSupplier));
     // (RobotState.getInstance().getPathPlannerTargetPose()).nearest(
     //     List.<Pose2d>of(
     //     new Pose2d(3.245, 0.881, new Rotation2d(66.19 * Math.PI / 180)),
@@ -395,11 +396,11 @@ public class RobotContainer {
         "Translate To Shoot",
         ((new AlignToPoseCommand(
                         swerve,
-                        shootingPoseSupplier,
+                        shootingPoseSupplier.get(),
                         true,
                         true,
                         autoChooser == null ? false : autoChooser.get().getName().contains("Right"))
-                    .raceWith(new WaitUnitlRobotStuckCommand(swerve)))
+                    .raceWith(new WaitUnitlRobotStuckCommand(swerve, shootingPoseSupplier)))
                 .repeatedly())
             .until(
                 () -> {
@@ -655,6 +656,7 @@ public class RobotContainer {
     return (doubleToDegrees(newAngle - currentAngle) + 180) % 360 - 180;
   }
 
+
   /** Ran every 20 milliseconds */
   public void updateSimulation() {
     if (Constants.getRobotMode() != Constants.Mode.SIM) return;
@@ -672,6 +674,7 @@ public class RobotContainer {
     Logger.recordOutput(
         "FieldSimulation/ObstaclePositions",
         RobotSimState.getInstance().getObstaclePositions().toArray(new Pose2d[0]));
+
 
     // Update the shooting logic with the correct rollers
     RobotSimState.getInstance()

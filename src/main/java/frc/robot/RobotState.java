@@ -195,12 +195,16 @@ public class RobotState {
       // add a dynamic obstacle that covers half of the field
       // Blue left: both field splitting lines must be right
       // Blue right: both field splitting lines must be left
-      // Test red side
-      if (stayOnRightSide ^ isAllianceRed()) {
-        combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
-      } else {
-        combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
-      }
+
+      // Red right: right
+      // Red left: Left
+      combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
+
+      // if (stayOnRightSide ^ isAllianceRed()) {
+      //   combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
+      // } else {
+      //   combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
+      // }
     }
 
     if (underTrench) {

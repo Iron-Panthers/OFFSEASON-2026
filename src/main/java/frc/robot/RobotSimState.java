@@ -26,6 +26,7 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public class RobotSimState {
 
@@ -77,10 +78,16 @@ public class RobotSimState {
 
     // opponent simulation
 
-    // To go left, (6.17, 5.881)
-    // To go right, (6.17, 3.5). Probably
-    addObstacleToSim(new Pose2d(new Translation2d(6.17, 5.881), new Rotation2d()));
+    // Blue: To go left, (6.17, 5.881)
+    // Blue: To go right, (6.17, 3.5). Probably
+    //Red: Right, (10.385, 5.759)
+    //Red: Left, (10.385, 2.082)
+    //When on red, obstacle should nbe spawning on -y
+    addObstacleToSim(new Pose2d(new Translation2d(10.385, 2.082), new Rotation2d()));
   }
+
+  //Get sim state from RobotContainer
+  
 
   public List<Pose2d> getObstaclePositions() {
     return obstacles.stream().map((obstacle) -> obstacle.getSimulatedDriveTrainPose()).toList();
