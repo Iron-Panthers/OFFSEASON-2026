@@ -204,6 +204,8 @@ public class RobotContainer {
           shooterHood = new ShooterHood(new ShooterHoodIOSim());
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOSim());
           shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOSim());
+
+          doubleArmMechanism = new DoubleArmMechanism(-0.5, -1);
         }
       }
     }

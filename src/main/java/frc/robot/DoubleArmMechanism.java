@@ -1,13 +1,13 @@
 package frc.robot;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Subsystem;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
-public class DoubleArmMechanism implements Subsystem {
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+public class DoubleArmMechanism extends SubsystemBase {
   private LoggedMechanismLigament2d arm1;
   private LoggedMechanismLigament2d arm2;
 
@@ -16,15 +16,14 @@ public class DoubleArmMechanism implements Subsystem {
   private LoggedMechanism2d mech;
 
   public DoubleArmMechanism(double x, double y) {
-    mech = new LoggedMechanism2d(0, 0);
-    LoggedMechanismRoot2d root = mech.getRoot(null, 0, 0);
+    mech = new LoggedMechanism2d(4, 4);
+    LoggedMechanismRoot2d root = mech.getRoot("root", 2, 2);
 
     arm1 = root.append(new LoggedMechanismLigament2d("arm1", 1, 0));
     arm2 = arm1.append(new LoggedMechanismLigament2d("arm2", 1, 0));
 
     setTargetPosition(x, y);
     calibrateDoubleArm(targetX, targetY);
-    SmartDashboard.putData("Mech2d", mech);
   }
 
   public void setTargetPosition(double x, double y) {
@@ -33,8 +32,14 @@ public class DoubleArmMechanism implements Subsystem {
   }
 
   public void calibrateDoubleArm(double x, double y) {
-    double angle1 = Math.acos(-Math.sqrt(x * x + y * y) / 2);
-    double angle2 = 2 * Math.asin(Math.sqrt(x * x + y * y) / 2);
+    double distance = Math.sqrt(x * x + y * y);
+    
+    double heading = Math.atan2(y, x);
+    double elbowInterior = 2 * Math.asin(distance / 2);
+    double baseAngle = (Math.PI - elbowInterior) / 2;
+
+    double angle1 = heading - baseAngle;
+    double angle2 = Math.PI - elbowInterior;
 
     setArm1Angle(angle1);
     setArm2Angle(angle2);
