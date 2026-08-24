@@ -12,7 +12,7 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
   public enum ShooterFlywheelTarget implements GenericRollers.VelocityTarget {
     IDLE(0, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
     INTAKE(8.5, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
-    SHOOT(RobotBase.isReal() ? 8.6 : 8.6, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
+    SHOOT(RobotBase.isReal() ? 8.7 : 8.7, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
     SPEEDY_SHOOT(9, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
     PASS(9, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS); // TODO: make this uniform
 
