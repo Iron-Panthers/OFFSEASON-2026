@@ -14,6 +14,7 @@ import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -40,7 +41,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotState.ShootingAnglePredictor.HoodParams;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.subsystems.vision.VisionConstants;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -168,17 +171,23 @@ public class RobotState {
 
     Command finalPathfindingCommand = null;
 
+    List<Pair<Translation2d, Translation2d>> finalObstaclesList =
+        new ArrayList<Pair<Translation2d, Translation2d>>();
+
+    finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
+
     if (underTrench) {
-      Pathfinding.setDynamicObstacles(
-          DriveConstants.OBSTACLES_FOR_TRENCH_PATHFINDING, estimatedPose.getTranslation());
-      finalPathfindingCommand =
-          AutoBuilder.pathfindToPose(approachPose2d, DriveConstants.ALIGN_PATH_CONSTRAINTS, 0.0);
+      finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_PATHFINDING);
     } else {
-      Pathfinding.setDynamicObstacles(
-          DriveConstants.OBSTACLES_FOR_BUMP_PATHFINDING, estimatedPose.getTranslation());
-      finalPathfindingCommand =
-          AutoBuilder.pathfindToPose(approachPose2d, DriveConstants.ALIGN_PATH_CONSTRAINTS, 0.0);
+      finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_BUMP_PATHFINDING);
     }
+
+    Pathfinding.setDynamicObstacles(finalObstaclesList, estimatedPose.getTranslation());
+
+    Logger.recordOutput("Robot State/Dynamic Obstacles", finalObstaclesList.toString());
+
+    finalPathfindingCommand =
+        AutoBuilder.pathfindToPose(approachPose2d, DriveConstants.ALIGN_PATH_CONSTRAINTS, 0.0);
 
     return finalPathfindingCommand;
   }
