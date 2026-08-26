@@ -15,12 +15,12 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.Constants.RobotType;
+import frc.robot.subsystems.intake.intake_rack.IntakeRackConstants;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.utility.FuelSim;
-import org.ironmaple.simulation.SimulatedArena;
 import frc.robot.utility.TrenchTerrainSim;
 import org.dyn4j.geometry.Vector2;
-import frc.robot.subsystems.intake.intake_rack.IntakeRackConstants;
+import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.seasonspecific.rebuilt2026.*;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -96,7 +96,6 @@ public class RobotSimState {
       new TrenchTerrainSim.TerrainContactState(
           DriveConstants.DRIVE_CONFIG.wheelRadius(), 0.0, 0.0, 0.0, new double[4]);
 
-
   public SwerveDriveSimulation getDriveSimulation() {
     return driveSimulation;
   }
@@ -115,7 +114,7 @@ public class RobotSimState {
   public Pose3d getRobotPose3d() {
     Pose2d robotPose2d = driveSimulation.getSimulatedDriveTrainPose();
     return new Pose3d(
-      new Translation3d(robotPose2d.getX(), robotPose2d.getY(), terrainState.robotBodyZ()),
+        new Translation3d(robotPose2d.getX(), robotPose2d.getY(), terrainState.robotBodyZ()),
         new Rotation3d(
             terrainState.pitchRad(),
             terrainState.rollRad(),
