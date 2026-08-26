@@ -4,6 +4,7 @@
 
 package frc.robot.commands;
 
+import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -14,10 +15,7 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.RobotState;
 import frc.robot.subsystems.swerve.Drive;
 import frc.robot.subsystems.swerve.DriveConstants;
-import frc.robot.subsystems.swerve.DriveConstants.DrivebaseConfig;
-
 import java.util.function.Supplier;
-
 import org.littletonrobotics.junction.Logger;
 
 // NOTE:  Consider using this command inline, rather than writing a subclass.  For more
@@ -37,9 +35,10 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                                 .getDistance(
                                     RobotState.getInstance().getEstimatedPose().getTranslation())
                             > 1.6
-                        && !swerve.isPIDAutoAlign()));
-
-
+                        && !swerve.isPIDAutoAlign())
+            .andThen(
+                new InstantCommand(
+                    () -> {
                       double speed =
                           Math.sqrt(
                               Math.pow((swerve.getTargetSpeed().vxMetersPerSecond), 2)
@@ -52,29 +51,39 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                       double distanceAway = halfWidth.getNorm();
                       // double edgeDistance = Math.sqrt((Math.pow(width,2) + Math.pow(length,2)) /
                       // 4) * 2;
+                      // PROBLEM
+                      int negation = 1;
+                      if (shootingPoseSupplier.get().getY() > FlippingUtil.fieldSizeY / 2) {
+                        negation *= -1;
+                      }
+                      if (RobotState.isAllianceRed()) {
+                        negation *= -1;
+                      }
                       Translation2d otherRobotTranslation2d =
                           RobotState.getInstance()
                               .getEstimatedPose()
                               .getTranslation()
                               .plus(
                                   new Translation2d(
-                                      (swerve.getTargetSpeed().vyMetersPerSecond)
-                                          * distanceAway
-                                          / (speed),
+                                      (swerve.getTargetSpeed().vyMetersPerSecond) / speed * 0.81,
                                       (swerve.getTargetSpeed().vxMetersPerSecond)
-                                          * distanceAway
-                                          / (speed)));
-                      if(Math.abs(halfWidth.getY() - otherRobotTranslation2d.getY()) > halfWidth.getY() - 1.9){
-                       addCommands(new AlignToPoseCommand(swerve, shootingPoseSupplier, false));
-                      }else{
+                                          / speed
+                                          * 0.81
+                                          * negation));
+
+                      if (Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY())
+                          > FlippingUtil.fieldSizeY / 2 - 1.9) {
+                        RobotState.getInstance().setAutoUnderTrench(false);
+                      }
                       Logger.recordOutput(
                           "PathPlanner/Other Robot Position",
                           new Pose2d(otherRobotTranslation2d, Rotation2d.kZero));
                       Translation2d lowerBound = otherRobotTranslation2d.minus(halfWidth);
                       Translation2d upperBound = otherRobotTranslation2d.plus(halfWidth);
+
                       RobotState.getInstance()
                           .addDynamicObstacle(
                               new Pair<Translation2d, Translation2d>(lowerBound, upperBound));
-                      }
+                    })));
   }
 }

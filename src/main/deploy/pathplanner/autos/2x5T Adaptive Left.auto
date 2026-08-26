@@ -46,6 +46,11 @@
             "data" : {
               "pathName" : "2xTT 2 Left"
             }
+          }, {
+            "type" : "named",
+            "data" : {
+              "name" : "Check If Off"
+            }
           } ]
         }
       }, {

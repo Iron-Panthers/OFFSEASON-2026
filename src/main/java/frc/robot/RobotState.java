@@ -83,6 +83,8 @@ public class RobotState {
 
   private Pose2d estimatedPose = initialPose; // vision adjusted
 
+  private boolean autoUnderTrench = true;
+
   private Pose2d lastApproachPose = new Pose2d();
 
   private ChassisSpeeds robotSpeeds = new ChassisSpeeds();
@@ -532,7 +534,7 @@ public class RobotState {
     if (RobotBase.isReal()) {
       return alliance.get() == DriverStation.Alliance.Red;
     }
-    return true;
+    return false;
   }
 
   public boolean isUnderTrench() {
@@ -564,5 +566,14 @@ public class RobotState {
 
   public Pose2d getPathPlannerTargetPose() {
     return pathPlannerTargetPose;
+  }
+
+  @AutoLogOutput(key = "Robot State/adaptive auto going under")
+  public boolean getIsAutoUnderTrench() {
+    return autoUnderTrench;
+  }
+
+  public void setAutoUnderTrench(boolean autoUnderTrench) {
+    this.autoUnderTrench = autoUnderTrench;
   }
 }

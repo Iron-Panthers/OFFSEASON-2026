@@ -7,13 +7,10 @@ package frc.robot.commands;
 import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.RobotContainer;
-import frc.robot.RobotSimState;
 import frc.robot.RobotState;
 import frc.robot.subsystems.swerve.Drive;
 import frc.robot.subsystems.swerve.DriveConstants;
 import java.util.function.Supplier;
-
 import org.littletonrobotics.junction.Logger;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
@@ -22,7 +19,6 @@ public class AlignToPoseCommand extends Command {
   private Drive drive;
   private Supplier<Pose2d> approachPose;
   private Pose2d currentApproachPose;
-  private boolean underTrench;
   private boolean endOnAccurate = false;
   private boolean stayOnCurrentSide = false;
   private boolean stayOnRightSide = false;
@@ -35,7 +31,7 @@ public class AlignToPoseCommand extends Command {
         RobotState.isAllianceRed()
             ? () -> FlippingUtil.flipFieldPose(approachPose.get())
             : approachPose;
-    this.underTrench = underTrench;
+    RobotState.getInstance().setAutoUnderTrench(underTrench);
 
     addRequirements(drive);
   }
@@ -55,8 +51,7 @@ public class AlignToPoseCommand extends Command {
     this(drive, approachPose, underTrench, endOnAccurate);
     this.stayOnCurrentSide = true;
     this.stayOnRightSide = stayOnRightSide;
-    Logger.recordOutput(
-        "Autochooser", stayOnRightSide);
+    Logger.recordOutput("Autochooser", stayOnRightSide);
   }
 
   public AlignToPoseCommand(
@@ -70,6 +65,19 @@ public class AlignToPoseCommand extends Command {
     this.stayOnRightSide = stayOnRightSide;
   }
 
+  public AlignToPoseCommand(
+      Drive drive,
+      Supplier<Pose2d> approachPose,
+      boolean endOnAccurate,
+      boolean stayOnRightSide,
+      int smarter) {
+    this(
+        drive,
+        approachPose,
+        RobotState.getInstance().getIsAutoUnderTrench(),
+        endOnAccurate); // I'm so sorry for ewhoeveri s reading this
+  }
+
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
@@ -81,7 +89,10 @@ public class AlignToPoseCommand extends Command {
               .andThen(
                   RobotState.getInstance()
                       .getPathPlannerApproachPoseCommand(
-                          currentApproachPose, underTrench, stayOnCurrentSide, stayOnRightSide));
+                          currentApproachPose,
+                          RobotState.getInstance().getIsAutoUnderTrench(),
+                          stayOnCurrentSide,
+                          stayOnRightSide));
       poseAlignCommand.initialize();
     } catch (Exception e) {
       e.printStackTrace();

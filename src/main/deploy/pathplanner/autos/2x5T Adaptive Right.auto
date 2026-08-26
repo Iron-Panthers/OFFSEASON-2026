@@ -56,6 +56,12 @@
                 "data": {
                   "pathName": "2xTT 2 Right"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Check If Off"
+                }
               }
             ]
           }
