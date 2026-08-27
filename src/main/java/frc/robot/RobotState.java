@@ -193,6 +193,11 @@ public class RobotState {
     List<Pair<Translation2d, Translation2d>> combined =
         new ArrayList<Pair<Translation2d, Translation2d>>(dynamicObstacles);
 
+    List<Pair<Translation2d, Translation2d>> finalObstaclesList =
+        new ArrayList<Pair<Translation2d, Translation2d>>();
+
+    finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
+
     if (stayOnCurrentSide) {
       // add a dynamic obstacle that covers half of the field
       // Blue left: both field splitting lines must be right
@@ -216,16 +221,17 @@ public class RobotState {
     }
 
     if (underTrench) {
-      combined.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_PATHFINDING);
-      Pathfinding.setDynamicObstacles(combined, estimatedPose.getTranslation());
-      finalPathfindingCommand =
-          AutoBuilder.pathfindToPose(approachPose2d, DriveConstants.ALIGN_PATH_CONSTRAINTS, 0.0);
+      finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_PATHFINDING);
     } else {
-      combined.addAll(DriveConstants.OBSTACLES_FOR_BUMP_PATHFINDING);
-      Pathfinding.setDynamicObstacles(combined, estimatedPose.getTranslation());
-      finalPathfindingCommand =
-          AutoBuilder.pathfindToPose(approachPose2d, DriveConstants.ALIGN_PATH_CONSTRAINTS, 0.0);
+      finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_BUMP_PATHFINDING);
     }
+
+    Pathfinding.setDynamicObstacles(finalObstaclesList, estimatedPose.getTranslation());
+
+    Logger.recordOutput("Robot State/Dynamic Obstacles", finalObstaclesList.toString());
+
+    finalPathfindingCommand =
+        AutoBuilder.pathfindToPose(approachPose2d, DriveConstants.ALIGN_PATH_CONSTRAINTS, 0.0);
 
     return finalPathfindingCommand;
   }

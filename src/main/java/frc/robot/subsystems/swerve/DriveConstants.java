@@ -123,7 +123,7 @@ public class DriveConstants {
               CAN.at(11, "FL Drive"),
               CAN.at(62, "FL Steer"),
               3,
-              new Rotation2d(2.216602),
+              new Rotation2d(2.218136),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.Clockwise_Positive),
           new ModuleConfig(
@@ -362,6 +362,36 @@ public class DriveConstants {
           1.5, 1.5, Units.degreesToRadians(540), Units.degreesToRadians(720), 12, false);
 
   // pathfinding constants
+
+  public static final double buffer = 0.387;
+
+  public static final List<Pair<Translation2d, Translation2d>> OBSTACLES_FOR_TRENCH_WALL =
+      List.of(
+          Pair.of(
+              new Translation2d(3.977 - buffer, 1.287 - buffer),
+              new Translation2d(5.322 + buffer, 1.592 + buffer)),
+          Pair.of(
+              new Translation2d(3.977 - buffer, 6.477 - buffer),
+              new Translation2d(5.322 + buffer, 6.783 + buffer)),
+          Pair.of(
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 1.287 - buffer)),
+              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 1.592 + buffer))),
+          Pair.of(
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 6.477 - buffer)),
+              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 6.783 + buffer))));
+
+  /*
+  List.of(
+      Pair.of(new Translation2d(3.977, 1.287), new Translation2d(5.172, 1.592)),
+      Pair.of(new Translation2d(3.977, 6.477), new Translation2d(5.172, 6.783)),
+      Pair.of(
+          FlippingUtil.flipFieldPosition(new Translation2d(3.977, 1.287)),
+          FlippingUtil.flipFieldPosition(new Translation2d(5.172, 1.592))),
+      Pair.of(
+          FlippingUtil.flipFieldPosition(new Translation2d(3.977, 6.477)),
+          FlippingUtil.flipFieldPosition(new Translation2d(5.172, 6.783))));
+  */
+
   public static final List<Pair<Translation2d, Translation2d>> OBSTACLES_FOR_TRENCH_PATHFINDING =
       List.of(
           Pair.of(new Translation2d(4.039, 6.590), new Translation2d(5.216, 4.572)),

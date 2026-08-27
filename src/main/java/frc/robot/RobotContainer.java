@@ -100,6 +100,9 @@ public class RobotContainer {
   // DO NOT DELETE -- this actually does something important
   private RobotState robotState = RobotState.getInstance();
 
+  // DO NOT DELETE -- storing the instance here registers @AutoLogOutput methods with AdvantageKit
+  private RobotSimState robotSimState;
+
   private ElasticSetpoints elasticSetpoints = ElasticSetpoints.getInstance();
 
   private boolean defaultZeroing = false;
@@ -176,7 +179,8 @@ public class RobotContainer {
                   new ModuleIOTalonFXReal(DriveConstants.MODULE_CONFIGS[3]));
         }
         case SIM -> {
-          SwerveDriveSimulation driveSimulation = RobotSimState.getInstance().getDriveSimulation();
+          robotSimState = RobotSimState.getInstance();
+          SwerveDriveSimulation driveSimulation = robotSimState.getDriveSimulation();
           swerve =
               new Drive(
                   new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -629,6 +633,12 @@ public class RobotContainer {
   }
 
   public Command getAutoCommand() {
+    // When running headlessly for AI testing, bypass the dashboard chooser entirely.
+    // Invoke: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
+    String aiAutoName = System.getProperty("ai.auto.name");
+    if (aiAutoName != null && !aiAutoName.isBlank()) {
+      return AutoBuilder.buildAuto(aiAutoName);
+    }
     return autoChooser.get();
   }
 
@@ -665,11 +675,12 @@ public class RobotContainer {
 
     Logger.recordOutput("Testing/Blank Pose3d", new Pose3d());
 
+    RobotSimState.getInstance().applyTerrainGravityForce();
     SimulatedArena.getInstance().simulationPeriodic();
+    RobotSimState.getInstance().updateTerrainState();
     RobotSimState.getInstance().getFuelSim().updateSim();
     Logger.recordOutput(
-        "Field Simulation/Robot Position",
-        RobotSimState.getInstance().getDriveSimulation().getSimulatedDriveTrainPose());
+        "Field Simulation/Robot Position", RobotSimState.getInstance().getRobotPose3d());
     Logger.recordOutput(
         "FieldSimulation/RobotFuel", RobotSimState.getInstance().getIntakeGamePieces());
     Logger.recordOutput("FieldSimulation/FuelCount", RobotSimState.getInstance().getFuelCount());

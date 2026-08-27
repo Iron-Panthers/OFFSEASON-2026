@@ -60,6 +60,7 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
       return Math.abs(super.inputs.velocityRadsPerSec - Units.rotationsToRadians(manualVelocityRPS))
           < 40;
     } else {
+      if (velocityTarget == null) return false;
       return Math.abs(
               super.inputs.velocityRadsPerSec - Units.rotationsToRadians(velocityTarget.velocity))
           < 40;
