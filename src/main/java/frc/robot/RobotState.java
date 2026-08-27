@@ -200,8 +200,14 @@ public class RobotState {
 
       // Red right: right
       // Red left: Left
-      combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
 
+      //ISSUE WITH GOING OVER BUMP; FIX LATER
+      if (isAllianceRed() ^ stayOnRightSide){
+        combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
+      } else {
+        combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
+      }
+      
       // if (stayOnRightSide ^ isAllianceRed()) {
       //   combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
       // } else {

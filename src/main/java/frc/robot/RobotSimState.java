@@ -82,7 +82,7 @@ public class RobotSimState {
     // Red: Right, (10.385, 5.759)
     // Red: Left, (10.385, 2.082)
     // When on red, obstacle should nbe spawning on -y
-    addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
+    addObstacleToSim(new Pose2d(new Translation2d(6.17, 1.6), new Rotation2d()));
   }
 
   // Get sim state from RobotContainer
