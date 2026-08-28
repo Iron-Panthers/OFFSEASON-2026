@@ -363,22 +363,22 @@ public class DriveConstants {
 
   // pathfinding constants
 
-  public static final double buffer = 0.387;
-
+  public static final double BUFFER_X = 0.387;
+      public static final double BUFFER_Y = 0.3;
   public static final List<Pair<Translation2d, Translation2d>> OBSTACLES_FOR_TRENCH_WALL =
       List.of(
           Pair.of(
-              new Translation2d(3.977 - buffer, 1.287 - buffer),
-              new Translation2d(5.322 + buffer, 1.592 + buffer)),
+              new Translation2d(3.977 - BUFFER_X, 1.287 - BUFFER_Y),
+              new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y)),
           Pair.of(
-              new Translation2d(3.977 - buffer, 6.477 - buffer),
-              new Translation2d(5.322 + buffer, 6.783 + buffer)),
+              new Translation2d(3.977 - BUFFER_X, 6.477 - BUFFER_Y),
+              new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y)),
           Pair.of(
-              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 1.287 - buffer)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 1.592 + buffer))),
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 1.287 - BUFFER_Y)),
+              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y))),
           Pair.of(
-              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 6.477 - buffer)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 6.783 + buffer))));
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 6.477 - BUFFER_Y)),
+              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y))));
 
   /*
   List.of(

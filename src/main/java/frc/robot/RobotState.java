@@ -191,10 +191,10 @@ public class RobotState {
 
     Command finalPathfindingCommand = null;
     List<Pair<Translation2d, Translation2d>> combined =
-        new ArrayList<Pair<Translation2d, Translation2d>>(dynamicObstacles);
+        new ArrayList<Pair<Translation2d, Translation2d>>();
 
     List<Pair<Translation2d, Translation2d>> finalObstaclesList =
-        new ArrayList<Pair<Translation2d, Translation2d>>();
+        new ArrayList<Pair<Translation2d, Translation2d>>(dynamicObstacles);
 
     finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
 

@@ -396,7 +396,6 @@ public class RobotContainer {
               ? FlippingUtil.flipFieldPose(shootingPoseSupplier.get())
               : shootingPoseSupplier.get();
         };
-
     NamedCommands.registerCommand(
         "Translate To Shoot",
         ((new AlignToPoseCommand(
