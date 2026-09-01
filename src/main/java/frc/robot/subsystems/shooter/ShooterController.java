@@ -1,5 +1,6 @@
 package frc.robot.subsystems.shooter;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -19,6 +20,8 @@ import frc.robot.subsystems.shooter.shooter_hood.ShooterHood;
 import frc.robot.subsystems.shooter.shooter_hood.ShooterHood.ShooterHoodTarget;
 import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheel;
 import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheel.ShooterOmniwheelTarget;
+import frc.robot.subsystems.swerve.DriveConstants;
+
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -82,7 +85,8 @@ public class ShooterController extends SubsystemBase {
         SerializerTarget.SHOOT),
     TOTAL_SPIN_UP(
         ShooterHoodTarget.SHOOT_TEMP,
-        ShooterFlywheelTarget.SHOOT,
+        RobotState.getInstance().getEstimatedPose().getTranslation().getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d()) > 10
+         ? ShooterFlywheelTarget.SHOOT : ShooterFlywheelTarget.SPEEDY_SHOOT,
         ShooterAcceleratorTarget.SHOOT,
         ShooterOmniwheelTarget.IDLE,
         SerializerTarget.SPIN_UP),
