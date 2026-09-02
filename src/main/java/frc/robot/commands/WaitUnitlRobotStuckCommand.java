@@ -70,7 +70,6 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                                           / speed
                                           * 0.81
                                           * negation));
-
                       if (Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY())
                           > FlippingUtil.fieldSizeY / 2 - 1.9) {
                         RobotState.getInstance().setAutoUnderTrench(false);

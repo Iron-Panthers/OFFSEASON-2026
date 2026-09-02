@@ -196,7 +196,7 @@ public class RobotState {
     List<Pair<Translation2d, Translation2d>> finalObstaclesList =
         new ArrayList<Pair<Translation2d, Translation2d>>(dynamicObstacles);
 
-    finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
+    //finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
 
     if (stayOnCurrentSide) {
       // add a dynamic obstacle that covers half of the field
@@ -206,12 +206,13 @@ public class RobotState {
       // Red right: right
       // Red left: Left
 
-      //ISSUE WITH GOING OVER BUMP; FIX LATER
       if (isAllianceRed() ^ stayOnRightSide){
-        combined.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
+        finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
       } else {
-        combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
+        finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
       }
+
+      // finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_CENTER);
       
       // if (stayOnRightSide ^ isAllianceRed()) {
       //   combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
@@ -546,7 +547,7 @@ public class RobotState {
     if (RobotBase.isReal()) {
       return alliance.get() == DriverStation.Alliance.Red;
     }
-    return false;
+    return true;
   }
 
   public boolean isUnderTrench() {
