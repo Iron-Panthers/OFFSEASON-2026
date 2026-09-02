@@ -363,8 +363,9 @@ public class DriveConstants {
 
   // pathfinding constants
 
+  //BUFFER_X = .44 works decently, test more
   public static final double BUFFER_X = 0.387;
-      public static final double BUFFER_Y = 0.28;
+  public static final double BUFFER_Y = 0.28;
   public static final List<Pair<Translation2d, Translation2d>> OBSTACLES_FOR_TRENCH_WALL =
       List.of(
           Pair.of(
@@ -375,10 +376,12 @@ public class DriveConstants {
               new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y)),
           Pair.of(
               FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 1.287 - BUFFER_Y)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y))),
+              FlippingUtil.flipFieldPosition(
+                  new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y))),
           Pair.of(
               FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 6.477 - BUFFER_Y)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y))));
+              FlippingUtil.flipFieldPosition(
+                  new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y))));
 
   /*
   List.of(
@@ -423,10 +426,10 @@ public class DriveConstants {
           new Translation2d(0, FlippingUtil.fieldSizeY / 2 - 0.05 + 2.5),
           new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2 + .05 + 2.5));
 
-    public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_CENTER =
+  public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_CENTER =
       Pair.of(
-        new Translation2d(0, FlippingUtil.fieldSizeY / 2 + .1),
-        new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY/2));
+          new Translation2d(0, FlippingUtil.fieldSizeY / 2 + .1),
+          new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2));
 
   public static final Translation2d CENTER_OF_FIELD = new Translation2d(8.27, 4.035);
   public static final Translation3d BLUE_HUB_ORIGIN = new Translation3d(4.5974, 4.034536, 1.5748);

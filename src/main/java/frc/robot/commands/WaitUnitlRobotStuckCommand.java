@@ -65,15 +65,25 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                               .getTranslation()
                               .plus(
                                   new Translation2d(
-                                      (swerve.getTargetSpeed().vyMetersPerSecond) / speed * 0.81,
+                                      (swerve.getTargetSpeed().vyMetersPerSecond) / speed * 0.7,
                                       (swerve.getTargetSpeed().vxMetersPerSecond)
                                           / speed
-                                          * 0.81
+                                          * 0.70
                                           * negation));
+
+                      // RobotState.getInstance().setAutoUnderTrench(true);
                       if (Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY())
-                          > FlippingUtil.fieldSizeY / 2 - 1.9) {
+                              > FlippingUtil.fieldSizeY / 2 - 1.8
+                          && Math.abs(FlippingUtil.fieldSizeX / 2 - otherRobotTranslation2d.getX())
+                              > 2) {
                         RobotState.getInstance().setAutoUnderTrench(false);
                       }
+                      Logger.recordOutput(
+                          "Not_Wall_vertical",
+                          Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY()));
+                      Logger.recordOutput(
+                          "Not_Wall_horizontal",
+                          Math.abs(FlippingUtil.fieldSizeX / 2 - otherRobotTranslation2d.getX()));
                       Logger.recordOutput(
                           "PathPlanner/Other Robot Position",
                           new Pose2d(otherRobotTranslation2d, Rotation2d.kZero));

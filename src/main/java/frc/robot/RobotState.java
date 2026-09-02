@@ -190,13 +190,11 @@ public class RobotState {
     Logger.recordOutput("Robot State/Approach Pose", approachPose2d);
 
     Command finalPathfindingCommand = null;
-    List<Pair<Translation2d, Translation2d>> combined =
-        new ArrayList<Pair<Translation2d, Translation2d>>();
 
     List<Pair<Translation2d, Translation2d>> finalObstaclesList =
         new ArrayList<Pair<Translation2d, Translation2d>>(dynamicObstacles);
 
-    //finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
+    finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
 
     if (stayOnCurrentSide) {
       // add a dynamic obstacle that covers half of the field
@@ -206,14 +204,14 @@ public class RobotState {
       // Red right: right
       // Red left: Left
 
-      if (isAllianceRed() ^ stayOnRightSide){
-        finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
-      } else {
-        finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
-      }
+      // if (isAllianceRed() ^ stayOnRightSide){
+      //   finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_LEFT);
+      // } else {
+      //   finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
+      // }
 
       // finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_CENTER);
-      
+
       // if (stayOnRightSide ^ isAllianceRed()) {
       //   combined.add(DriveConstants.FIELD_SPLITTING_LINE_RIGHT);
       // } else {
@@ -547,7 +545,7 @@ public class RobotState {
     if (RobotBase.isReal()) {
       return alliance.get() == DriverStation.Alliance.Red;
     }
-    return true;
+    return false;
   }
 
   public boolean isUnderTrench() {

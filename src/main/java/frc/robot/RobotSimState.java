@@ -21,9 +21,9 @@ import frc.robot.subsystems.intake.intake_rack.IntakeRackConstants;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.utility.FuelSim;
 import frc.robot.utility.TrenchTerrainSim;
-import org.dyn4j.geometry.Vector2;
 import java.util.ArrayList;
 import java.util.List;
+import org.dyn4j.geometry.Vector2;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt;
@@ -85,7 +85,7 @@ public class RobotSimState {
     // Red: Right, (10.385, 5.759)
     // Red: Left, (10.385, 2.082)
     // When on red, obstacle should nbe spawning on -y
-    addObstacleToSim(new Pose2d(new Translation2d(9.8, 2.082), new Rotation2d()));
+    addObstacleToSim(new Pose2d(new Translation2d(7.6, 2.6), new Rotation2d()));
   }
 
   // Get sim state from RobotContainer

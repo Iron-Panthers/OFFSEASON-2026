@@ -78,7 +78,6 @@ public class AlignToPoseCommand extends Command {
         endOnAccurate); // I'm so sorry for ewhoeveri s reading this
     this.stayOnCurrentSide = true;
     this.stayOnRightSide = stayOnRightSide;
-
   }
 
   // Called when the command is initially scheduled.
