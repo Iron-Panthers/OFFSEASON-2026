@@ -38,6 +38,8 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.RobotState.ShootingAnglePredictor.HoodParams;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.subsystems.vision.VisionConstants;
@@ -527,4 +529,42 @@ public class RobotState {
                     <= DriveConstants.TRENCH_LENGTH));
     return underTrench;
   }
+
+  //full match auto code
+  private enum RobotGoal {
+    SCORE,
+    PICKUP
+  }
+
+  private RobotGoal currentGoal = RobotGoal.PICKUP;
+
+  public void setCurrentGoal(RobotGoal goal) {
+    this.currentGoal = goal;
+  }
+
+  public RobotGoal getCurrentGoal() {
+    return currentGoal;
+  }
+
+  public void initFullMatchAuto() {
+    // triggers for larger commands
+    new Trigger(() -> getCurrentGoal() == RobotGoal.SCORE)
+        .onTrue(
+            scoreStateCommandBuilder()
+                .andThen(() -> setCurrentGoal(RobotGoal.PICKUP)));
+              
+    new Trigger(() -> getCurrentGoal() == RobotGoal.PICKUP)
+        .onTrue(
+            pickupStateCommandBuilder()
+                .andThen(() -> setCurrentGoal(RobotGoal.SCORE)));
 }
+
+  public Command scoreStateCommandBuilder(){
+    return new SequentialCommandGroup(null);
+  }
+
+  public Command pickupStateCommandBuilder(){
+    return new SequentialCommandGroup(null);
+  }
+}
+
