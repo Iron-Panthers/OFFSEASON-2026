@@ -419,6 +419,9 @@ public class RobotContainer {
 
     // Use pov down and left for testing buttons please!! (Drivers get annoyed when we use other
     // buttons)
+
+    // setup full match auto commands
+    RobotState.getInstance().initFullMatchAuto(swerve);
   }
 
   private void configureDriverAButtons() {

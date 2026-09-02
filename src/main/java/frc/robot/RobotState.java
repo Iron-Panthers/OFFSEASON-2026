@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radian;
@@ -41,6 +42,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.RobotState.ShootingAnglePredictor.HoodParams;
+import frc.robot.commands.AlignToPoseCommand;
+import frc.robot.subsystems.swerve.Drive;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.subsystems.vision.VisionConstants;
 import java.util.ArrayList;
@@ -546,25 +549,47 @@ public class RobotState {
     return currentGoal;
   }
 
-  public void initFullMatchAuto() {
+  public void initFullMatchAuto(Drive drive) {
     // triggers for larger commands
     new Trigger(() -> getCurrentGoal() == RobotGoal.SCORE)
         .onTrue(
-            scoreStateCommandBuilder()
+            scoreStateCommandBuilder(drive)
                 .andThen(() -> setCurrentGoal(RobotGoal.PICKUP)));
               
     new Trigger(() -> getCurrentGoal() == RobotGoal.PICKUP)
         .onTrue(
-            pickupStateCommandBuilder()
+            pickupStateCommandBuilder(drive)
                 .andThen(() -> setCurrentGoal(RobotGoal.SCORE)));
 }
 
-  public Command scoreStateCommandBuilder(){
-    return new SequentialCommandGroup(null);
+  private Command scoreStateCommandBuilder(Drive drive){
+    return new SequentialCommandGroup();
   }
 
-  public Command pickupStateCommandBuilder(){
-    return new SequentialCommandGroup(null);
+  private Command pickupStateCommandBuilder(Drive drive){
+    return new SequentialCommandGroup(new AlignToPoseCommand(drive, () -> getObservingPose(), true));
   }
+
+
+  /**
+   * Gets the pose for the robot to best observe the balls on the field
+   */
+  private Pose2d getObservingPose(){
+    Pose2d[] possibleObservingPoses = new Pose2d[]{
+      new Pose2d(6.135, 0.794, new Rotation2d(Math.toRadians(-111.297))),
+      new Pose2d(6.135, 8-0.794, new Rotation2d(Math.toRadians(360-111.297))),
+      FlippingUtil.flipFieldPose(new Pose2d(6.135, 0.794, new Rotation2d(Math.toRadians(-111.297)))),
+      FlippingUtil.flipFieldPose(new Pose2d(6.135, 8-0.794, new Rotation2d(Math.toRadians(360-111.297)))),
+    };
+
+    Pose2d best = possibleObservingPoses[0];
+    for (Pose2d pose : possibleObservingPoses){
+      if (pose.getTranslation().getDistance(getEstimatedPose().getTranslation()) < best.getTranslation().getDistance(getEstimatedPose().getTranslation())){
+        best = pose;
+      }
+    }
+    return best;
+  }
+  private 
 }
 
