@@ -45,7 +45,8 @@ public class ShooterController extends SubsystemBase {
     /** spin just flywheels */
     FLYWHEEL_SPIN_UP(
         ShooterHoodTarget.STOW,
-        ShooterFlywheelTarget.INTAKE,
+        RobotState.getInstance().getEstimatedPose().getTranslation().getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d()) > 5.2
+         ? ShooterFlywheelTarget.SPEEDY_SHOOT : ShooterFlywheelTarget.INTAKE,
         ShooterAcceleratorTarget.IDLE,
         ShooterOmniwheelTarget.SLOW_REVERSE,
         SerializerTarget.IDLE),
@@ -85,8 +86,9 @@ public class ShooterController extends SubsystemBase {
         SerializerTarget.SHOOT),
     TOTAL_SPIN_UP(
         ShooterHoodTarget.SHOOT_TEMP,
-        RobotState.getInstance().getEstimatedPose().getTranslation().getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d()) > 10
-         ? ShooterFlywheelTarget.SHOOT : ShooterFlywheelTarget.SPEEDY_SHOOT,
+        // RobotState.getInstance().getEstimatedPose().getTranslation().getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d()) > 5.2
+        //  ? ShooterFlywheelTarget.SPEEDY_SHOOT : ShooterFlywheelTarget.SHOOT,
+        ShooterFlywheelTarget.SPEEDY_SHOOT,
         ShooterAcceleratorTarget.SHOOT,
         ShooterOmniwheelTarget.IDLE,
         SerializerTarget.SPIN_UP),
