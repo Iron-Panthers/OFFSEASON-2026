@@ -59,7 +59,7 @@ public class DriveConstants {
             4,
             10,
             10);
-        case ALPHA -> new DrivebaseConfig(
+        case DEFENSE -> new DrivebaseConfig(
             Units.inchesToMeters(1.925),
             Units.inchesToMeters(19.75),
             Units.inchesToMeters(23.75),
@@ -178,35 +178,35 @@ public class DriveConstants {
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive)
         };
-        case ALPHA -> new ModuleConfig[] {
+        case DEFENSE -> new ModuleConfig[] {
           new ModuleConfig(
-              CAN.at(3, "FL Drive"),
-              CAN.at(4, "FL Steer"),
-              6,
-              new Rotation2d(2.058602),
-              InvertedValue.Clockwise_Positive,
+              CAN.at(11, "FL Drive"),
+              CAN.at(62, "FL Steer"),
+              3,
+              new Rotation2d(2.825593),
+              InvertedValue.CounterClockwise_Positive,
               InvertedValue.Clockwise_Positive),
           new ModuleConfig(
-              CAN.at(11, "FR Drive"),
-              CAN.at(10, "FR Steer"),
-              3,
-              new Rotation2d(-2.161379),
-              InvertedValue.Clockwise_Positive,
-              InvertedValue.Clockwise_Positive),
-          new ModuleConfig(
-              CAN.at(2, "BL Drive"),
-              CAN.at(1, "BL Steer"),
-              3,
-              new Rotation2d(0.48934),
-              InvertedValue.Clockwise_Positive,
+              CAN.at(35, "FR Drive"),
+              CAN.at(6, "FR Steer"),
+              12,
+              new Rotation2d(-1.46035),
+              InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive),
           new ModuleConfig(
-              CAN.at(5, "BR Drive"),
-              CAN.at(7, "BRSteer"),
-              2,
-              new Rotation2d(-0.271515),
-              InvertedValue.Clockwise_Positive,
-              InvertedValue.Clockwise_Positive)
+              CAN.at(3, "BL Drive"),
+              CAN.at(4, "BL Steer"),
+              9,
+              new Rotation2d(-0.691825),
+              InvertedValue.CounterClockwise_Positive,
+              InvertedValue.Clockwise_Positive),
+          new ModuleConfig(
+              CAN.at(2, "BR Drive"),
+              CAN.at(1, "BR Steer"),
+              6,
+              new Rotation2d(1.092194),
+              InvertedValue.CounterClockwise_Positive,
+              InvertedValue.CounterClockwise_Positive)
         };
         case SIM -> new ModuleConfig[] {
           new ModuleConfig(
@@ -256,7 +256,7 @@ public class DriveConstants {
             (30.0 / 15) * (25.0 / 32) * (54.0 / 14), // Mk5n L2.5 16 tooth
             287.0 / 11,
             3.125);
-        case ALPHA -> new ModuleConstants(
+        case DEFENSE -> new ModuleConstants(
             new Gains(0.25, 2.26, 0, 50, 0, 0),
             new MotionProfileGains(4, 64, 640),
             new Gains(0.16, 0.67, 0, 1.5, 0, 0),
@@ -303,7 +303,7 @@ public class DriveConstants {
             new PIDConstants(8, 0), new PIDConstants(4, 0));
         case VISION -> new TrajectoryFollowerConstants(
             new PIDConstants(8, 0), new PIDConstants(4, 0));
-        case ALPHA -> new TrajectoryFollowerConstants(
+        case DEFENSE -> new TrajectoryFollowerConstants(
             new PIDConstants(8, 0), new PIDConstants(4, 0));
         case SIM -> new TrajectoryFollowerConstants(new PIDConstants(8, 0), new PIDConstants(4, 0));
         default -> new TrajectoryFollowerConstants(new PIDConstants(0, 0), new PIDConstants(0, 0));
@@ -315,7 +315,7 @@ public class DriveConstants {
         case COMP -> new HeadingControllerConstants(6, 0, 5, 200, 0.03);
         case SIM -> new HeadingControllerConstants(6, 0, 5, 200, 0.01);
         case VISION -> new HeadingControllerConstants(3, 0, 5, 15, 0.007);
-        case ALPHA -> new HeadingControllerConstants(6, 0, 5, 200, 0.002);
+        case DEFENSE -> new HeadingControllerConstants(6, 0, 5, 200, 0.002);
         default -> new HeadingControllerConstants(0, 0, 0, 0, 0);
       };
 
@@ -325,7 +325,7 @@ public class DriveConstants {
             8, 0, 0, 3, 3, 0.03); /*FIXME: tune these constants*/
         case VISION -> new PIDAutoAlignControllerConstants(
             8, 0, 0, 3, 3, 0.01); /*FIXME: tune these constants*/
-        case ALPHA -> new PIDAutoAlignControllerConstants(
+        case DEFENSE -> new PIDAutoAlignControllerConstants(
             7, 0, 0, 1, 1, 0.01); /* FIXME: tune these constants */
         case SIM -> new PIDAutoAlignControllerConstants(7, 0.0, 0.0, 3, 4, 0.01);
         default -> new PIDAutoAlignControllerConstants(0, 0, 0, 0, 0, 0.01);

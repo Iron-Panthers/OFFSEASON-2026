@@ -163,7 +163,7 @@ public class RobotContainer {
           // vision = new Vision(new VisionIOPhotonvision("arducam-4", 0), new
           // VisionIOPhotonvision("arducam-5", 1));
         }
-        case ALPHA -> {
+        case DEFENSE -> {
           swerve =
               new Drive(
                   new GyroIOPigeon2(),
