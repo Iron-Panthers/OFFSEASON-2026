@@ -363,7 +363,7 @@ public class DriveConstants {
 
   // pathfinding constants
 
-  //BUFFER_X = .44 works decently, test more
+  // BUFFER_X = .44 works decently, test more
   public static final double BUFFER_X = 0.387;
   public static final double BUFFER_Y = 0.28;
   public static final List<Pair<Translation2d, Translation2d>> OBSTACLES_FOR_TRENCH_WALL =

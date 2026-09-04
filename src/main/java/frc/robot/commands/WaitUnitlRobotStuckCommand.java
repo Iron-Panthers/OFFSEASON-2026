@@ -59,17 +59,21 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                       if (RobotState.isAllianceRed()) {
                         negation *= -1;
                       }
+                      Translation2d dsitanceToMovingPose =
+                          RobotState.getInstance()
+                              .getEstimatedPose()
+                              .getTranslation()
+                              .minus(
+                                  RobotState.getInstance()
+                                      .getPathPlannerTargetPose()
+                                      .getTranslation())
+                              .times(0.45);
                       Translation2d otherRobotTranslation2d =
                           RobotState.getInstance()
                               .getEstimatedPose()
                               .getTranslation()
-                              .plus(
-                                  new Translation2d(
-                                      (swerve.getTargetSpeed().vyMetersPerSecond) / speed * 0.7,
-                                      (swerve.getTargetSpeed().vxMetersPerSecond)
-                                          / speed
-                                          * 0.70
-                                          * negation));
+                              .minus(dsitanceToMovingPose);
+                      Logger.recordOutput("otherRobotTranslation2d", swerve.getTargetSpeed());
 
                       // RobotState.getInstance().setAutoUnderTrench(true);
                       if (Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY())
