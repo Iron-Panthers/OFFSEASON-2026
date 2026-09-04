@@ -45,6 +45,12 @@
           "data": {
             "name": "Auto shoot full hopper"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "xB Right"
+          }
         }
       ]
     }

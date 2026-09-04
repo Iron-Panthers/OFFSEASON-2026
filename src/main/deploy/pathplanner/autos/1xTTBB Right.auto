@@ -5,12 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "1xTB Climb 1 I Right"
-          }
-        },
-        {
           "type": "named",
           "data": {
             "name": "Smart zero"
@@ -38,6 +32,12 @@
           "type": "named",
           "data": {
             "name": "Auto shoot full hopper (no intake)"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "xB Right"
           }
         }
       ]

@@ -31,7 +31,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2xTT 2 Right"
+            "pathName": "2xTB 1 I Right"
           }
         },
         {
@@ -44,6 +44,12 @@
           "type": "named",
           "data": {
             "name": "Align and auto shoot full hopper (no intake)"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "xB Right"
           }
         }
       ]
