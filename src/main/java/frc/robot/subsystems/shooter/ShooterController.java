@@ -1,6 +1,6 @@
 package frc.robot.subsystems.shooter;
 
-import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,7 +21,6 @@ import frc.robot.subsystems.shooter.shooter_hood.ShooterHood.ShooterHoodTarget;
 import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheel;
 import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheel.ShooterOmniwheelTarget;
 import frc.robot.subsystems.swerve.DriveConstants;
-
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -45,8 +44,13 @@ public class ShooterController extends SubsystemBase {
     /** spin just flywheels */
     FLYWHEEL_SPIN_UP(
         ShooterHoodTarget.STOW,
-        RobotState.getInstance().getEstimatedPose().getTranslation().getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d()) > 5.2
-         ? ShooterFlywheelTarget.SPEEDY_SHOOT : ShooterFlywheelTarget.INTAKE,
+        RobotState.getInstance()
+                    .getEstimatedPose()
+                    .getTranslation()
+                    .getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d())
+                > 5.2
+            ? ShooterFlywheelTarget.SPEEDY_SHOOT
+            : ShooterFlywheelTarget.INTAKE,
         ShooterAcceleratorTarget.IDLE,
         ShooterOmniwheelTarget.SLOW_REVERSE,
         SerializerTarget.IDLE),
@@ -204,12 +208,27 @@ public class ShooterController extends SubsystemBase {
             targetState.hoodTarget.getSupplyCurrentLimit());
       }
 
-      // Flywheels
-      if (targetState == ShooterState.DEFAULT_SHOOT) {
+      Translation2d currentPosition =
+          RobotState.getInstance().getEstimatedPose().getTranslation(); // Flywheels
+
+      double distance =
+          RobotState.getInstance()
+              .getEstimatedPose()
+              .getTranslation()
+              .getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d());
+
+      if (targetState == ShooterState.DEFAULT_SHOOT) { // just added
         shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.SHOOT);
+        if (distance
+            >= .2) { // get distance somehow??, 5.2 is "farthest" distance, need to check this tho
+          shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.SPEEDY_SHOOT);
+        }
       } else {
+
         shooterFlywheel.setVelocityManual(
             shotState.shooterSpeed(), targetState.flywheelTarget.getSupplyCurrentLimit());
+
+        //  targetState = ShooterFlywheelTarget.SPEEDY_SHOOT;
       }
 
       // Omniwheels
