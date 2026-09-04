@@ -44,13 +44,7 @@ public class ShooterController extends SubsystemBase {
     /** spin just flywheels */
     FLYWHEEL_SPIN_UP(
         ShooterHoodTarget.STOW,
-        RobotState.getInstance()
-                    .getEstimatedPose()
-                    .getTranslation()
-                    .getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d())
-                > 5.2
-            ? ShooterFlywheelTarget.SPEEDY_SHOOT
-            : ShooterFlywheelTarget.INTAKE,
+        ShooterFlywheelTarget.INTAKE,
         ShooterAcceleratorTarget.IDLE,
         ShooterOmniwheelTarget.SLOW_REVERSE,
         SerializerTarget.IDLE),
@@ -90,8 +84,6 @@ public class ShooterController extends SubsystemBase {
         SerializerTarget.SHOOT),
     TOTAL_SPIN_UP(
         ShooterHoodTarget.SHOOT_TEMP,
-        // RobotState.getInstance().getEstimatedPose().getTranslation().getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d()) > 5.2
-        //  ? ShooterFlywheelTarget.SPEEDY_SHOOT : ShooterFlywheelTarget.SHOOT,
         ShooterFlywheelTarget.SPEEDY_SHOOT,
         ShooterAcceleratorTarget.SHOOT,
         ShooterOmniwheelTarget.IDLE,
@@ -171,6 +163,16 @@ public class ShooterController extends SubsystemBase {
     this.serializer = serializer;
   }
 
+  private static final double FAR_SHOT_DISTANCE_METERS = 4.8;
+
+  private boolean isFarShot() {
+    return RobotState.getInstance()
+            .getEstimatedPose()
+            .getTranslation()
+            .getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d())
+        > FAR_SHOT_DISTANCE_METERS;
+  }
+
   @Override
   public void periodic() {
     if (stopped) {
@@ -211,20 +213,14 @@ public class ShooterController extends SubsystemBase {
       Translation2d currentPosition =
           RobotState.getInstance().getEstimatedPose().getTranslation(); // Flywheels
 
-      double distance =
-          RobotState.getInstance()
-              .getEstimatedPose()
-              .getTranslation()
-              .getDistance(DriveConstants.BLUE_HUB_ORIGIN.toTranslation2d());
-
+      // Flywheels
       if (targetState == ShooterState.DEFAULT_SHOOT) { // just added
-        shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.SHOOT);
-        if (distance
-            >= .2) { // get distance somehow??, 5.2 is "farthest" distance, need to check this tho
+        if (isFarShot()) {
           shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.SPEEDY_SHOOT);
+        } else {
+          shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.SHOOT);
         }
       } else {
-
         shooterFlywheel.setVelocityManual(
             shotState.shooterSpeed(), targetState.flywheelTarget.getSupplyCurrentLimit());
 
@@ -260,7 +256,10 @@ public class ShooterController extends SubsystemBase {
         serializer.setVelocityTarget(targetState.serializerTarget);
       }
     } else {
-      if (targetState.flywheelTarget == ShooterFlywheelTarget.INTAKE) {
+      if (targetState == ShooterState.FLYWHEEL_SPIN_UP) {
+        shooterFlywheel.setVelocityTarget(
+            isFarShot() ? ShooterFlywheelTarget.SPEEDY_SHOOT : ShooterFlywheelTarget.INTAKE);
+      } else if (targetState.flywheelTarget == ShooterFlywheelTarget.INTAKE) {
         TargetShootingState shotState = RobotState.getInstance().calculateTargetShootingState();
         shooterFlywheel.setVelocityManual(
             Units.MetersPerSecond.of(
@@ -283,6 +282,7 @@ public class ShooterController extends SubsystemBase {
     Logger.recordOutput("Shooter/Target State", targetState);
     Logger.recordOutput("Shooter/Is Stopped", stopped);
     Logger.recordOutput("Shooter/Auto Aim", autoAim);
+    Logger.recordOutput("Shooter/Is Far Shot", isFarShot());
   }
 
   public ShooterState getTargetState() {
