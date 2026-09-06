@@ -53,6 +53,10 @@ import frc.robot.subsystems.intake.intake_rollers.IntakeRollers;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIO;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOSim;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOTalonFX;
+import frc.robot.subsystems.object_detection.ObjectDetection;
+import frc.robot.subsystems.object_detection.ObjectDetectionIO;
+import frc.robot.subsystems.object_detection.ObjectDetectionIOLimelight;
+import frc.robot.subsystems.object_detection.ObjectDetectionIOSim;
 import frc.robot.subsystems.rgb.RGB;
 import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
@@ -109,6 +113,9 @@ public class RobotContainer {
 
   private ElasticUpdater matchTimerUpdater = new ElasticUpdater();
 
+  private static final String FULL_MATCH_AUTO_NAME = "Full Match Auto";
+  private static final double AI_FULL_MATCH_AUTO_SEC = 30.0;
+
   // private SendableChooser<Command> autoChooser;
   private LoggedDashboardChooser<Command> autoChooser;
 
@@ -120,6 +127,7 @@ public class RobotContainer {
   private IntakeRack intakeRack;
   private IntakeRollers intakeRollers;
   private IntakeController intakeController;
+  private ObjectDetection objectDetection;
   private RGB rgb;
   private Serializer serializer;
   private ShooterAccelerator shooterAccelerator;
@@ -157,6 +165,7 @@ public class RobotContainer {
           shooterHood = new ShooterHood(new ShooterHoodIOTalonFX());
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOTalonFX());
           serializer = new Serializer(new SerializerIOTalonFX());
+          objectDetection = new ObjectDetection(new ObjectDetectionIOLimelight());
         }
         case VISION -> {
           swerve =
@@ -208,6 +217,7 @@ public class RobotContainer {
           shooterFlywheels = new ShooterFlywheel(new ShooterFlywheelIOSim());
           shooterHood = new ShooterHood(new ShooterHoodIOSim());
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOSim());
+          objectDetection = new ObjectDetection(new ObjectDetectionIOSim());
         }
       }
     }
@@ -249,6 +259,9 @@ public class RobotContainer {
 
     // VISION
     if (vision == null) vision = new Vision(new VisionIO() {}, new VisionIO() {});
+
+    // OBJECT DETECTION
+    if (objectDetection == null) objectDetection = new ObjectDetection(new ObjectDetectionIO() {});
 
     // init shooter with testing values
     RobotState.getInstance()
@@ -421,7 +434,8 @@ public class RobotContainer {
     // buttons)
 
     // setup full match auto commands
-    RobotState.getInstance().initFullMatchAuto(swerve);
+    RobotState.getInstance()
+        .initFullMatchAuto(swerve, intakeController, shooterController, objectDetection);
   }
 
   private void configureDriverAButtons() {
@@ -553,6 +567,9 @@ public class RobotContainer {
     driverB.povDown().onTrue(shooterController.zeroCommand());
     driverB.povDown().onFalse(shooterController.stopZeroingCommand());
 
+    // Testing: run the full match auto in teleop for as long as the button is held.
+    driverB.back().whileTrue(RobotState.getInstance().fullMatchAutoCommand());
+
     driverB.rightBumper().onTrue(intakeController.setTargetStateCommand(IntakeState.INTAKE));
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
@@ -593,6 +610,7 @@ public class RobotContainer {
 
     autoChooser =
         new LoggedDashboardChooser<Command>("Auto Chooser", AutoBuilder.buildAutoChooser());
+    autoChooser.addOption(FULL_MATCH_AUTO_NAME, RobotState.getInstance().fullMatchAutoCommand());
     VisionTuningCommands.addTuningCommandsToAutoChooser(vision, autoChooser);
     SmartDashboard.putData("Auto Chooser", autoChooser.getSendableChooser());
   }
@@ -602,6 +620,11 @@ public class RobotContainer {
     // Invoke: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
     String aiAutoName = System.getProperty("ai.auto.name");
     if (aiAutoName != null && !aiAutoName.isBlank()) {
+      // The full match auto is a chooser option, not a .auto file, and never ends on its own.
+      // Bound it here so the headless harness can finish and flush its log.
+      if (aiAutoName.equals(FULL_MATCH_AUTO_NAME)) {
+        return RobotState.getInstance().fullMatchAutoCommand().withTimeout(AI_FULL_MATCH_AUTO_SEC);
+      }
       return AutoBuilder.buildAuto(aiAutoName);
     }
     return autoChooser.get();

@@ -1,18 +1,16 @@
 package frc.robot.subsystems.object_detection;
 
-public interface ObjectDetectionIO{
-    class ObjectDetectionIOInputs {
-        public double[] x;
-        public double[] y;
-        public double[] z;
-        public double[] pitch;
-        public double[] yaw;
-        public double[] roll;
-        public double[] width;
-        public double[] height;
-    }
+import edu.wpi.first.math.geometry.Translation2d;
+import org.littletonrobotics.junction.AutoLog;
 
-    default void updateInputs(ObjectDetectionIOInputs inputs) {}
+public interface ObjectDetectionIO {
+  @AutoLog
+  class ObjectDetectionIOInputs {
+    public boolean connected = false;
 
-    default void threadFn() {}
+    /** Field relative positions of every ball the camera can currently see. */
+    public Translation2d[] ballPositions = new Translation2d[0];
+  }
+
+  default void updateInputs(ObjectDetectionIOInputs inputs) {}
 }

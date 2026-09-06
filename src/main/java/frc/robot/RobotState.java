@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radian;
@@ -39,16 +38,24 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.DeferredCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.RobotState.ShootingAnglePredictor.HoodParams;
 import frc.robot.commands.AlignToPoseCommand;
+import frc.robot.subsystems.intake.IntakeController;
+import frc.robot.subsystems.intake.IntakeController.IntakeState;
+import frc.robot.subsystems.object_detection.ObjectDetection;
+import frc.robot.subsystems.shooter.ShooterController;
+import frc.robot.subsystems.shooter.ShooterController.ShooterState;
 import frc.robot.subsystems.swerve.Drive;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.subsystems.vision.VisionConstants;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -533,63 +540,121 @@ public class RobotState {
     return underTrench;
   }
 
-  //full match auto code
-  private enum RobotGoal {
+  // full match auto
+
+  public enum RobotGoal {
     SCORE,
     PICKUP
   }
 
-  private RobotGoal currentGoal = RobotGoal.PICKUP;
+  private RobotGoal currentGoal = RobotGoal.SCORE;
+  private boolean fullMatchAutoActive = false;
+
+  @AutoLogOutput(key = "Robot State/Full Match Auto/Goal")
+  public RobotGoal getCurrentGoal() {
+    return currentGoal;
+  }
 
   public void setCurrentGoal(RobotGoal goal) {
     this.currentGoal = goal;
   }
 
-  public RobotGoal getCurrentGoal() {
-    return currentGoal;
+  @AutoLogOutput(key = "Robot State/Full Match Auto/Active")
+  public boolean isFullMatchAutoActive() {
+    return fullMatchAutoActive;
   }
-
-  public void initFullMatchAuto(Drive drive) {
-    // triggers for larger commands
-    new Trigger(() -> getCurrentGoal() == RobotGoal.SCORE)
-        .onTrue(
-            scoreStateCommandBuilder(drive)
-                .andThen(() -> setCurrentGoal(RobotGoal.PICKUP)));
-              
-    new Trigger(() -> getCurrentGoal() == RobotGoal.PICKUP)
-        .onTrue(
-            pickupStateCommandBuilder(drive)
-                .andThen(() -> setCurrentGoal(RobotGoal.SCORE)));
-}
-
-  private Command scoreStateCommandBuilder(Drive drive){
-    return new SequentialCommandGroup();
-  }
-
-  private Command pickupStateCommandBuilder(Drive drive){
-    return new SequentialCommandGroup(new AlignToPoseCommand(drive, () -> getObservingPose(), true));
-  }
-
 
   /**
-   * Gets the pose for the robot to best observe the balls on the field
+   * Runs the full match auto for as long as it is scheduled. Put this on the auto chooser — the
+   * triggers built by {@link #initFullMatchAuto} do the actual work.
    */
-  private Pose2d getObservingPose(){
-    Pose2d[] possibleObservingPoses = new Pose2d[]{
-      new Pose2d(6.135, 0.794, new Rotation2d(Math.toRadians(-111.297))),
-      new Pose2d(6.135, 8-0.794, new Rotation2d(Math.toRadians(360-111.297))),
-      FlippingUtil.flipFieldPose(new Pose2d(6.135, 0.794, new Rotation2d(Math.toRadians(-111.297)))),
-      FlippingUtil.flipFieldPose(new Pose2d(6.135, 8-0.794, new Rotation2d(Math.toRadians(360-111.297)))),
-    };
+  public Command fullMatchAutoCommand() {
+    return Commands.startEnd(
+        () -> {
+          currentGoal = RobotGoal.SCORE; // auto starts with a preloaded hopper
+          fullMatchAutoActive = true;
+        },
+        () -> fullMatchAutoActive = false);
+  }
 
-    Pose2d best = possibleObservingPoses[0];
-    for (Pose2d pose : possibleObservingPoses){
-      if (pose.getTranslation().getDistance(getEstimatedPose().getTranslation()) < best.getTranslation().getDistance(getEstimatedPose().getTranslation())){
+  /** Wires up the SCORE/PICKUP loop. Call once from RobotContainer. */
+  public void initFullMatchAuto(
+      Drive drive,
+      IntakeController intake,
+      ShooterController shooter,
+      ObjectDetection objectDetection) {
+    new Trigger(() -> fullMatchAutoActive && currentGoal == RobotGoal.SCORE)
+        .onTrue(
+            scoreStateCommandBuilder(drive, intake, shooter)
+                .andThen(() -> setCurrentGoal(RobotGoal.PICKUP))
+                .onlyWhile(() -> fullMatchAutoActive));
+
+    new Trigger(() -> fullMatchAutoActive && currentGoal == RobotGoal.PICKUP)
+        .onTrue(
+            pickupStateCommandBuilder(drive, intake, shooter, objectDetection)
+                .andThen(() -> setCurrentGoal(RobotGoal.SCORE))
+                .onlyWhile(() -> fullMatchAutoActive));
+  }
+
+  /** Drive to the nearer trench shooting pose, then empty the hopper. */
+  private Command scoreStateCommandBuilder(
+      Drive drive, IntakeController intake, ShooterController shooter) {
+    return new AlignToPoseCommand(drive, this::getScoringPose, true, true)
+        .alongWith(
+            shooter.setTargetStateCommand(ShooterState.TOTAL_SPIN_UP),
+            intake.setTargetStateCommand(IntakeState.SHOOTING_STOW))
+        .andThen(new WaitCommand(FullMatchAutoConstants.SPIN_UP_SEC))
+        .andThen(shooter.setTargetStateCommand(ShooterState.SHOOT))
+        .andThen(new WaitCommand(FullMatchAutoConstants.FULL_HOPPER_SHOOT_SEC))
+        .andThen(shooter.setTargetStateCommand(ShooterState.FLYWHEEL_SPIN_UP));
+  }
+
+  /**
+   * Drive to the corner of the center of the field that looks at the balls, then follow a path the
+   * object detection subsystem generates through the densest clusters it can see from there.
+   */
+  private Command pickupStateCommandBuilder(
+      Drive drive,
+      IntakeController intake,
+      ShooterController shooter,
+      ObjectDetection objectDetection) {
+    return new AlignToPoseCommand(drive, this::getObservingPose, true, true)
+        .alongWith(
+            intake.setTargetStateCommand(IntakeState.INTAKE),
+            shooter.setTargetStateCommand(ShooterState.INTAKE))
+        .andThen(
+            new DeferredCommand(
+                () ->
+                    objectDetection.getPickupCommand(
+                        estimatedPose, FullMatchAutoConstants.PICKUP_BALL_GOAL),
+                Set.of(drive)));
+  }
+
+  /** Nearer of the two trench shooting poses. */
+  @AutoLogOutput(key = "Robot State/Full Match Auto/Scoring Pose (Blue Frame)")
+  public Pose2d getScoringPose() {
+    return closestPose(FullMatchAutoConstants.SCORING_POSES);
+  }
+
+  /** Nearer corner of the center of the field, aimed so the rear intake looks at the middle. */
+  @AutoLogOutput(key = "Robot State/Full Match Auto/Observing Pose (Blue Frame)")
+  public Pose2d getObservingPose() {
+    return closestPose(FullMatchAutoConstants.OBSERVING_POSES);
+  }
+
+  /**
+   * Picks the closest of a set of blue frame poses. AlignToPoseCommand applies the red flip itself,
+   * so the comparison happens in the blue frame and the result stays unflipped.
+   */
+  private Pose2d closestPose(Pose2d[] poses) {
+    Pose2d reference = isAllianceRed() ? FlippingUtil.flipFieldPose(estimatedPose) : estimatedPose;
+    Pose2d best = poses[0];
+    for (Pose2d pose : poses) {
+      if (pose.getTranslation().getDistance(reference.getTranslation())
+          < best.getTranslation().getDistance(reference.getTranslation())) {
         best = pose;
       }
     }
     return best;
   }
-  private 
 }
-
