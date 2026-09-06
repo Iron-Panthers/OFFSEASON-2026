@@ -41,6 +41,7 @@ public class Robot extends LoggedRobot {
   private RobotContainer robotContainer;
 
   private Command autoCommand;
+  private Command pathfindingWarmupCommand;
   private boolean matchStartingMethodCalled = false;
   private boolean aiShutdownInitiated = false;
 
@@ -112,7 +113,12 @@ public class Robot extends LoggedRobot {
     robotContainer = new RobotContainer();
 
     CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
-    CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
+    // Held so it can be cancelled on enable. It shares the global Pathfinding singleton, and
+    // getCurrentPath() clears the new-path flag, so if it is still running when a real
+    // AlignToPoseCommand starts it swallows that path into its no-op output and the robot
+    // never moves.
+    pathfindingWarmupCommand = PathfindingCommand.warmupCommand();
+    CommandScheduler.getInstance().schedule(pathfindingWarmupCommand);
 
     // Headless AI testing never has a real/virtual DS to enable the robot, so nothing would ever
     // leave disabledPeriodic(). Enable it ourselves: autonomous when an auto name is specified,
@@ -160,6 +166,14 @@ public class Robot extends LoggedRobot {
   @Override
   public void disabledInit() {}
 
+  /** Frees the global pathfinder so real pathfinding commands can claim their own paths. */
+  private void cancelPathfindingWarmup() {
+    if (pathfindingWarmupCommand != null) {
+      pathfindingWarmupCommand.cancel();
+      pathfindingWarmupCommand = null;
+    }
+  }
+
   /** This function is called periodically when disabled. */
   @Override
   public void disabledPeriodic() {
@@ -169,6 +183,7 @@ public class Robot extends LoggedRobot {
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
+    cancelPathfindingWarmup();
     if (!matchStartingMethodCalled) {
       matchStartingMethodCalled = true;
       robotContainer.containerMatchStarting();
@@ -208,6 +223,7 @@ public class Robot extends LoggedRobot {
   /** This function is called once when teleop is enabled. */
   @Override
   public void teleopInit() {
+    cancelPathfindingWarmup();
     /** TODO: Is this necessary? Does it work? */
     if (!matchStartingMethodCalled) {
       matchStartingMethodCalled = true;

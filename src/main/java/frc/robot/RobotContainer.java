@@ -88,6 +88,7 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonvision;
 import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
+import frc.robot.utility.FuelSim;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
@@ -114,7 +115,7 @@ public class RobotContainer {
   private ElasticUpdater matchTimerUpdater = new ElasticUpdater();
 
   private static final String FULL_MATCH_AUTO_NAME = "Full Match Auto";
-  private static final double AI_FULL_MATCH_AUTO_SEC = 30.0;
+  private static final double AI_FULL_MATCH_AUTO_SEC = 150.0;
 
   // private SendableChooser<Command> autoChooser;
   private LoggedDashboardChooser<Command> autoChooser;
@@ -674,6 +675,8 @@ public class RobotContainer {
     Logger.recordOutput(
         "Field Simulation/Robot Fuel", RobotSimState.getInstance().getIntakeGamePieces());
     Logger.recordOutput("Field Simulation/Fuel Count", RobotSimState.getInstance().getFuelCount());
+    Logger.recordOutput("Field Simulation/Red Score", FuelSim.Hub.RED_HUB.getScore());
+    Logger.recordOutput("Field Simulation/Blue Score", FuelSim.Hub.BLUE_HUB.getScore());
 
     // Update the shooting logic with the correct rollers
     RobotSimState.getInstance()

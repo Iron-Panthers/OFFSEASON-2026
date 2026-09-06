@@ -9,13 +9,16 @@ import frc.robot.subsystems.object_detection.ObjectDetectionConstants;
 /** Tuning values for the SCORE/PICKUP full match auto state machine in {@link RobotState}. */
 public class FullMatchAutoConstants {
   /** Time the shooter needs to empty a full hopper. */
-  public static final double FULL_HOPPER_SHOOT_SEC = 2.0;
+  public static final double FULL_HOPPER_SHOOT_SEC = 4.0;
 
   /** Time given to spin the shooter up before the hopper is dumped. */
   public static final double SPIN_UP_SEC = 0.6;
 
   /** Balls worth of clusters to chase before returning to SCORE. */
-  public static final int PICKUP_BALL_GOAL = 40;
+  public static final int PICKUP_BALL_GOAL = 25;
+
+  /** Ceiling on one pickup leg, so a picked-over field cannot stall the cycle. */
+  public static final double PICKUP_TIME_BUDGET_SEC = 6.0;
 
   /** Middle of the field — observing poses aim the intake here. */
   public static final Translation2d FIELD_CENTER = new Translation2d(8.255, 4.02);

@@ -57,6 +57,12 @@ public class ObjectDetectionConstants {
   /** A cluster this close to the robot is already being driven over, so it is skipped. */
   public static final double CLUSTER_SKIP_RADIUS_M = 0.3;
 
+  /**
+   * Stops chained into one generated path. Balls scatter when the robot drives through them, so a
+   * short path that is regenerated often tracks the pile better than one long committed tour.
+   */
+  public static final int MAX_STOPS_PER_PATH = 2;
+
   /** Clusters are only targeted between the two hubs, the neutral strip where the fuel sits. */
   public static final double PICKUP_ZONE_MIN_X = DriveConstants.BLUE_HUB_ORIGIN.getX();
 

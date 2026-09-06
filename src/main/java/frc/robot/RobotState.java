@@ -624,10 +624,12 @@ public class RobotState {
             shooter.setTargetStateCommand(ShooterState.INTAKE))
         .andThen(
             new DeferredCommand(
-                () ->
-                    objectDetection.getPickupCommand(
-                        estimatedPose, FullMatchAutoConstants.PICKUP_BALL_GOAL),
-                Set.of(drive)));
+                    () ->
+                        objectDetection.getPickupCommand(
+                            estimatedPose, FullMatchAutoConstants.PICKUP_BALL_GOAL),
+                    Set.of(drive))
+                .repeatedly()
+                .withTimeout(FullMatchAutoConstants.PICKUP_TIME_BUDGET_SEC));
   }
 
   /** Nearer of the two trench shooting poses. */

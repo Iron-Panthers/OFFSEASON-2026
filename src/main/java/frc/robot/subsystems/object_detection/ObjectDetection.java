@@ -155,7 +155,9 @@ public class ObjectDetection extends SubsystemBase {
     // The intake and camera face out the back, so that is the way the robot sweeps first.
     Rotation2d heading = startPose.getRotation().rotateBy(Rotation2d.kPi);
 
-    while (ballsCovered < ballGoal && !remaining.isEmpty()) {
+    while (ballsCovered < ballGoal
+        && stops.size() < ObjectDetectionConstants.MAX_STOPS_PER_PATH
+        && !remaining.isEmpty()) {
       Cluster best = null;
       double bestScore = 0.0;
       for (Cluster candidate : remaining) {
