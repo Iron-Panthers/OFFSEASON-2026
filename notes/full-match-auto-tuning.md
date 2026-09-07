@@ -50,3 +50,33 @@ align there, then the pickup path (4 s early, 15 s late). Fuel carried into the 
    nothing (see reverted row above).
 5. **`CLUSTER_DISTANCE_BIAS_M` = 4.0 flattens distance discrimination** (a 0.5 m and a 4 m cluster
    cost 4.5 vs 8.0), so the tour crosses the field cheaply. Worth a sweep late-match.
+
+## Wall-collision investigation (2026-09-06)
+
+Measured "stall episodes" — commanded >1 m/s but actually moving <25% of that, i.e. the robot is
+pushing on something. Baseline: **13 episodes, 16.0 s mean of a 151 s match (n=5)**. Two causes,
+both real:
+
+1. **PID auto-align corner-cutting.** Episode at (11.22, 0.92), 1.43 m from the scoring pose —
+   just inside `PATHPLANNER_PID_OFFSET` (1.5 m), where `AlignToPoseCommand` drops pathfinding for
+   a straight-line PID that knows nothing about obstacles. It clips the red trench wall corner.
+2. **The pickup path had no obstacle or bounds awareness.** It was a raw Bezier through cluster
+   centroids, extended a further `FOLLOW_THROUGH_M`. Most stalls were during pickup, pressed into
+   the field perimeter (y≈7.8 / y≈0.2 with a 0.42 m robot half-extent) or the trench at x≈5.2–5.8.
+
+The navgrid is **not** at fault: `field_size` 16.54×8.07 vs FuelSim's actual 16.51×8.04, 3 cm off.
+
+| Date | Change | Before | After | Kept? |
+|------|--------|--------|-------|-------|
+| 2026-09-06 | **Mid-path replanning:** cap each generated path at `MAX_STOPS_PER_PATH`=2 and repeat the deferred pickup under `PICKUP_TIME_BUDGET_SEC`=6 s, so the tour replans off a fresh pool as balls scatter | 369.6 (n=5) | 343/367/360/416 (mean 371.5) | **kept** — score-neutral, but stall time 16.0 s → 11.4 s |
+| 2026-09-06 | Clamp pickup waypoints to `FIELD_MARGIN_M`=0.6 inside the field | 371.5 | 321/389/370/335 (mean 354) | **kept as a guard** — measured neutral/slightly negative, but it stops the tour aiming at points the robot cannot occupy, which matters more now that legs are pathfound |
+| 2026-09-06 | **Pathfind every leg** between cluster stops (`AutoBuilder.pathfindToPose`, `PICKUP_TRANSIT_VEL`=2.0 through intermediate stops) instead of one spline; **drop the middle-zone restriction** (`inPickupZone` removed); **skip the observing pose** when the pool already knows of `PICKUP_SKIP_OBSERVE_BALLS`=25 balls | 369.6 | 379/433/344/302 (mean 364.5) | **kept** — score-neutral, but stall time 16.0 s → **7.5 s**, less than half the baseline |
+| 2026-09-06 | **Red-zone scan:** spin in place through 4 headings after shooting, before the observing drive, to pool balls in our own half | 364.5 | 345/245/356/244 (mean 297.5) | **reverted** — clearly worse. Cycles stretched ~12 s → ~15–16 s with no gain in fuel per cycle: our own half near the hub does not hold enough fuel to pay for the look, and the scan then tripped the skip-observe threshold so the robot picked over a thin local field instead of going to the dense middle |
+
+**Net:** none of the structural changes moved the score — it sits at ~365–372 either way — but
+together they cut wall contact by more than half (16.0 s → 7.5 s per match). Score is bounded by
+cycle time and hopper capacity, not by collisions.
+
+**Confirmation of the kept config (2026-09-07):** 365/400/355/336 — pooled with the earlier batch
+of the same code, n=8: 379/433/344/302/365/400/355/336, mean **364.3**, σ 41, against a 369.6
+(n=5, σ 16) baseline. Score-neutral confirmed; the win is collision reduction, not points.
