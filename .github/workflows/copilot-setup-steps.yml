@@ -36,3 +36,11 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew help --no-daemon
+
+      - name: Prefetch robot build and sim dependencies
+        run: |
+          ./gradlew --no-daemon \
+            classes \
+            extractReleaseNative \
+            extractDebugNative \
+            simulateExternalJavaRelease
