@@ -17,6 +17,9 @@ public class FullMatchAutoConstants {
   /** Balls worth of clusters to chase before returning to SCORE. */
   public static final int PICKUP_BALL_GOAL = 25;
 
+  /** Pooled balls that make the trip to an observing pose pointless — just go collect them. */
+  public static final int PICKUP_SKIP_OBSERVE_BALLS = 25;
+
   /** Ceiling on one pickup leg, so a picked-over field cannot stall the cycle. */
   public static final double PICKUP_TIME_BUDGET_SEC = 6.0;
 

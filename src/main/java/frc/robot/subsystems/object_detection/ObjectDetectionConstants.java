@@ -4,7 +4,6 @@ import com.pathplanner.lib.path.PathConstraints;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
-import frc.robot.subsystems.swerve.DriveConstants;
 
 public class ObjectDetectionConstants {
   /**
@@ -69,10 +68,8 @@ public class ObjectDetectionConstants {
    */
   public static final int MAX_STOPS_PER_PATH = 2;
 
-  /** Clusters are only targeted between the two hubs, the neutral strip where the fuel sits. */
-  public static final double PICKUP_ZONE_MIN_X = DriveConstants.BLUE_HUB_ORIGIN.getX();
-
-  public static final double PICKUP_ZONE_MAX_X = DriveConstants.RED_HUB_ORIGIN.getX();
+  /** Speed carried through an intermediate stop, so the sweep does not stop on every cluster. */
+  public static final double PICKUP_TRANSIT_VEL = 2.0;
 
   public static final PathConstraints PICKUP_PATH_CONSTRAINTS =
       new PathConstraints(3.0, 3.0, Math.toRadians(540), Math.toRadians(720));

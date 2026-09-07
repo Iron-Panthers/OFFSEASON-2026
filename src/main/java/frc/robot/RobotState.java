@@ -619,6 +619,11 @@ public class RobotState {
       ShooterController shooter,
       ObjectDetection objectDetection) {
     return new AlignToPoseCommand(drive, this::getObservingPose, true, true)
+        // Already know where enough fuel is, so skip the look-around and go get it.
+        .until(
+            () ->
+                objectDetection.getPooledBallCount()
+                    >= FullMatchAutoConstants.PICKUP_SKIP_OBSERVE_BALLS)
         .alongWith(
             intake.setTargetStateCommand(IntakeState.INTAKE),
             shooter.setTargetStateCommand(ShooterState.INTAKE))

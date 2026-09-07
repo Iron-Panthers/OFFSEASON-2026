@@ -1,10 +1,6 @@
 package frc.robot.subsystems.object_detection;
 
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.IdealStartingState;
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.RotationTarget;
 import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -75,6 +71,11 @@ public class ObjectDetection extends SubsystemBase {
     return clusters;
   }
 
+  /** Balls the pool currently believes are on the field, fresh sightings and remembered alike. */
+  public int getPooledBallCount() {
+    return clusters.stream().mapToInt(Cluster::ballCount).sum();
+  }
+
   /** Forgets every pooled observation. */
   public void resetPool() {
     pool.clear();
@@ -143,11 +144,6 @@ public class ObjectDetection extends SubsystemBase {
    * Whether a cluster sits in the neutral strip between the two hubs. Fuel past a hub is in an
    * alliance's own end of the field, and the straight sweep has no way around the obstacles there.
    */
-  private boolean inPickupZone(Translation2d center) {
-    return center.getX() >= ObjectDetectionConstants.PICKUP_ZONE_MIN_X
-        && center.getX() <= ObjectDetectionConstants.PICKUP_ZONE_MAX_X;
-  }
-
   /**
    * Picks the clusters to sweep, best first, until {@code ballGoal} balls are covered or the known
    * clusters run out.
@@ -171,7 +167,6 @@ public class ObjectDetection extends SubsystemBase {
       Cluster best = null;
       double bestScore = 0.0;
       for (Cluster candidate : remaining) {
-        if (!inPickupZone(candidate.center())) continue;
         Translation2d leg = candidate.center().minus(position);
         double distance = leg.getNorm();
         if (distance < ObjectDetectionConstants.CLUSTER_SKIP_RADIUS_M) continue;
@@ -220,35 +215,21 @@ public class ObjectDetection extends SubsystemBase {
     points.add(last.plus(new Translation2d(ObjectDetectionConstants.FOLLOW_THROUGH_M, runOut)));
     points.replaceAll(ObjectDetection::clampToField);
 
-    // Each waypoint's rotation is the bezier tangent, so point it along the leg of travel.
-    List<Pose2d> waypointPoses = new ArrayList<>();
-    List<RotationTarget> rotationTargets = new ArrayList<>();
-    for (int i = 0; i < points.size(); i++) {
-      Rotation2d heading =
-          i < points.size() - 1
-              ? points.get(i + 1).minus(points.get(i)).getAngle()
-              : points.get(i).minus(points.get(i - 1)).getAngle();
-      waypointPoses.add(new Pose2d(points.get(i), heading));
-      // The end rotation comes from the goal end state, so the last waypoint gets no target.
-      if (i > 0 && i < points.size() - 1) {
-        rotationTargets.add(new RotationTarget(i, heading.rotateBy(Rotation2d.kPi)));
-      }
+    // Pathfind each leg rather than splining through the stops, so the tour routes around the
+    // trench and the field wall instead of grinding along them.
+    Command tour = Commands.none();
+    for (int i = 1; i < points.size(); i++) {
+      Rotation2d heading = points.get(i).minus(points.get(i - 1)).getAngle();
+      // Intake and camera are on the back, so arrive rear first.
+      Pose2d target = new Pose2d(points.get(i), heading.rotateBy(Rotation2d.kPi));
+      boolean lastLeg = i == points.size() - 1;
+      tour =
+          tour.andThen(
+              AutoBuilder.pathfindToPose(
+                  target,
+                  ObjectDetectionConstants.PICKUP_PATH_CONSTRAINTS,
+                  lastLeg ? 0.0 : ObjectDetectionConstants.PICKUP_TRANSIT_VEL));
     }
-
-    Rotation2d endHeading = waypointPoses.get(waypointPoses.size() - 1).getRotation();
-    PathPlannerPath path =
-        new PathPlannerPath(
-            PathPlannerPath.waypointsFromPoses(waypointPoses),
-            rotationTargets,
-            List.of(),
-            List.of(),
-            List.of(),
-            ObjectDetectionConstants.PICKUP_PATH_CONSTRAINTS,
-            new IdealStartingState(0.0, startPose.getRotation()),
-            new GoalEndState(0.0, endHeading.rotateBy(Rotation2d.kPi)),
-            false);
-    // Detections are already field absolute, so the alliance flip must not be applied again.
-    path.preventFlipping = true;
-    return AutoBuilder.followPath(path);
+    return tour;
   }
 }
