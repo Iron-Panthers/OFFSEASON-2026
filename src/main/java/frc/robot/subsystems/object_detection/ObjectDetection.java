@@ -5,6 +5,8 @@ import com.pathplanner.lib.path.GoalEndState;
 import com.pathplanner.lib.path.IdealStartingState;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.path.RotationTarget;
+import com.pathplanner.lib.util.FlippingUtil;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -102,6 +104,14 @@ public class ObjectDetection extends SubsystemBase {
       Translation2d center = sum.div(cellBalls.size());
       pool.put(cellKey(center), new PooledCell(center, cellBalls.size(), now));
     }
+  }
+
+  /** Pulls a waypoint far enough inside the field for the robot to actually sit on it. */
+  private static Translation2d clampToField(Translation2d point) {
+    double margin = ObjectDetectionConstants.FIELD_MARGIN_M;
+    return new Translation2d(
+        MathUtil.clamp(point.getX(), margin, FlippingUtil.fieldSizeX - margin),
+        MathUtil.clamp(point.getY(), margin, FlippingUtil.fieldSizeY - margin));
   }
 
   /** Whether a point falls inside the camera's horizontal view, flattened to 2d. */
@@ -208,6 +218,7 @@ public class ObjectDetection extends SubsystemBase {
     Translation2d last = points.get(points.size() - 1);
     Rotation2d runOut = last.minus(points.get(points.size() - 2)).getAngle();
     points.add(last.plus(new Translation2d(ObjectDetectionConstants.FOLLOW_THROUGH_M, runOut)));
+    points.replaceAll(ObjectDetection::clampToField);
 
     // Each waypoint's rotation is the bezier tangent, so point it along the leg of travel.
     List<Pose2d> waypointPoses = new ArrayList<>();

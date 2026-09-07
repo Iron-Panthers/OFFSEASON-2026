@@ -58,6 +58,12 @@ public class ObjectDetectionConstants {
   public static final double CLUSTER_SKIP_RADIUS_M = 0.3;
 
   /**
+   * Keeps planned waypoints inside the field. Balls roll into the perimeter, so without this the
+   * tour aims the robot at points it cannot physically occupy and it grinds along the wall.
+   */
+  public static final double FIELD_MARGIN_M = 0.6;
+
+  /**
    * Stops chained into one generated path. Balls scatter when the robot drives through them, so a
    * short path that is regenerated often tracks the pile better than one long committed tour.
    */
