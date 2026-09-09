@@ -294,3 +294,9 @@ def test_replay_time_base_is_invariant_to_wall_clock_stretch():
 def test_replay_time_base_absent_for_non_replay_logs():
     assert replay_time_base({}) is None
     assert replay_time_base({REPLAY_CLOCK_KEY: [(1.0, 0.0)]}) is None
+
+
+def test_power_distribution_is_excluded():
+    # The PDH is not simulated; its voltage scored nrmse 12.0 as pure noise.
+    assert is_excluded("PowerDistribution/Voltage")
+    assert is_excluded("PowerDistribution/ChannelCurrent")

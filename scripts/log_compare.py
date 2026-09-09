@@ -76,6 +76,8 @@ _EXCLUDED_PREFIXES = (
     "DriverStation/MatchTime",
     "RealOutputs/Match Time",
     "RealOutputs/Vision/",
+    # The PDH is not simulated at all; its voltage sits at a constant 12 V in sim.
+    "PowerDistribution/",
     "SystemStats/CPUTemp",
     "DriverStation/MatchNumber",
     "DriverStation/ReplayNumber",

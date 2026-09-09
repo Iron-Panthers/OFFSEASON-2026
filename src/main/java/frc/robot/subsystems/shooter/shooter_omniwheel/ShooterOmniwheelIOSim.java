@@ -66,11 +66,16 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
     // Set TalonFX sim state
     talon.getSimState().setSupplyVoltage(RobotController.getBatteryVoltage());
     talon.getSimState().setRawRotorPosition(rotorPositionRotations);
-    talon.getSimState().setRotorVelocity(currentVelocityRPS);
+    talon.getSimState().setRotorVelocity(currentVelocityRPS * SHOOTER_OMNIWHEEL_CONFIG.reduction());
 
-    // Calculate applied voltage using feedforward + proportional feedback
+    // Regulate ROTOR velocity, matching Phoenix VelocityVoltage on the real robot.
+    // GenericRollersIOTalonFX never sets SensorToMechanismRatio, so the setpoint the subsystem
+    // passes down is in rotor rot/s; comparing it against MECHANISM rot/s made the sim settle at
+    // a different speed for the same command, which is why the SIM reduction constants had been
+    // fudged to the reciprocal of the real ones to compensate.
+    double rotorVelocityRPS = currentVelocityRPS * SHOOTER_OMNIWHEEL_CONFIG.reduction();
     double feedforwardVoltage = feedforward.calculate(velocitySetpointRPS);
-    double error = velocitySetpointRPS - currentVelocityRPS;
+    double error = velocitySetpointRPS - rotorVelocityRPS;
     double proportionalVoltage = GAINS.kP() * error;
     double appliedVoltage = feedforwardVoltage + proportionalVoltage;
     // Clamp to the battery's ACTUAL voltage so sag reduces available torque.

@@ -8,7 +8,7 @@ public class IntakeRollersConstants {
   public static final IntakeRollerConfig INTAKE_ROLLER_CONFIG =
       switch (Constants.getRobotType()) {
         case SIM -> new IntakeRollerConfig(
-            CAN.at(64, "Intake Roller"), CAN.at(65, "Intake Roller 2"), 2, false, true);
+            CAN.at(64, "Intake Roller"), CAN.at(65, "Intake Roller 2"), 36.0 / 15.0, false, true);
         case COMP -> new IntakeRollerConfig(
             CAN.at(8, "Intake Roller Left"),
             CAN.at(9, "Intake Roller Right"),
@@ -22,7 +22,7 @@ public class IntakeRollersConstants {
   // CONTROL LOOP GAINS AND MOTION MAGIC CONFIG
   public static final PIDGains GAINS =
       switch (Constants.getRobotType()) {
-        case SIM -> new PIDGains(1, 0, 0, 0, 1, 0, 0);
+        case SIM -> new PIDGains(0.3, 0, 0, 0.1, 0.2739, 0, 0);
         case COMP -> new PIDGains(0.3, 0, 0, 0.1, 0.2739, 0, 0);
         default -> new PIDGains(0, 0, 0, 0, 0, 0, 0);
       };
