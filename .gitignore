@@ -190,4 +190,4 @@ compile_commands.json
 # opencode — generated skill files (auto-synced from .claude/commands/ by plugin)
 .opencode/skills/
 # opencode — plugin dependencies
-.opencode/node_modules/
+.opencode/node_modules/__pycache__/

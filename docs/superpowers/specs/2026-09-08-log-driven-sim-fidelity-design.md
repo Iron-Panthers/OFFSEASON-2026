@@ -64,9 +64,11 @@ Flags:
 
 ### 2. Pose re-anchoring
 
-Auto runs free (pose is trusted there). During teleop, every `-Preplay.anchor=<sec>` (default `1.0`, `0` disables) the maple-sim drivetrain pose is set to the logged `RealOutputs/Robot State/Estimated Pose`, preserving chassis velocity. Always anchors once at teleop entry.
+Auto runs free (pose is trusted there). During teleop, every `-Preplay.anchor=<sec>` (default `10.0`, `0` disables) the maple-sim drivetrain pose is set to the logged `RealOutputs/Robot State/Estimated Pose`, preserving chassis velocity. Always anchors once at teleop entry.
 
-Rationale: keeps auto-aim distance and the shooter LUT seeing realistic inputs, and prevents the sim robot from wedging against a wall and producing a fictitious current draw — which would corrupt the primary signal being measured.
+Rationale: prevents the sim robot from wedging against a wall and producing a fictitious current draw — which would corrupt the primary signal being measured — while leaving a long enough window between corrections for pose drift to accumulate visibly.
+
+A 10 s interval is a deliberate tradeoff. A tight interval (~1 s) would keep auto-aim distance and the shooter LUT seeing near-real inputs, but it also continuously erases drift and would hide a genuinely wrong drivetrain model. At 10 s the drift between corrections is itself a measurement: the pose error accumulated just before each anchor is logged as `Replay/Anchor Error` (translation and rotation) so drivetrain fidelity can be scored directly rather than assumed. The cost is that auto-aim inputs degrade late in each window; comparisons of shooter LUT outputs are weighted toward the first seconds after an anchor.
 
 ### 3. Battery model (new)
 
@@ -108,6 +110,7 @@ Optimized against, in order of trustworthiness:
 2. **Per-mechanism current draw** — stator and supply current for all four swerve modules (drive and steer) plus flywheels, rack, rollers, hood, accelerator, omniwheel, serializer. Matched on mean, p95, peak, and shape during events.
 3. **Battery voltage and brownout timing** — sag events at the same match times with similar depth.
 4. **Aggregate power** — `MotorOutputManager/TotalAmps` and cumulative `TotalAmpSeconds`.
+5. **Drivetrain pose drift** — `Replay/Anchor Error`, the translation and rotation error accumulated in each 10 s window before the pose is re-anchored. A drivetrain model with the right mass, MOI, and wheel friction should drift slowly and without systematic bias; large or consistently-signed drift points at a specific modelling error. Valid only in stretches where the real robot was not being hit, so outliers are inspected rather than averaged in.
 
 ## Constraints
 
@@ -128,5 +131,6 @@ Optimized against, in order of trustworthiness:
 
 - **Overfitting to one match.** Mitigated by the held-out log and by requiring changes to improve validation logs, not just the primary.
 - **`-Preplay.fast` may break maple-sim or CTRE sim.** Fall back to realtime; runs cost ~3 min each instead.
-- **Pose anchoring could mask a genuine drivetrain modelling error** by hiding accumulated tracking error. Mitigated by scoring the auto segment (where pose is free-running and trusted) separately from teleop.
+- **Pose anchoring could mask a genuine drivetrain modelling error** by hiding accumulated tracking error. Mitigated three ways: the anchor interval defaults to 10 s rather than 1 s so drift has room to develop; the drift at each correction is logged as `Replay/Anchor Error` and scored as a fidelity target in its own right; and the auto segment (free-running, pose trusted) is scored separately from teleop.
+- **A 10 s anchor interval degrades auto-aim inputs late in each window.** As the sim pose drifts, distance-to-goal diverges and the shooter LUT is queried at the wrong distance, so hood angle and flywheel setpoint stop being comparable. Mitigated by weighting shooter-setpoint comparisons toward the seconds immediately after each anchor, and by treating the anchor interval as tunable if it proves too coarse.
 - **Per-log battery fitting could absorb errors that belong elsewhere.** Mitigated by fitting the battery parameters once per log and holding them fixed while tuning everything else, and by reporting the spread — an implausibly wide spread means the model is absorbing something it should not.
