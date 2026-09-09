@@ -27,6 +27,7 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
             IntakeRackConstants.PHYSICAL_CONSTANTS.simulateGravity(),
             0);
     setOffset();
+    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
     setSlot0(
         IntakeRackConstants.GAINS.kP(),
         IntakeRackConstants.GAINS.kI(),
@@ -40,6 +41,9 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
         0,
         IntakeRackConstants.GRAVITY_TYPE);
   }
+
+  /** Last computed supply current, published to SimBattery. */
+  private double lastSupplyCurrentAmps = 0.0;
 
   @Override
   public void updateInputs(GenericSuperstructureIOInputs inputs) {
@@ -73,7 +77,14 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
     inputs.positionRotations = rotations;
     inputs.velocityRotPerSec = velocityRPS;
     inputs.appliedVolts = appliedVoltage;
-    inputs.supplyCurrentAmps = 1.0; // Not simulated
+    // Was a hardcoded 1.0 A "not simulated", which meant the intake rack
+    // contributed a constant fake load and could never show a real current spike.
+    double availableVolts = RobotController.getBatteryVoltage();
+    double statorAmps = Math.abs(intakeRackSim.getCurrentDrawAmps());
+    double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
+    inputs.statorCurrent = statorAmps;
+    inputs.supplyCurrentAmps = statorAmps * dutyCycle;
+    lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
 
     // update the Sim State to match if it is up or down
     if (rotations < .1) {

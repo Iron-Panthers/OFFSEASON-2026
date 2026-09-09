@@ -39,7 +39,11 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
         ShooterHoodConstants.MOTION_MAGIC_CONFIG.cruiseVelocity(),
         0,
         ShooterHoodConstants.GRAVITY_TYPE);
+    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
   }
+
+  /** Last computed supply current, published to SimBattery. */
+  private double lastSupplyCurrentAmps = 0.0;
 
   @Override
   public void updateInputs(GenericSuperstructureIO.GenericSuperstructureIOInputs inputs) {
@@ -63,7 +67,9 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
     inputs.positionRotations = rotations;
     inputs.velocityRotPerSec = velocityRPS;
     inputs.appliedVolts = appliedVoltage;
+    inputs.statorCurrent = Math.abs(shooterHoodSim.getCurrentDrawAmps());
     inputs.supplyCurrentAmps = talon.getSimState().getSupplyCurrent();
+    lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 
   @Override

@@ -26,7 +26,11 @@ public class SerializerSim extends GenericRollersIOSim {
                 PHYSICAL_CONSTANTS.momentOfIntertia(),
                 SERIALIZER_CONFIG.reduction()),
             DCMotor.getKrakenX60Foc(1));
+    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
   }
+
+  /** Last computed supply current, published to SimBattery. */
+  private double lastSupplyCurrentAmps = 0.0;
 
   @Override
   public void updateInputs(GenericRollersIOInputs inputs) {
@@ -49,9 +53,19 @@ public class SerializerSim extends GenericRollersIOSim {
     talon.getSimState().setRawRotorPosition(rotations);
     talon.getSimState().setRotorVelocity(velocityRPS);
 
+    // appliedVelocity actually holds a voltage (getMotorVoltage). Publish it as
+    // appliedVolts too so the sim log carries the same key the real logs do.
+    // supplyCurrentAmps was a hardcoded 1.0 A "not simulated".
+    double availableVolts = RobotController.getBatteryVoltage();
+    double statorAmps = Math.abs(serializerSim.getCurrentDrawAmps());
+    double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVelocity) / availableVolts : 0.0;
+
     inputs.connected = true;
     inputs.velocityRadsPerSec = velocityRPS;
     inputs.appliedVelocity = appliedVelocity;
-    inputs.supplyCurrentAmps = 1.0; // Not simulated
+    inputs.appliedVolts = appliedVelocity;
+    inputs.statorCurrentAmps = statorAmps;
+    inputs.supplyCurrentAmps = statorAmps * dutyCycle;
+    lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 }

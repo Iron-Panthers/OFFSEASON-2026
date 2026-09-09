@@ -235,6 +235,23 @@ tasks.withType(JavaExec).configureEach {
     if (project.hasProperty('teleop.axes')) {
         jvmArgs "-Dai.teleop.axes=${project.getProperty('teleop.axes')}"
     }
+    // Log-driven replay: feed a real match's driver inputs through the sim.
+    // Usage: ./gradlew simulateJava -Pheadless -Pai.logging -Preplay.inputs=<path.wpilog>
+    if (project.hasProperty('replay.inputs')) {
+        jvmArgs "-Dai.replay.inputs=${project.getProperty('replay.inputs')}"
+    }
+    if (project.hasProperty('replay.anchor')) {
+        jvmArgs "-Dai.replay.anchor=${project.getProperty('replay.anchor')}"
+    }
+    if (project.hasProperty('replay.battery')) {
+        jvmArgs "-Dai.replay.battery=${project.getProperty('replay.battery')}"
+    }
+    if (project.hasProperty('replay.fast')) {
+        jvmArgs '-Dai.replay.fast=true'
+    }
+    if (project.hasProperty('replay.teleopOnly')) {
+        jvmArgs '-Dai.replay.teleopOnly=true'
+    }
 }
 
 

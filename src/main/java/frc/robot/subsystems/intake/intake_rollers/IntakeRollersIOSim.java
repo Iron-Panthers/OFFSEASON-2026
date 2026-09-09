@@ -44,7 +44,11 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
             ? ChassisReference.Clockwise_Positive
             : ChassisReference.CounterClockwise_Positive;
     simState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
+    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
   }
+
+  /** Last computed supply current, published to SimBattery. */
+  private double lastSupplyCurrentAmps = 0.0;
 
   @Override
   public void runVelocity(double velocity) {
@@ -66,7 +70,11 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     double error = velocitySetpointRPS - currentVelocityRPS;
     double proportionalVoltage = GAINS.kP() * error;
     double appliedVoltage = feedforwardVoltage + proportionalVoltage;
-    appliedVoltage = Math.max(-12, Math.min(12, appliedVoltage)); // Clamp to battery voltage
+    // Clamp to the battery's ACTUAL voltage so sag reduces available torque.
+    // The old hardcoded +/-12 made brownouts cosmetic: the pack could read 6 V
+    // while the motor still behaved as though it had a full 12 V to work with.
+    double availableVolts = RobotController.getBatteryVoltage();
+    appliedVoltage = Math.max(-availableVolts, Math.min(availableVolts, appliedVoltage));
 
     // Simulate physics
     intakeRollersSim.setInputVoltage(appliedVoltage);
@@ -80,6 +88,14 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     inputs.positionRads = rotorPositionRotations * 2.0 * Math.PI;
     inputs.velocityRadsPerSec = intakeRollersSim.getAngularVelocityRadPerSec();
     inputs.appliedVolts = appliedVoltage;
-    inputs.supplyCurrentAmps = Math.abs(intakeRollersSim.getCurrentDrawAmps());
+    // getCurrentDrawAmps() is stator current. Supply current is lower by roughly
+    // the duty cycle, since the motor controller is a buck converter. Reporting
+    // stator as supply overstates pack draw and would make the battery model sag
+    // far harder than the real robot does.
+    double statorAmps = Math.abs(intakeRollersSim.getCurrentDrawAmps());
+    double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
+    inputs.statorCurrentAmps = statorAmps;
+    inputs.supplyCurrentAmps = statorAmps * dutyCycle;
+    lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 }

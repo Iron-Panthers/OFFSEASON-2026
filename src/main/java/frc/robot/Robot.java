@@ -18,11 +18,15 @@ import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj.simulation.GenericHIDSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.utility.replay.LogInputPlayer;
+import frc.robot.utility.replay.MatchInputs;
+import frc.robot.utility.replay.MatchLogReader;
 import java.io.File;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -43,6 +47,9 @@ public class Robot extends LoggedRobot {
   private Command autoCommand;
   private boolean matchStartingMethodCalled = false;
   private boolean aiShutdownInitiated = false;
+
+  /** Non-null only when running a log-driven replay in simulation. */
+  private LogInputPlayer replayPlayer;
 
   public Robot() {
     Pathfinding.setPathfinder(new LocalADStarAK());
@@ -109,7 +116,70 @@ public class Robot extends LoggedRobot {
     // Start AdvantageKit logger
     Logger.start();
 
+    // Load the replay BEFORE constructing RobotContainer: the auto name is
+    // published as a system property that RobotContainer reads when it builds
+    // its auto command.
+    String replayInputsPath = System.getProperty("ai.replay.inputs");
+    if (Constants.getRobotMode() == Constants.Mode.SIM
+        && replayInputsPath != null
+        && !replayInputsPath.isBlank()) {
+      try {
+        frc.robot.utility.SimBattery.getInstance()
+            .configureFromProperty(System.getProperty("ai.replay.battery"));
+        MatchInputs matchInputs = MatchLogReader.read(replayInputsPath);
+        replayPlayer = new LogInputPlayer(matchInputs);
+        System.out.println(
+            "[Replay] Loaded "
+                + replayInputsPath
+                + " - "
+                + String.format("%.1f", matchInputs.durationSeconds())
+                + "s match, auto="
+                + matchInputs.autoName());
+        if (matchInputs.autoName() != null && !matchInputs.autoName().isBlank()) {
+          System.setProperty("ai.replay.auto.name", matchInputs.autoName());
+        }
+        if (Boolean.getBoolean("ai.replay.fast")) {
+          // Free-run the loop instead of pacing to wall clock.
+          //
+          // SMOKE TESTS ONLY -- not valid for fidelity comparison. AdvantageKit
+          // stamps records with wall-clock time, so a 165s match lands in the log
+          // as ~48s of timestamps and every signal is time-compressed against the
+          // real log. Any control code that reads FPGA time deltas also sees ~6ms
+          // instead of 20ms. Use realtime for anything being measured.
+          System.out.println(
+              "[Replay] WARNING: fast mode compresses log timestamps; "
+                  + "do NOT use for fidelity comparison.");
+          setUseTiming(false);
+        }
+      } catch (Exception e) {
+        throw new IllegalStateException("Failed to load replay log: " + replayInputsPath, e);
+      }
+    }
+
     robotContainer = new RobotContainer();
+
+    if (replayPlayer != null) {
+      robotContainer.attachPoseAnchor(
+          Double.parseDouble(System.getProperty("ai.replay.anchor", "10.0")));
+
+      if (Boolean.getBoolean("ai.replay.teleopOnly")) {
+        double[] teleopPose = replayPlayer.seekToTeleop();
+        if (teleopPose != null) {
+          // Place the robot where the real one finished auto, otherwise teleop
+          // would start from the drivetrain's initialisation pose instead.
+          RobotSimState.getInstance()
+              .getDriveSimulation()
+              .setSimulationWorldPose(
+                  new Pose2d(teleopPose[0], teleopPose[1], new Rotation2d(teleopPose[2])));
+          System.out.println(
+              "[Replay] teleopOnly: skipped to t="
+                  + String.format("%.1f", replayPlayer.elapsedSeconds())
+                  + "s");
+        } else {
+          System.err.println("[Replay] teleopOnly requested but log has no teleop transition");
+        }
+      }
+    }
 
     CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
     CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
@@ -117,10 +187,12 @@ public class Robot extends LoggedRobot {
     // Headless AI testing never has a real/virtual DS to enable the robot, so nothing would ever
     // leave disabledPeriodic(). Enable it ourselves: autonomous when an auto name is specified,
     // otherwise teleop (so the AI teleop input thread in teleopInit() can take over).
-    String aiAutoName = System.getProperty("ai.auto.name");
-    boolean aiLogging = Boolean.getBoolean("ai.logging");
-    if (Constants.getRobotMode() == Constants.Mode.SIM && (aiAutoName != null || aiLogging)) {
-      startAiEnableThread(aiAutoName != null);
+    if (replayPlayer == null) {
+      String aiAutoName = System.getProperty("ai.auto.name");
+      boolean aiLogging = Boolean.getBoolean("ai.logging");
+      if (Constants.getRobotMode() == Constants.Mode.SIM && (aiAutoName != null || aiLogging)) {
+        startAiEnableThread(aiAutoName != null);
+      }
     }
   }
 
@@ -148,6 +220,29 @@ public class Robot extends LoggedRobot {
   /** This function is called periodically during all modes. */
   @Override
   public void robotPeriodic() {
+    // Step the replay before the scheduler runs so commands see this loop's
+    // inputs. Frame-locked: exactly one loop period per call, never wall clock.
+    if (replayPlayer != null) {
+      replayPlayer.step(Constants.PERIODIC_LOOP_SEC);
+      robotContainer.updatePoseAnchor(replayPlayer);
+      if (replayPlayer.isFinished() && !aiShutdownInitiated) {
+        aiShutdownInitiated = true;
+        // Shut down from a separate thread, matching the pattern used by the
+        // auto-shutdown path. Calling endCompetition() inline from within
+        // robotPeriodic does not stop the loop.
+        new Thread(
+                () -> {
+                  try {
+                    Thread.sleep(1000); // buffer to flush the final records
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                  }
+                  endCompetition();
+                })
+            .start();
+      }
+    }
+
     /** TODO: Is this necessary? */
     Threads.setCurrentThreadPriority(true, 99);
 
@@ -219,7 +314,7 @@ public class Robot extends LoggedRobot {
 
     robotContainer.teleopInit();
 
-    if (Boolean.getBoolean("ai.logging")) {
+    if (Boolean.getBoolean("ai.logging") && replayPlayer == null) {
       startAiTeleopThread();
     }
   }

@@ -15,6 +15,14 @@ public class ModuleIOTalonFXSim extends ModuleIOTalonFX {
 
     simulation.useSteerMotorController(
         new PhoenixUtil.TalonFXMotorControllerWithRemoteCancoderSim(steerTalon, encoder));
+
+    // Phoenix models supply current for the maple-sim-driven modules directly.
+    // Eight motors (four drive, four steer) dominate the robot's power draw, so
+    // omitting them would make the battery model far too optimistic.
+    frc.robot.utility.SimBattery.getInstance()
+        .register(() -> driveTalon.getSimState().getSupplyCurrent());
+    frc.robot.utility.SimBattery.getInstance()
+        .register(() -> steerTalon.getSimState().getSupplyCurrent());
   }
 
   @Override
