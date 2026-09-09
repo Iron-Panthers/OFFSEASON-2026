@@ -111,6 +111,27 @@ class SimCurrentLimitTest {
   }
 
   @Test
+  void statorClampBoundsPostIntegrationSpikes() {
+    // The rack hitting its hard stop reported 206 A against a 27 A limit, because ElevatorSim
+    // zeroes velocity inside update() and then evaluates (V - 0)/R.
+    assertEquals(
+        27.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO,
+        SimCurrentLimit.clampStatorCurrent(206.0, 27.0),
+        1e-9);
+  }
+
+  @Test
+  void statorClampPreservesSignAndSmallValues() {
+    assertEquals(-108.0, SimCurrentLimit.clampStatorCurrent(-206.0, 27.0), 1e-9);
+    assertEquals(5.0, SimCurrentLimit.clampStatorCurrent(5.0, 27.0), 1e-9);
+  }
+
+  @Test
+  void statorClampIsInertWhenUnlimited() {
+    assertEquals(999.0, SimCurrentLimit.clampStatorCurrent(999.0, 0.0), 1e-9);
+  }
+
+  @Test
   void zeroBusVoltageYieldsZeroCeiling() {
     assertEquals(0.0, SimCurrentLimit.maxVoltageForSupplyLimit(0.0, KRAKEN, 0.0, 40.0), 1e-9);
   }

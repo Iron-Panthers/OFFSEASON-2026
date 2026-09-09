@@ -77,7 +77,9 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
     inputs.positionRotations = rotations;
     inputs.velocityRotPerSec = velocityRPS;
     inputs.appliedVolts = appliedVoltage;
-    inputs.statorCurrent = Math.abs(shooterHoodSim.getCurrentDrawAmps());
+    inputs.statorCurrent =
+        frc.robot.utility.SimCurrentLimit.clampStatorCurrent(
+            shooterHoodSim.getCurrentDrawAmps(), ShooterHoodConstants.SUPPLY_CURRENT_LIMIT);
     inputs.supplyCurrentAmps = talon.getSimState().getSupplyCurrent();
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }

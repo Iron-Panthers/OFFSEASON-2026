@@ -31,6 +31,26 @@ public final class SimCurrentLimit {
   private SimCurrentLimit() {}
 
   /**
+   * Clamp a reported stator current to what the motor controller would allow.
+   *
+   * <p>Needed in addition to the voltage clamp because the WPILib sims evaluate current draw
+   * <em>after</em> integrating, so a velocity discontinuity leaks into the reported current: when
+   * the intake rack reaches its hard stop, {@code ElevatorSim} zeroes velocity inside {@code
+   * update()} and then computes {@code (V - 0)/R} with a voltage that was legal for a moving motor.
+   * That reported 206 A against a 27 A limit, purely as a discretization artifact.
+   *
+   * @param statorAmps the sim's reported stator current, signed
+   * @param limitAmps configured supply limit; non-positive means unlimited
+   */
+  public static double clampStatorCurrent(double statorAmps, double limitAmps) {
+    if (limitAmps <= 0.0 || !Double.isFinite(statorAmps)) {
+      return statorAmps;
+    }
+    double cap = limitAmps * STATOR_TO_SUPPLY_RATIO;
+    return Math.max(-cap, Math.min(cap, statorAmps));
+  }
+
+  /**
    * Largest voltage magnitude that keeps supply current within {@code limitAmps}.
    *
    * <p>For a brushed-DC model with the motor controller acting as a buck converter:

@@ -117,7 +117,9 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
     // Signed, not abs(): a negative draw is the mechanism back-driving and returning
     // energy. abs() booked every deceleration as consumption -- 47% of the omniwheel's
     // total error, and the real robot logs supply current down to -69.94 A.
-    double statorAmps = shooterOmniwheelsSim.getCurrentDrawAmps();
+    double statorAmps =
+        frc.robot.utility.SimCurrentLimit.clampStatorCurrent(
+            shooterOmniwheelsSim.getCurrentDrawAmps(), CURRENT_LIMIT_AMPS);
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
