@@ -270,3 +270,27 @@ def test_unmodelled_rails_and_clock_are_excluded():
 def test_battery_voltage_survives_the_rail_exclusions():
     # The pack rail is the one voltage we DO model and must keep scoring.
     assert not is_excluded("SystemStats/BatteryVoltage")
+
+
+from log_compare import REPLAY_CLOCK_KEY, replay_time_base
+
+
+def test_replay_time_base_maps_wall_clock_to_match_time():
+    data = {REPLAY_CLOCK_KEY: [(10.0, 0.02), (10.5, 0.52), (11.0, 1.02)]}
+    f = replay_time_base(data)
+    assert f(10.0) == pytest.approx(0.02)
+    assert f(10.5) == pytest.approx(0.52)
+    assert f(10.25) == pytest.approx(0.27)  # interpolated
+
+
+def test_replay_time_base_is_invariant_to_wall_clock_stretch():
+    # Same match, two runs whose wall clocks ran at different rates. Both must map an event at
+    # match time 0.52 back to 0.52 -- that invariance is the whole point.
+    fast = replay_time_base({REPLAY_CLOCK_KEY: [(10.0, 0.02), (10.5, 0.52)]})
+    slow = replay_time_base({REPLAY_CLOCK_KEY: [(10.0, 0.02), (11.0, 0.52)]})
+    assert fast(10.5) == pytest.approx(slow(11.0))
+
+
+def test_replay_time_base_absent_for_non_replay_logs():
+    assert replay_time_base({}) is None
+    assert replay_time_base({REPLAY_CLOCK_KEY: [(1.0, 0.0)]}) is None

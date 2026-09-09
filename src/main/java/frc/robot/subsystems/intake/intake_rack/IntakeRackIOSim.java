@@ -12,7 +12,9 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
   private final double reduction;
 
   public IntakeRackIOSim() {
-    super(IntakeRackConstants.INTAKE_RACK_CONFIG.motorID());
+    super(
+        IntakeRackConstants.INTAKE_RACK_CONFIG.motorID(),
+        IntakeRackConstants.INTAKE_RACK_CONFIG.reduction());
 
     this.reduction = IntakeRackConstants.INTAKE_RACK_CONFIG.reduction();
 
@@ -70,26 +72,22 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
     intakeRackSim.setInputVoltage(appliedVoltage);
     intakeRackSim.update(0.02);
 
-    // Convert position and velocity from meters to rotations for the
-    // TalonFX sensor
-    // Correct unit conversion: meters to rotations
-    double rotations =
+    // Mechanism units first, then convert up to rotor units for the sensor. The TalonFX sim
+    // state wants ROTOR rotations; the subsystem and the real robot both work in MECHANISM
+    // rotations. Reporting rotor units here was the other half of the unit mismatch.
+    double mechanismRotations =
         intakeRackSim.getPositionMeters()
-            / (2 * Math.PI * IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters())
-            * reduction;
-
-    // Correct unit conversion: meters/s to rotations/s
-    double velocityRPS =
+            / (2 * Math.PI * IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters());
+    double mechanismRPS =
         intakeRackSim.getVelocityMetersPerSecond()
-            / (2 * Math.PI * IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters())
-            * reduction;
+            / (2 * Math.PI * IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters());
 
-    talon.getSimState().setRawRotorPosition(rotations);
-    talon.getSimState().setRotorVelocity(velocityRPS);
+    talon.getSimState().setRawRotorPosition(mechanismRotations * reduction);
+    talon.getSimState().setRotorVelocity(mechanismRPS * reduction);
 
     inputs.isConnected = true;
-    inputs.positionRotations = rotations;
-    inputs.velocityRotPerSec = velocityRPS;
+    inputs.positionRotations = mechanismRotations;
+    inputs.velocityRotPerSec = mechanismRPS;
     inputs.appliedVolts = appliedVoltage;
     // Was a hardcoded 1.0 A "not simulated", which meant the intake rack
     // contributed a constant fake load and could never show a real current spike.
@@ -101,7 +99,7 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
 
     // update the Sim State to match if it is up or down
-    if (rotations < .1) {
+    if (mechanismRotations < .1) {
       RobotSimState.getInstance().setIntakeState(false);
     } else {
       RobotSimState.getInstance().setIntakeState(true);

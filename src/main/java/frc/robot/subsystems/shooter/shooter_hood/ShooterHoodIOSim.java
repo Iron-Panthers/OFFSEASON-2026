@@ -12,7 +12,9 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
   private final double reduction;
 
   public ShooterHoodIOSim() {
-    super(ShooterHoodConstants.SHOOTER_HOOD_CONFIG.motorID());
+    super(
+        ShooterHoodConstants.SHOOTER_HOOD_CONFIG.motorID(),
+        ShooterHoodConstants.SHOOTER_HOOD_CONFIG.reduction());
 
     this.reduction = ShooterHoodConstants.SHOOTER_HOOD_CONFIG.reduction();
 
@@ -66,16 +68,18 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
     shooterHoodSim.setInputVoltage(appliedVoltage);
     shooterHoodSim.update(0.02);
 
-    // Convert the position and velocity from meters to rotations for the TalonFX sensor
-    double rotations = shooterHoodSim.getAngleRads() / (2 * Math.PI * reduction);
-    double velocityRPS = shooterHoodSim.getVelocityRadPerSec() / (2 * Math.PI * reduction);
+    // Mechanism units, then up to rotor units for the sensor. The old code DIVIDED by the
+    // reduction where the rack multiplied -- the two superstructure sims applied gearing in
+    // opposite directions, so at most one could have been right.
+    double mechanismRotations = shooterHoodSim.getAngleRads() / (2 * Math.PI);
+    double mechanismRPS = shooterHoodSim.getVelocityRadPerSec() / (2 * Math.PI);
 
-    talon.getSimState().setRawRotorPosition(rotations);
-    talon.getSimState().setRotorVelocity(velocityRPS);
+    talon.getSimState().setRawRotorPosition(mechanismRotations * reduction);
+    talon.getSimState().setRotorVelocity(mechanismRPS * reduction);
 
     inputs.isConnected = true;
-    inputs.positionRotations = rotations;
-    inputs.velocityRotPerSec = velocityRPS;
+    inputs.positionRotations = mechanismRotations;
+    inputs.velocityRotPerSec = mechanismRPS;
     inputs.appliedVolts = appliedVoltage;
     inputs.statorCurrent = shooterHoodSim.getCurrentDrawAmps();
     inputs.supplyCurrentAmps = talon.getSimState().getSupplyCurrent();

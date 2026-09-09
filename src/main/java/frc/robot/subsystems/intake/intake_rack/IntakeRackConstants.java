@@ -84,8 +84,9 @@ public class IntakeRackConstants {
   /** Rack hard stop, measured from the real logs at 11.29 rotations. */
   public static final double RACK_HARD_STOP_ROTATIONS = 11.29;
 
+  // In MECHANISM rotations now that the sim applies SensorToMechanismRatio.
   private static final double RACK_HARD_STOP_METERS =
-      RACK_HARD_STOP_ROTATIONS * 2.0 * Math.PI * 0.1 / INTAKE_RACK_CONFIG.reduction();
+      RACK_HARD_STOP_ROTATIONS * 2.0 * Math.PI * 0.1;
 
   public static final IntakeRackPhysicalConstants PHYSICAL_CONSTANTS =
       switch (Constants.getRobotType()) {

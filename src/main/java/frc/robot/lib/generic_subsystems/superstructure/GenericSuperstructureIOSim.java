@@ -1,5 +1,6 @@
 package frc.robot.lib.generic_subsystems.superstructure;
 
+import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -25,13 +26,33 @@ public abstract class GenericSuperstructureIOSim implements GenericSuperstructur
   protected final DynamicMotionMagicVoltage positionControl =
       new DynamicMotionMagicVoltage(0, 0, 0).withUpdateFreqHz(0);
 
+  /** Sensor-to-mechanism reduction, so subclasses can convert consistently. */
+  protected final double mechanismReduction;
+
   public GenericSuperstructureIOSim(int id) {
+    this(id, 1.0);
+  }
+
+  /**
+   * @param id CAN id
+   * @param reduction sensor-to-mechanism reduction; rotor rotations = mechanism rotations x this
+   */
+  public GenericSuperstructureIOSim(int id, double reduction) {
 
     talon = new TalonFX(id);
     talon.setNeutralMode(NeutralModeValue.Brake);
+    mechanismReduction = reduction;
     config =
         new TalonFXConfiguration()
-            .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
+            .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake))
+            // GenericSuperstructureIOTalonFX sets this and the sim did not, and the sim also never
+            // applied its config at all -- only the gains and motion-magic configs were applied.
+            // The sim's position loop therefore ran in ROTOR units while the real robot ran in
+            // MECHANISM units, a factor of `reduction` (8/pi = 2.55 for the intake rack) in travel
+            // distance, kP stiffness and cruise velocity. That is why the simulated rack deployed
+            // ~1.7x faster than the real one: it was moving 2.55x less actual distance.
+            .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(reduction));
+    talon.getConfigurator().apply(config);
   }
 
   @Override

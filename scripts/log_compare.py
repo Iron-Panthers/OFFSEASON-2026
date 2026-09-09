@@ -88,6 +88,44 @@ _EXCLUDED_PREFIXES = (
 )
 
 
+REPLAY_CLOCK_KEY = "RealOutputs/Replay/Elapsed Seconds"
+
+
+def replay_time_base(data):
+    """
+    Build fpga_seconds -> match_elapsed_seconds for a replay sim log.
+
+    AdvantageKit stamps records with wall clock, so two runs of identical code finish at slightly
+    different wall times and the same event lands on different grid points once resampled. That
+    showed up as a ~0.016 noise floor in the category scores -- the same size as the effects being
+    measured. The replay player logs exact match time every loop, so use that instead and the
+    comparison becomes invariant to wall-clock jitter.
+
+    Returns None when the key is absent (a non-replay log), in which case callers fall back to
+    plain first-enable rebasing.
+    """
+    series = data.get(REPLAY_CLOCK_KEY, [])
+    if len(series) < 2:
+        return None
+    stamps = [ts for ts, _ in series]
+    elapsed = [v for _, v in series]
+
+    def to_match_time(ts):
+        idx = bisect_right(stamps, ts) - 1
+        if idx < 0:
+            return elapsed[0] - (stamps[0] - ts)
+        if idx >= len(stamps) - 1:
+            return elapsed[-1] + (ts - stamps[-1])
+        # Linear interpolation between logged loop stamps.
+        span = stamps[idx + 1] - stamps[idx]
+        if span <= 0:
+            return elapsed[idx]
+        frac = (ts - stamps[idx]) / span
+        return elapsed[idx] + frac * (elapsed[idx + 1] - elapsed[idx])
+
+    return to_match_time
+
+
 def is_excluded(key):
     """True for metadata keys that should never enter the fidelity ranking."""
     return any(key.startswith(prefix) for prefix in _EXCLUDED_PREFIXES)
@@ -305,11 +343,16 @@ def compare_logs(sim_path, real_path, top=25, json_out=None, event_keys=None):
             "Cannot align the two runs."
         )
 
+    # Prefer the replay clock for the sim side; it is exact match time rather than wall clock.
+    sim_clock = replay_time_base(sim_data)
+
     lines = [
         "=== LOG COMPARISON ===",
         f"sim:  {sim_path}",
         f"real: {real_path}",
         f"aligned on first-enable: sim t0={sim_t0:.2f}s, real t0={real_t0:.2f}s",
+        "sim time base: "
+        + ("replay match clock (wall-clock jitter removed)" if sim_clock else "wall clock"),
     ]
 
     # Bound the comparison by the shorter of the two ENABLED windows. Using the
@@ -338,7 +381,12 @@ def compare_logs(sim_path, real_path, top=25, json_out=None, event_keys=None):
             continue
         if not _numeric_series(sim_data[key]) or not _numeric_series(real_data[key]):
             continue
-        sim_r = resample([(ts - sim_t0, v) for ts, v in sim_data[key]], grid)
+        sim_series = (
+            [(sim_clock(ts), v) for ts, v in sim_data[key]]
+            if sim_clock
+            else [(ts - sim_t0, v) for ts, v in sim_data[key]]
+        )
+        sim_r = resample(sim_series, grid)
         real_r = resample([(ts - real_t0, v) for ts, v in real_data[key]], grid)
 
         # A key that is constant on both sides has no dynamics to compare. Any
@@ -389,7 +437,11 @@ def compare_logs(sim_path, real_path, top=25, json_out=None, event_keys=None):
             # either run "performed", and pairing them produces nonsense deltas
             # like real=-227.80s.
             sim_events = extract_events(
-                [(ts - sim_t0, v) for ts, v in sim_data.get(key, []) if ts >= sim_t0]
+                [
+                    (sim_clock(ts) if sim_clock else ts - sim_t0, v)
+                    for ts, v in sim_data.get(key, [])
+                    if ts >= sim_t0
+                ]
             )
             real_events = extract_events(
                 [(ts - real_t0, v) for ts, v in real_data.get(key, []) if ts >= real_t0]
