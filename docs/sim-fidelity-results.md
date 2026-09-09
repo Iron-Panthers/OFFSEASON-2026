@@ -46,6 +46,9 @@ Every category now sits between 0.20 and 0.24.
 
 Within a few percent across the board. These are model fixes, not curve-fitting.
 
+Both columns were measured on the same code revision (before the `MotorOutputManager` parity fix),
+so the comparison is internally consistent; see below for the same three logs on final code.
+
 ---
 
 ## What matches well
