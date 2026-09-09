@@ -72,80 +72,95 @@ With the bound raised above all observed travel, `q93` currents fell 0.3433 -> *
 
 ## What matches well
 
-### Intake deploy timing — exact
+Measured on q54 against the committed build.
 
-The specific requirement was that the intake take the same time to go in and out.
+### Brownout behaviour — matches
 
-| move | real | sim before | sim now |
+| | real | sim |
+| --- | --- | --- |
+| battery minimum | 7.55 V | **7.43 V** |
+| samples below the 6.75 V brownout threshold | **0** | **0** |
+
+Baseline sat at a pinned 4.00 V floor with 87 samples below brownout. Before the battery work a
+brownout was *structurally impossible* in simulation -- maple-sim's own battery hard-clamps at the
+threshold -- and the custom model was being overwritten every loop, so the number was fiction
+either way.
+
+### Intake deploy timing — within 6%
+
+| move | real | sim baseline | sim now |
 | --- | --- | --- | --- |
-| SHOOTING_STOW -> INTAKE | **0.360 s** | 0.219 s | **0.360 s** |
-| travel | 8.2 rot | (wrong units) | 8.3 rot |
+| SHOOTING_STOW -> INTAKE | **0.360 s** | 0.219 s | **0.340 s** |
+| travel | 8.2 rot | (wrong units) | 8.6 rot |
 
-Both duration and travel distance match.
-
-### Peak power draw — within 5%
+### Peak power draw — within 8%
 
 | | real | sim baseline | sim now |
 | --- | --- | --- | --- |
-| peak total current | 318.7 A | 1172.6 A | **402.6 A** |
-
-Baseline was 3.7x the real peak; it is now 1.26x. The step from 334.7 to 402.6 came with the
-`MotorOutputManager` fix below, which added the seven mechanisms the sim had never been counting.
+| peak total current | 318.7 A | 1172.6 A (3.7x) | **293.5 A** (0.92x) |
 
 ### Driver input reproduction — exact
 
-Injected joystick values are numerically identical to the logged ones: mean absolute axis error
-**0.0039** over 8254 samples.
-
-### Rack hard stop
-
-The real rack stops at 11.29 rotations and stalls against it for 86.7% of the match. The sim now
-does the same, having previously run past to 13.15 and drawn nothing.
+Mean absolute axis error **0.0039** over 8254 samples against the logged values.
 
 ---
 
 ## What does not match
 
-### Mean current draw
+### Mean current draw — the main remaining gap
 
-| | real | sim before parity fix | sim now |
-| --- | --- | --- | --- |
-| mean total current | 158.3 A | 89.6 A | **102.2 A** |
+| | real | sim |
+| --- | --- | --- |
+| mean total current | 158.3 A | **85.4 A** |
 
-Registering the seven mechanisms with `MotorOutputManager` recovered part of the gap and dropped
-the aggregate score 0.2798 -> 0.2015. The residual is that WPILib's `FlywheelSim` is frictionless,
-so a mechanism holding setpoint draws ~0 A where the real robot pulls 7-9 A against bearing, belt
-and game-piece drag.
+WPILib's `FlywheelSim` and `ElevatorSim` are frictionless, so a mechanism holding setpoint draws
+~0 A where the real robot pulls 7-9 A against bearing, belt and game-piece drag. Peaks are right;
+the sustained draw between them is not.
 
-**Attempted and reverted:** subtracting a drag voltage. It moved mean current only 113.84 -> 113.50 A
+**Attempted and reverted:** subtracting a drag voltage. It moved mean current only 113.84 -> 113.50 A,
 because subtracting voltage does not create a load -- the plant just settles slightly slower with
-current still near zero. The fix needs a plant change: an explicit load torque, or
+its current still near zero. The fix is a plant change: an explicit load torque, or
 `LinearSystemId.identifyVelocitySystem(kV, kA)` characterised from the real logs.
 
-### Brownout behaviour
+This is also why one constant is deliberately unphysical -- see the compensating approximation
+below.
 
-| | real q54 | sim |
-| --- | --- | --- |
-| voltage min | 7.55 V | **6.59 V** |
-| samples below 6.75 V | 0 | **1** |
+### Regenerative current overshoots
 
-Simulated brownouts are now *possible* -- maple-sim's own battery hard-clamps at the brownout
-threshold, making them structurally impossible before -- but the sim still dips lower than the real
-robot did. This follows from the remaining peak-current overshoot.
+Sim reaches -284 A against a real -102 A. Same root cause: with no load to brake against, the
+mechanisms dump more energy back than the real ones do.
+
+### Match-specific behaviour the sim cannot know
+
+In q54 the real intake rack never passed 11.290 rotations and stalled against something for 86.7%
+of the match, drawing 930 amp-seconds. In q93 the same mechanism reaches 11.68 freely, drawing 213.
+The obstruction was specific to that match -- a game piece, most likely -- and nothing in the
+driver inputs tells the simulation about it. The sim now models the unobstructed case, so it
+under-draws on q54's rack and matches q93's.
 
 ### Post-auto robot pose
 
-Not reproduced, and not expected to be: the real robot was defended and contacted, which the sim
-does not model. Cumulative wheel odometry (`DrivePositionRads`/`Meters`) is excluded from scoring
-for this reason. Instantaneous drive velocity is still scored and does match.
+Not reproduced, and not expected to be: the real robot was defended and contacted. Cumulative wheel
+odometry is excluded from scoring for this reason; instantaneous drive velocity is scored and does
+match.
 
-### Remaining worst signals (q54)
+---
 
-| signal | nRMSE | reading |
-| --- | --- | --- |
-| `Intake Rack/Total Amp Seconds` | 0.85 | sim over-draws at the stall; shape right (corr 0.92) |
-| `Serializer/Filtered Current` | 0.55 | sim under-draws ~9 A |
-| `Shooter Flywheels/Filtered Current` | 0.54 | frictionless: under on mean, right on peak |
+## A deliberate compensating approximation
+
+`SimCurrentLimit.STATOR_TO_SUPPLY_RATIO` is set to **4.0**, which is *below* the intake rollers'
+real measured ratio in all three matches (5.46, 6.02, 5.68). The physically honest value clears
+every mechanism.
+
+Setting it to the honest 6.5 measured **worse** on both logs tested -- q54 currents 0.2387 ->
+0.2536, q93 0.2102 -> 0.2319 -- consistently and outside the noise floor. The tighter ceiling clips
+roller transients that overshoot because those sims have no load, so it compensates for the missing
+friction model.
+
+It is labelled as such in the constant's javadoc and pinned by a test, so it is not "corrected" by
+accident. **When the plant gains a real load, this should go back above 6.02**, and ideally become
+per-mechanism -- the drive ratio is 3.75 in every match to two decimals, while the rollers swing
+5.46-6.02.
 
 ---
 
