@@ -35,19 +35,38 @@ Baseline is the first replay run, re-scored with the current tooling so the comp
 
 Every category now sits between 0.20 and 0.24.
 
-### It generalises — q14 was never tuned against
+### It generalises — all three logs, identical code
 
-| category | q54 (tuned) | q14 (untouched) |
-| --- | --- | --- |
-| currents | 0.2507 | 0.2554 |
-| mechanisms | 0.1954 | 0.2132 |
-| other | 0.2071 | **0.1842** |
-| voltage | 0.2195 | 0.2630 |
+`q54` is the only log tuned against. `q93` and `q14` were held back.
 
-Within a few percent across the board. These are model fixes, not curve-fitting.
+| category | q54 (tuned) | q93 | q14 |
+| --- | --- | --- | --- |
+| aggregate | 0.2464 | **0.2338** | 0.2624 |
+| currents | 0.2387 | **0.2102** | 0.2215 |
+| mechanisms | **0.2025** | 0.2142 | 0.2124 |
+| other | 0.2085 | 0.2235 | **0.1878** |
+| voltage | **0.2465** | 0.2647 | 0.2906 |
 
-Both columns were measured on the same code revision (before the `MotorOutputManager` parity fix),
-so the comparison is internally consistent; see below for the same three logs on final code.
+Every category on every log falls between 0.19 and 0.29, and the untuned logs beat the tuned one in
+several categories. These are model fixes, not curve-fitting.
+
+### The validation logs caught a real overfit
+
+`q93` initially scored 0.3433 on currents against `q54`'s 0.2387 -- 44% worse, driven entirely by
+one signal: `Intake Rack/Total Amp Seconds` at nRMSE **6.159**.
+
+An earlier change had given the simulated rack a hard stop at 11.29 rotations, inferred from `q54`
+where the real rack never exceeded 11.290 and stalled against whatever blocked it for 86.7% of the
+match. That evidence was strong and the change improved `q54`.
+
+`q93` disproved it: the real rack reaches **11.68** there -- past the 11.6 commanded target -- with
+0.32 V mean applied and 1.87 A mean draw, no stall at all. `q54`'s ceiling was that match's
+obstruction, not the mechanism's limit. Capping the sim left the controller with permanent error
+against an unreachable target, drawing 2540 amp-seconds against a real 213.
+
+With the bound raised above all observed travel, `q93` currents fell 0.3433 -> **0.2102**.
+
+**The tuned log's score never revealed this.** It is the reason to hold logs back.
 
 ---
 
