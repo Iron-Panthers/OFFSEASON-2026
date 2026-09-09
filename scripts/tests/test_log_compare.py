@@ -313,3 +313,21 @@ def test_instantaneous_drive_velocity_is_still_scored():
     # The signal that actually reflects the drivetrain model must survive.
     assert not is_excluded("RealOutputs/Swerve/Module3/DriveVelRadsScalar")
     assert not is_excluded("Swerve/Module0/DriveVelocityRadPerSec")
+
+
+from log_compare import MIN_RECORDS_TO_SCORE
+
+
+def test_min_records_threshold_is_set():
+    # A signal logged a couple of times across a 165 s match is a constant, not a series.
+    assert MIN_RECORDS_TO_SCORE >= 3
+
+
+def test_nrmse_explodes_on_a_near_constant_real_signal():
+    # Why the threshold exists: real q103 logged PID Autoalign/Velocity Wanted twice, range
+    # 0.024. A 0.24 offset -- tiny in absolute terms -- scores nRMSE 10 against that range.
+    real = [0.3268, 0.3506]
+    sim = [0.0868, 0.1106]
+    score = score_pair(sim, real)
+    assert score.nrmse > 5, "expected the metric to blow up, which is the point"
+    assert score.correlation > 0.99, "shape is fine; only the normalisation is meaningless"

@@ -12,6 +12,10 @@ from dataclasses import dataclass
 
 GRID_DT = 0.02  # matches Constants.PERIODIC_LOOP_SEC
 
+# Minimum real-side records inside the compared window for a signal to be scorable. Below this
+# there is no time series to compare, only a constant that nRMSE cannot normalise sensibly.
+MIN_RECORDS_TO_SCORE = 10
+
 
 def resample(series, grid):
     """
@@ -391,6 +395,7 @@ def compare_logs(sim_path, real_path, top=25, json_out=None, event_keys=None):
     shared = sorted(set(sim_data) & set(real_data))
     scored, category_totals = [], {}
     skipped_constant = 0
+    skipped_sparse = 0
     for key in shared:
         if is_excluded(key):
             continue
@@ -401,6 +406,18 @@ def compare_logs(sim_path, real_path, top=25, json_out=None, event_keys=None):
             if sim_clock
             else [(ts - sim_t0, v) for ts, v in sim_data[key]]
         )
+        # A signal the real robot logged only a handful of times over a whole match has no
+        # dynamics to compare, and nRMSE normalises by its range -- so a near-constant signal
+        # divides a small error by a tiny range and explodes. On q103 that put
+        # `PID Autoalign/Velocity Wanted` (2 real records, range 0.024, shape correlation 0.996)
+        # at nRMSE 10.16, single-handedly doubling that log's mechanisms score.
+        real_in_window = [
+            1 for ts, _ in real_data[key] if real_t0 <= ts <= real_t0 + duration
+        ]
+        if len(real_in_window) < MIN_RECORDS_TO_SCORE:
+            skipped_sparse += 1
+            continue
+
         sim_r = resample(sim_series, grid)
         real_r = resample([(ts - real_t0, v) for ts, v in real_data[key]], grid)
 
@@ -423,8 +440,8 @@ def compare_logs(sim_path, real_path, top=25, json_out=None, event_keys=None):
     real_only = sorted(set(real_data) - set(sim_data))
 
     lines.append(
-        f"--- TOP {top} DIVERGING SIGNALS "
-        f"(of {len(scored)} scored, {skipped_constant} constant-on-both skipped) ---"
+        f"--- TOP {top} DIVERGING SIGNALS (of {len(scored)} scored, "
+        f"{skipped_constant} constant-on-both and {skipped_sparse} too-sparse skipped) ---"
     )
     for key, score, sim_r, real_r in scored[:top]:
         lines.append("")
