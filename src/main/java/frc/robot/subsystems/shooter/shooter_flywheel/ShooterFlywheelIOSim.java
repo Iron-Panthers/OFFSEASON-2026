@@ -33,10 +33,10 @@ public class ShooterFlywheelIOSim extends GenericRollersIOSim implements Shooter
     shooterFlywheelsSim =
         new FlywheelSim(
             LinearSystemId.createFlywheelSystem(
-                DCMotor.getKrakenX60Foc(1),
+                DCMotor.getKrakenX60Foc(4),
                 PHYSICAL_CONSTANTS.momentOfInertia(),
                 SHOOTER_FLYWHEEL_CONFIG.reduction()),
-            DCMotor.getKrakenX60Foc(1));
+            DCMotor.getKrakenX60Foc(4));
 
     // Enable physics simulation for Phoenix
     var simState = talon.getSimState();
@@ -45,10 +45,10 @@ public class ShooterFlywheelIOSim extends GenericRollersIOSim implements Shooter
             ? ChassisReference.Clockwise_Positive
             : ChassisReference.CounterClockwise_Positive;
 
-    // The real robot drives this mechanism with 4 motors and registers each with
-    // MotorOutputManager, so the pack sees 4x this current; the sim models one.
+    // The plant models all 4 motors (see the DCMotor above), so its reported current is
+    // already the whole mechanism's -- no multiplier here.
     frc.robot.utility.SimBattery.getInstance()
-        .register(() -> lastSupplyCurrentAmps * 4, CURRENT_LIMIT_AMPS * 4.0);
+        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * 4.0);
   }
 
   /** Last computed supply current, published to SimBattery. */
@@ -82,6 +82,19 @@ public class ShooterFlywheelIOSim extends GenericRollersIOSim implements Shooter
     if (coasting) {
       // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
       appliedVoltage = 0.0;
+    } else {
+      // Enforce the supply limit on the VOLTAGE, not just on the reported current. Clamping
+      // only the number would leave the mechanism accelerating as though unlimited; a real
+      // current-limited motor also makes less torque. CURRENT_LIMIT_AMPS is per motor, and this
+      // mechanism has 4.
+      appliedVoltage =
+          frc.robot.utility.SimCurrentLimit.clampToSupplyLimit(
+              appliedVoltage,
+              shooterFlywheelsSim.getAngularVelocityRadPerSec(),
+              SHOOTER_FLYWHEEL_CONFIG.reduction(),
+              edu.wpi.first.math.system.plant.DCMotor.getKrakenX60Foc(4),
+              availableVolts,
+              CURRENT_LIMIT_AMPS * 4.0);
     }
 
     // Simulate physics

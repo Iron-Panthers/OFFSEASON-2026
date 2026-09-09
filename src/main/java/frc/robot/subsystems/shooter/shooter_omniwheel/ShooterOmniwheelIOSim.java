@@ -81,6 +81,19 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
     if (coasting) {
       // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
       appliedVoltage = 0.0;
+    } else {
+      // Enforce the supply limit on the VOLTAGE, not just on the reported current. Clamping
+      // only the number would leave the mechanism accelerating as though unlimited; a real
+      // current-limited motor also makes less torque. CURRENT_LIMIT_AMPS is per motor, and this
+      // mechanism has 1.
+      appliedVoltage =
+          frc.robot.utility.SimCurrentLimit.clampToSupplyLimit(
+              appliedVoltage,
+              shooterOmniwheelsSim.getAngularVelocityRadPerSec(),
+              SHOOTER_OMNIWHEEL_CONFIG.reduction(),
+              edu.wpi.first.math.system.plant.DCMotor.getKrakenX60Foc(1),
+              availableVolts,
+              CURRENT_LIMIT_AMPS * 1.0);
     }
 
     // Simulate physics

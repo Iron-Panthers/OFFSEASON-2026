@@ -53,6 +53,19 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
 
     double appliedVoltage = talon.getSimState().getMotorVoltage();
 
+    // The superstructure sim never applies its TalonFX config, so the 27 A supply limit the
+    // subsystem pushes down every loop reaches nothing. Real rack supply p95 is 27.96 A against
+    // that limit -- it is clearly binding on the real robot.
+    appliedVoltage =
+        frc.robot.utility.SimCurrentLimit.clampToSupplyLimit(
+            appliedVoltage,
+            intakeRackSim.getVelocityMetersPerSecond()
+                / IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters(),
+            reduction,
+            DCMotor.getKrakenX60Foc(1),
+            RobotController.getBatteryVoltage(),
+            IntakeRackConstants.SUPPLY_CURRENT_LIMIT);
+
     // Simulate physics
     intakeRackSim.setInputVoltage(appliedVoltage);
     intakeRackSim.update(0.02);

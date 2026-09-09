@@ -49,6 +49,16 @@ public class SerializerSim extends GenericRollersIOSim {
 
     double appliedVelocity = talon.getSimState().getMotorVoltage();
 
+    // Enforce the supply limit on the voltage so the mechanism's torque is limited too.
+    appliedVelocity =
+        frc.robot.utility.SimCurrentLimit.clampToSupplyLimit(
+            appliedVelocity,
+            serializerSim.getAngularVelocityRadPerSec(),
+            SERIALIZER_CONFIG.reduction(),
+            DCMotor.getKrakenX60Foc(1),
+            RobotController.getBatteryVoltage(),
+            CURRENT_LIMIT_AMPS);
+
     // Simulate physics
     serializerSim.setInputVoltage(appliedVelocity);
     serializerSim.update(0.02);

@@ -81,9 +81,24 @@ public class IntakeRackConstants {
       double maxExtensionMeters,
       boolean simulateGravity) {}
 
+  /** Rack hard stop, measured from the real logs at 11.29 rotations. */
+  public static final double RACK_HARD_STOP_ROTATIONS = 11.29;
+
+  private static final double RACK_HARD_STOP_METERS =
+      RACK_HARD_STOP_ROTATIONS * 2.0 * Math.PI * 0.1 / INTAKE_RACK_CONFIG.reduction();
+
   public static final IntakeRackPhysicalConstants PHYSICAL_CONSTANTS =
       switch (Constants.getRobotType()) {
-        case SIM -> new IntakeRackPhysicalConstants(0.1, 0.1, -15, 15, false);
+          // Travel limits model the rack's real hard stop. The real robot never exceeds
+          // 11.290 rotations all match: it parks at 11.18-11.20 against a mechanical stop and
+          // holds 85-102 A stator / 25-30 A supply for 86.7% of the match, because the commanded
+          // INTAKE target of 11.6 sits past that stop. The old +/-15 m (= +/-60.8 rotations) let
+          // the sim converge cleanly and draw nothing, which is most of the 930.7 vs 63.3
+          // amp-second gap. 11.29 rot at a 0.1 m drum = 11.29 * 2*pi * 0.1 / reduction metres.
+          //
+          // The real robot's INTAKE target is deliberately left alone -- the goal is for the sim
+          // to reproduce the Worlds logs, not to change the robot that produced them.
+        case SIM -> new IntakeRackPhysicalConstants(0.1, 0.1, 0, RACK_HARD_STOP_METERS, false);
         case COMP -> new IntakeRackPhysicalConstants(0.1, 0, 0, 0, false);
         default -> new IntakeRackPhysicalConstants(0.1, 0, 0, 0, false);
       };

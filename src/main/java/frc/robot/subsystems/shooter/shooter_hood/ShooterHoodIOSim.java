@@ -53,6 +53,15 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
 
     double appliedVoltage = talon.getSimState().getMotorVoltage();
 
+    appliedVoltage =
+        frc.robot.utility.SimCurrentLimit.clampToSupplyLimit(
+            appliedVoltage,
+            shooterHoodSim.getVelocityRadPerSec(),
+            reduction,
+            DCMotor.getKrakenX60Foc(1),
+            RobotController.getBatteryVoltage(),
+            ShooterHoodConstants.SUPPLY_CURRENT_LIMIT);
+
     // Simulate the physics
     shooterHoodSim.setInputVoltage(appliedVoltage);
     shooterHoodSim.update(0.02);
