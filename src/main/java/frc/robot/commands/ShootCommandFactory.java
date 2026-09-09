@@ -49,12 +49,7 @@ public class ShootCommandFactory {
             setJustShootCommand(false)),
         Commands.parallel(
             Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
-            Commands.sequence(
-                    Commands.runOnce(() -> intakeController.setTargetState(IntakeState.MID)),
-                    new WaitCommand(0.1),
-                    Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
-                    new WaitCommand(0.2))
-                .repeatedly()
+                setChunkyShootCommand()
                 .until(() -> intakeController.getTargetState() == IntakeState.SHOOTING_STOW),
             Commands.runOnce(
                     () -> {
@@ -121,11 +116,12 @@ public class ShootCommandFactory {
     return Commands.runOnce(() -> this.justShoot = justShoot);
   }
 
-  public Command chunkShootGoBrrr(boolean justShoot) {
+  public Command setChunkyShootCommand() {
     return Commands.runOnce(
         () -> {
           intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
-          this.justShoot = justShoot;
+          Commands.waitSeconds(1)
+          .andThen(intakeController.setTargetStateCommand(IntakeState.STOW));
         });
   }
 }
