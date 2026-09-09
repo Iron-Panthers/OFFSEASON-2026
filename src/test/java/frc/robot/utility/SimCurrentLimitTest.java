@@ -127,14 +127,14 @@ class SimCurrentLimitTest {
   }
 
   @Test
-  void statorCeilingSitsBelowTheRacksRealPeak() {
-    // Documents a known limitation rather than asserting an ideal. The real intake rack reaches
-    // 130.5 A stator against a 27 A supply limit (4.83x), above this ceiling -- so applying
-    // clampStatorCurrent globally would truncate real behaviour. Raising the ratio to 5.0 to
-    // cover it measured worse overall (currents 0.3221 vs 0.3018), so the ratio stays at 4.0 and
-    // the reported-current clamp stays unused. A per-mechanism ceiling would be the real fix.
-    double rackCeiling = 27.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO;
-    assertTrue(rackCeiling < 130.5, "if this now passes, revisit enabling clampStatorCurrent");
+  void statorCeilingClearsEveryMeasuredMechanism() {
+    // Peak stator / configured supply limit, measured across q54, q93 and q14. The ceiling is a
+    // guard against blow-ups and must sit above all real behaviour, or it clips genuine torque.
+    // An earlier 4.0, derived from q54 alone, sat below the rollers' 5.46-6.02 in every match.
+    assertTrue(27.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO > 130.5, "intake rack, 4.83x");
+    assertTrue(60.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO > 180.7, "omniwheel, 3.01x");
+    assertTrue(40.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO > 150.0, "swerve drive, 3.75x");
+    assertTrue(30.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO > 180.5, "intake rollers, 6.02x");
   }
 
   @Test

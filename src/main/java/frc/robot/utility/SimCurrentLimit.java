@@ -21,16 +21,24 @@ public final class SimCurrentLimit {
    * Stator current a motor may draw relative to its configured supply limit.
    *
    * <p>Supply limits do not bound stator current directly -- the controller is a buck converter, so
-   * stator exceeds supply by roughly 1/dutyCycle. Measured on the real q54 log: the intake rack
-   * holds 85-102 A stator against a 27 A supply limit (~3.8x) and the omniwheel reaches 160 A
-   * stator against 60 A supply (~2.7x). The largest measured ratio is the rack's 130.5 A / 27 A =
-   * 4.83x.
+   * stator exceeds supply by roughly 1/dutyCycle. Peak stator current divided by the configured
+   * supply limit, measured across three real matches:
    *
-   * <p>Kept at 4.0 on evidence rather than theory: 4.0 measured better than 5.0 against the real
-   * q54 log (currents 0.3018 vs 0.3221), even though 4.0 sits below the rack's measured ratio.
-   * Retune it against the fit score, not from first principles.
+   * <table>
+   * <tr><th>mechanism</th><th>q54</th><th>q93</th><th>q14</th></tr>
+   * <tr><td>swerve drive</td><td>3.75</td><td>3.75</td><td>3.74</td></tr>
+   * <tr><td>shooter omniwheel</td><td>2.66</td><td>3.01</td><td>2.77</td></tr>
+   * <tr><td>intake rack</td><td>4.83</td><td>4.59</td><td>4.15</td></tr>
+   * <tr><td>intake rollers</td><td>5.46</td><td>6.02</td><td>5.68</td></tr>
+   * </table>
+   *
+   * <p>Set above the largest of those. This is a guard against unphysical blow-ups, not a
+   * behavioural limit -- it must never bind during normal operation. An earlier value of 4.0 was
+   * derived from q54 alone and sat BELOW the rollers' real ratio in all three matches, clipping
+   * genuine torque. The drive ratio is 3.75 in every match to two decimals; the rollers are not
+   * constant, so a per-mechanism ceiling would be the principled fix if this ever needs to bind.
    */
-  public static final double STATOR_TO_SUPPLY_RATIO = 4.0;
+  public static final double STATOR_TO_SUPPLY_RATIO = 6.5;
 
   private SimCurrentLimit() {}
 
