@@ -1,0 +1,95 @@
+=== LOG COMPARISON ===
+sim:  build/ai-logs/akit_26-09-08_21-34-49.wpilog
+real: C:\Users\bruce\Downloads\LOGS-2026-main\LOGS-2026-main\Worlds/akit_26-04-30_14-50-56_johnson_q54.wpilog
+aligned on first-enable: sim t0=6.08s, real t0=242.83s
+compared span: 0.00s to 165.10s of enabled time (8254 grid points)
+
+--- TOP 10 DIVERGING SIGNALS (of 155 scored, 48 constant-on-both skipped) ---
+
+Shooter/Shooter Flywheels/StatorCurrentAmps   [currents]
+  nrmse=1.086  mean_shift=-12.593  p95_shift=+181.865  peak_shift=+201.376  corr=0.023  n=8254
+    worst   16.00s-  17.98s  mean_abs_err=208.766
+    worst   20.00s-  21.98s  mean_abs_err=208.759
+    worst   18.00s-  19.98s  mean_abs_err=208.683
+
+RealOutputs/Intake/Intake Rack/Total Amp Seconds   [currents]
+  nrmse=0.925  mean_shift=+619.398  p95_shift=+1625.434  peak_shift=+1725.845  corr=0.915  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=1726.349
+    worst  162.00s- 163.98s  mean_abs_err=1706.693
+    worst  160.00s- 161.98s  mean_abs_err=1672.424
+
+Shooter/Shooter Flywheels/SupplyCurrentAmps   [currents]
+  nrmse=0.832  mean_shift=+6.254  p95_shift=+54.754  peak_shift=+35.625  corr=0.002  n=8254
+    worst   34.00s-  35.98s  mean_abs_err=60.906
+    worst   84.00s-  85.98s  mean_abs_err=60.395
+    worst   60.00s-  61.98s  mean_abs_err=60.116
+
+RealOutputs/Shooter/Shooter Accelerator/Total Amp Seconds   [currents]
+  nrmse=0.766  mean_shift=+350.814  p95_shift=+782.532  peak_shift=+932.325  corr=0.995  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=915.144
+    worst  162.00s- 163.98s  mean_abs_err=855.699
+    worst  158.00s- 159.98s  mean_abs_err=842.709
+
+Swerve/Module2/DrivePositionRads   [mechanisms]
+  nrmse=0.754  mean_shift=-1268.507  p95_shift=-1497.202  peak_shift=-1327.143  corr=-0.498  n=8254
+    worst   42.00s-  43.98s  mean_abs_err=2065.176
+    worst   44.00s-  45.98s  mean_abs_err=2045.138
+    worst   40.00s-  41.98s  mean_abs_err=2041.564
+
+Swerve/Module2/DrivePositionMeters   [mechanisms]
+  nrmse=0.751  mean_shift=-63.317  p95_shift=-75.065  peak_shift=-66.932  corr=-0.498  n=8254
+    worst   42.00s-  43.98s  mean_abs_err=102.933
+    worst   44.00s-  45.98s  mean_abs_err=102.022
+    worst   40.00s-  41.98s  mean_abs_err=101.686
+
+RealOutputs/Shooter/Shooter Omniwheel/Total Amp Seconds   [currents]
+  nrmse=0.675  mean_shift=+475.422  p95_shift=+1099.151  peak_shift=+1269.962  corr=0.995  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=1259.671
+    worst  162.00s- 163.98s  mean_abs_err=1210.082
+    worst  160.00s- 161.98s  mean_abs_err=1195.605
+
+RealOutputs/Shooter/Shooter Accelerator/Filtered Current   [currents]
+  nrmse=0.594  mean_shift=+5.405  p95_shift=+32.646  peak_shift=+35.443  corr=0.779  n=8254
+    worst  108.00s- 109.98s  mean_abs_err=41.113
+    worst  164.00s- 165.06s  mean_abs_err=37.293
+    worst    6.00s-   7.98s  mean_abs_err=36.471
+
+Intake/Intake Rollers/VelocityRadsPerSec   [mechanisms]
+  nrmse=0.570  mean_shift=+82.780  p95_shift=+121.969  peak_shift=+140.921  corr=0.542  n=8254
+    worst   20.00s-  21.98s  mean_abs_err=296.993
+    worst   22.00s-  23.98s  mean_abs_err=296.993
+    worst   18.00s-  19.98s  mean_abs_err=296.990
+
+RealOutputs/Serializer/Filtered Current   [currents]
+  nrmse=0.545  mean_shift=-9.369  p95_shift=-18.158  peak_shift=-19.948  corr=0.420  n=8254
+    worst   62.00s-  63.98s  mean_abs_err=18.747
+    worst  138.00s- 139.98s  mean_abs_err=18.051
+    worst   86.00s-  87.98s  mean_abs_err=17.901
+
+--- EVENT-ALIGNED STATE TIMING ---
+
+--- FIT SCORE BY CATEGORY (mean nrmse, lower is better) ---
+  aggregate    0.3015   (4 signals)
+  currents     0.3178   (48 signals)
+  mechanisms   0.2523   (54 signals)
+  other        0.2295   (48 signals)
+  voltage      0.2838   (1 signals)
+
+--- UNCOMPARABLE KEYS: 19 sim-only, 17 real-only ---
+  real-only: NetworkInputs/Tuning/Shooter/5.2m/shooterAngle
+  real-only: NetworkInputs/Tuning/Shooter/5.2m/shooterSpeed
+  real-only: NetworkInputs/Tuning/Shooter/5.2m/timeOfFlight
+  real-only: RealOutputs/Vision/Camera1/Angle
+  real-only: RealOutputs/Vision/Camera1/Average Distance
+  real-only: RealOutputs/Vision/Camera2/Angle
+  real-only: RealOutputs/Vision/Camera2/Average Distance
+  real-only: SystemStats/NTClients/Elastic@2/Connected
+  real-only: SystemStats/NTClients/Elastic@2/IPAddress
+  real-only: SystemStats/NTClients/Elastic@2/RemotePort
+  real-only: SystemStats/NTClients/PV4@1/Connected
+  real-only: SystemStats/NTClients/PV4@1/IPAddress
+  real-only: SystemStats/NTClients/PV4@1/RemotePort
+  real-only: Vision/Camera 1/Connected
+  real-only: Vision/Camera 1/TagIDs
+
+Wrote fit scores to docs/superpowers/fit-scores/fit-q54-final.json
