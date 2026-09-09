@@ -204,3 +204,50 @@ def test_real_current_keys_still_bucket_as_currents():
         "RealOutputs/Intake/Intake Rack/Total Amp Seconds",
     ):
         assert categorize(key) == CATEGORY_CURRENTS, key
+
+
+from log_compare import find_match_window, is_excluded
+
+
+def test_match_window_bounds_by_last_disable():
+    data = {
+        "DriverStation/Enabled": [
+            (1.0, False),
+            (61.3, True),
+            (82.0, False),
+            (86.0, True),
+            (226.7, False),
+        ]
+    }
+    assert find_match_window(data) == (61.3, 226.7)
+
+
+def test_match_window_without_disable_returns_none_end():
+    data = {"DriverStation/Enabled": [(1.0, False), (61.3, True)]}
+    assert find_match_window(data) == (61.3, None)
+
+
+def test_metadata_keys_are_excluded():
+    for key in (
+        "SystemStats/NTClients/PV4@1/RemotePort",
+        "SystemStats/EpochTimeMicros",
+        "DriverStation/MatchNumber",
+        "RealOutputs/Logger/AutoLogMS",
+        "Timestamp",
+    ):
+        assert is_excluded(key), key
+
+
+def test_physics_keys_are_not_excluded():
+    for key in (
+        "SystemStats/BatteryVoltage",
+        "Swerve/Module0/DriveStatorCurrent",
+        "RealOutputs/Shooter/Shooter Flywheels/Current Velocity",
+    ):
+        assert not is_excluded(key), key
+
+
+def test_abbreviated_velocity_key_is_a_mechanism():
+    assert (
+        categorize("RealOutputs/Swerve/Module3/DriveVelRadsScalar") == CATEGORY_MECHANISMS
+    )

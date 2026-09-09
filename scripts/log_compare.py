@@ -5,7 +5,10 @@ Aligns both logs on first-enable, resamples every shared numeric key onto a
 common grid, and ranks keys by how much they diverge.
 """
 
+import json
+import math
 from bisect import bisect_right
+from dataclasses import dataclass
 
 GRID_DT = 0.02  # matches Constants.PERIODIC_LOOP_SEC
 
@@ -35,8 +38,49 @@ def find_first_enable(data):
     return None
 
 
-import math
-from dataclasses import dataclass
+def find_match_window(data):
+    """
+    (first_enable, last_disable) for the match, or (None, None).
+
+    Both real and sim logs contain long stretches of pre- and post-match idle.
+    Scoring across those inflates the compared span far beyond the ~165s the
+    robot was actually playing, and dilutes every fit score with dead time.
+    """
+    start = find_first_enable(data)
+    if start is None:
+        return None, None
+    end = None
+    for ts, value in data.get("DriverStation/Enabled", []):
+        if ts > start and not value:
+            end = ts
+    return start, end
+
+
+# Key prefixes that carry no physics and would otherwise dominate the ranking:
+# network client ports, wall-clock epochs, match numbers and CAN error counters
+# all differ hugely between two runs while telling us nothing about whether the
+# simulation models the robot correctly.
+_EXCLUDED_PREFIXES = (
+    "Timestamp",
+    "SystemStats/NTClients/",
+    "SystemStats/EpochTimeMicros",
+    "SystemStats/CANBus/",
+    "SystemStats/UserActive",
+    "SystemStats/CPUTemp",
+    "DriverStation/MatchNumber",
+    "DriverStation/ReplayNumber",
+    "DriverStation/MatchType",
+    "DriverStation/AllianceStation",
+    "RealOutputs/Logger/",
+    "RealOutputs/LoggedRobot/",
+    "NetworkInputs/",
+    "RadioStatus/",
+)
+
+
+def is_excluded(key):
+    """True for metadata keys that should never enter the fidelity ranking."""
+    return any(key.startswith(prefix) for prefix in _EXCLUDED_PREFIXES)
 
 
 @dataclass
@@ -203,6 +247,197 @@ def categorize(key):
         return CATEGORY_VOLTAGE
     if any(marker in key for marker in _CURRENT_MARKERS):
         return CATEGORY_CURRENTS
-    if "Position" in key or "Velocity" in key or "Rotations" in key:
+    # "Vel" catches both Velocity and the abbreviated DriveVelRadsScalar form.
+    if any(token in key for token in ("Position", "Vel", "Rotations", "Rads", "Meters")):
         return CATEGORY_MECHANISMS
     return CATEGORY_OTHER
+
+
+def _is_constant(resampled):
+    """True if every non-None value in a resampled series is identical."""
+    seen = None
+    for value in resampled:
+        if value is None:
+            continue
+        if seen is None:
+            seen = value
+        elif value != seen:
+            return False
+    return True
+
+
+def _numeric_series(series):
+    """True if the series holds plain numbers (bools are not useful to score)."""
+    if not series:
+        return False
+    sample = series[0][1]
+    return isinstance(sample, (int, float)) and not isinstance(sample, bool)
+
+
+def compare_logs(sim_path, real_path, top=25, json_out=None, event_keys=None):
+    """
+    Compare two logs and return the report as a string.
+
+    The reader is imported lazily so this module stays unit-testable without
+    pulling in the wpilog parser.
+    """
+    from wpilog_to_csv import read_log
+
+    sim_data = read_log(sim_path)
+    real_data = read_log(real_path)
+
+    sim_t0, sim_end = find_match_window(sim_data)
+    real_t0, real_end = find_match_window(real_data)
+    if sim_t0 is None or real_t0 is None:
+        missing = "sim" if sim_t0 is None else "real"
+        return (
+            f"ERROR: no DriverStation/Enabled -> True found in the {missing} log. "
+            "Cannot align the two runs."
+        )
+
+    lines = [
+        "=== LOG COMPARISON ===",
+        f"sim:  {sim_path}",
+        f"real: {real_path}",
+        f"aligned on first-enable: sim t0={sim_t0:.2f}s, real t0={real_t0:.2f}s",
+    ]
+
+    # Bound the comparison by the shorter of the two ENABLED windows. Using the
+    # last record in each file instead would drag in post-match idle and inflate
+    # the span well past the ~165s the robot was actually playing.
+    def _span(t0, t_end, data):
+        if t_end is not None:
+            return t_end - t0
+        return max((ts for s in data.values() for ts, _ in s), default=t0) - t0
+
+    duration = min(_span(sim_t0, sim_end, sim_data), _span(real_t0, real_end, real_data))
+    if duration <= 0:
+        return "ERROR: no overlapping enabled time between the two logs."
+    grid = [i * GRID_DT for i in range(int(duration / GRID_DT))]
+    lines.append(
+        f"compared span: 0.00s to {duration:.2f}s of enabled time "
+        f"({len(grid)} grid points)"
+    )
+    lines.append("")
+
+    shared = sorted(set(sim_data) & set(real_data))
+    scored, category_totals = [], {}
+    skipped_constant = 0
+    for key in shared:
+        if is_excluded(key):
+            continue
+        if not _numeric_series(sim_data[key]) or not _numeric_series(real_data[key]):
+            continue
+        sim_r = resample([(ts - sim_t0, v) for ts, v in sim_data[key]], grid)
+        real_r = resample([(ts - real_t0, v) for ts, v in real_data[key]], grid)
+
+        # A key that is constant on both sides has no dynamics to compare. Any
+        # difference is a configuration or identity mismatch, not a fidelity
+        # problem, and normalizing it produces a meaningless huge nrmse.
+        if _is_constant(sim_r) and _is_constant(real_r):
+            skipped_constant += 1
+            continue
+
+        score = score_pair(sim_r, real_r)
+        if score is None:
+            continue
+        scored.append((key, score, sim_r, real_r))
+        category_totals.setdefault(categorize(key), []).append(score.nrmse)
+
+    scored.sort(key=lambda row: -row[1].nrmse)
+
+    sim_only = sorted(set(sim_data) - set(real_data))
+    real_only = sorted(set(real_data) - set(sim_data))
+
+    lines.append(
+        f"--- TOP {top} DIVERGING SIGNALS "
+        f"(of {len(scored)} scored, {skipped_constant} constant-on-both skipped) ---"
+    )
+    for key, score, sim_r, real_r in scored[:top]:
+        lines.append("")
+        lines.append(f"{key}   [{categorize(key)}]")
+        lines.append(
+            f"  nrmse={score.nrmse:.3f}  mean_shift={score.mean_shift:+.3f}  "
+            f"p95_shift={score.p95_shift:+.3f}  peak_shift={score.peak_shift:+.3f}  "
+            f"corr={score.correlation:.3f}  n={score.samples}"
+        )
+        for start, end, err in worst_windows(sim_r, real_r, grid):
+            lines.append(f"    worst {start:7.2f}s-{end:7.2f}s  mean_abs_err={err:.3f}")
+
+    # Event-aligned diff for the state machine channels.
+    if event_keys is None:
+        event_keys = [
+            k
+            for k in shared
+            if (k.endswith("/Target") or k.endswith("/Target State")) and not is_excluded(k)
+        ]
+    if event_keys:
+        lines.append("")
+        lines.append("--- EVENT-ALIGNED STATE TIMING ---")
+        for key in sorted(event_keys):
+            # Clip to the enabled window: pre-match idle states are not events
+            # either run "performed", and pairing them produces nonsense deltas
+            # like real=-227.80s.
+            sim_events = extract_events(
+                [(ts - sim_t0, v) for ts, v in sim_data.get(key, []) if ts >= sim_t0]
+            )
+            real_events = extract_events(
+                [(ts - real_t0, v) for ts, v in real_data.get(key, []) if ts >= real_t0]
+            )
+            pairs = pair_events(sim_events, real_events)
+            if not pairs:
+                continue
+            lines.append("")
+            lines.append(
+                f"{key}: {len(pairs)} matched of "
+                f"{len(sim_events)} sim / {len(real_events)} real events"
+            )
+            for state, sim_ts, real_ts, delta in pairs[:12]:
+                lines.append(
+                    f"    {str(state):<28} real={real_ts:7.2f}s  sim={sim_ts:7.2f}s  "
+                    f"delta={delta:+.2f}s"
+                )
+
+    lines.append("")
+    lines.append("--- FIT SCORE BY CATEGORY (mean nrmse, lower is better) ---")
+    fit = {}
+    for category, values in sorted(category_totals.items()):
+        fit[category] = sum(values) / len(values)
+        lines.append(f"  {category:<12} {fit[category]:.4f}   ({len(values)} signals)")
+
+    if sim_only or real_only:
+        lines.append("")
+        lines.append(
+            f"--- UNCOMPARABLE KEYS: {len(sim_only)} sim-only, {len(real_only)} real-only ---"
+        )
+        for key in real_only[:15]:
+            lines.append(f"  real-only: {key}")
+
+    if json_out:
+        with open(json_out, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "sim": sim_path,
+                    "real": real_path,
+                    "duration_s": duration,
+                    "categories": fit,
+                    "signals": {
+                        key: {
+                            "nrmse": s.nrmse,
+                            "mean_shift": s.mean_shift,
+                            "p95_shift": s.p95_shift,
+                            "peak_shift": s.peak_shift,
+                            "correlation": s.correlation,
+                            "samples": s.samples,
+                            "category": categorize(key),
+                        }
+                        for key, s, _, _ in scored
+                    },
+                },
+                handle,
+                indent=2,
+            )
+        lines.append("")
+        lines.append(f"Wrote fit scores to {json_out}")
+
+    return "\n".join(lines)

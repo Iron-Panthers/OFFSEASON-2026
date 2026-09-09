@@ -914,7 +914,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="Analyze WPILib .wpilog files. Use --investigate for AI-friendly reports."
     )
-    parser.add_argument("wpilog", help="Path to .wpilog file")
+    parser.add_argument("wpilog", nargs="?", help="Path to .wpilog file")
+    parser.add_argument(
+        "--compare",
+        nargs=2,
+        metavar=("SIM_LOG", "REAL_LOG"),
+        help="Compare a sim log against a real match log (aligned on first-enable)",
+    )
+    parser.add_argument("--json", help="With --compare: write fit scores to this JSON path")
+    parser.add_argument(
+        "--top", type=int, default=25,
+        help="With --compare: how many diverging signals to print (default 25)",
+    )
     parser.add_argument(
         "--investigate",
         choices=REPORT_FNS.keys(),
@@ -946,6 +957,19 @@ def main():
     )
     parser.add_argument("--out", help="Write output to FILE instead of stdout")
     args = parser.parse_args()
+
+    if args.compare:
+        from log_compare import compare_logs
+
+        for path in args.compare:
+            if not Path(path).exists():
+                print(f"ERROR: file not found: {path}", file=sys.stderr)
+                sys.exit(1)
+        print(compare_logs(args.compare[0], args.compare[1], args.top, args.json))
+        return
+
+    if not args.wpilog:
+        parser.error("a .wpilog path is required unless --compare is used")
 
     log_path = Path(args.wpilog)
     if not log_path.exists():
