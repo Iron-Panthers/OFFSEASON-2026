@@ -74,6 +74,40 @@ With the bound raised above all observed travel, `q93` currents fell 0.3433 -> *
 
 Measured on q54 against the committed build.
 
+### Battery discharge through the match — now modelled
+
+The simulated pack's no-load voltage used to be pinned at exactly 12.80 V in every window of the
+match: it never discharged at all.
+
+| window | real q54 peak | sim before | sim now |
+| --- | --- | --- | --- |
+| first 30 s | 13.34 V | 12.80 V | 12.45 V |
+| 30-60 s | 12.74 V | 12.80 V | 12.30 V |
+| 60-100 s | 12.25 V | 12.80 V | 12.04 V |
+| 100-135 s | 12.72 V | 12.80 V | 11.77 V |
+| last 30 s | 11.74 V | 12.80 V | 11.53 V |
+| **fall over the match** | **-1.60 V** | **0.00 V** | **-0.92 V** |
+
+On mean voltage the sim now falls 1.61 V against the real 2.02 V -- about 80% of the real
+discharge. The residual is mostly the mean-current deficit below, which produces less I*R sag on
+top of the droop.
+
+Fitted per match by regressing `V = a + b*t + c*I` over the enabled window:
+
+| log | OCV start | droop V/min | R mOhm |
+| --- | --- | --- | --- |
+| q54 | 12.451 | 0.439 | 11.96 |
+| q93 | 12.074 | 0.345 | 11.59 |
+| q14 | 12.162 | 0.652 | 10.51 |
+| q64 | 12.270 | 1.019 | 10.90 |
+
+Pass them with `-Preplay.battery=<volts>:<ohms>:<droopVoltsPerMinute>`. Resistance is consistent
+across all four matches (10.5-12.0 mOhm), so it is a real constant and is now the default; the old
+value was 20 mOhm, which sagged roughly twice as hard as the real pack. Open-circuit voltage and
+droop vary with the battery's state of charge and health, so they are per-run. q64 -- the match
+where the real robot browned out worst -- has by far the steepest droop, ending 2.8 V below where
+it started.
+
 ### Brownout behaviour — matches
 
 | | real | sim |
