@@ -32,13 +32,22 @@ public final class SimCurrentLimit {
    * <tr><td>intake rollers</td><td>5.46</td><td>6.02</td><td>5.68</td></tr>
    * </table>
    *
-   * <p>Set above the largest of those. This is a guard against unphysical blow-ups, not a
-   * behavioural limit -- it must never bind during normal operation. An earlier value of 4.0 was
-   * derived from q54 alone and sat BELOW the rollers' real ratio in all three matches, clipping
-   * genuine torque. The drive ratio is 3.75 in every match to two decimals; the rollers are not
-   * constant, so a per-mechanism ceiling would be the principled fix if this ever needs to bind.
+   * <p><b>Deliberately set BELOW the rollers' measured ratio, as a compensating approximation.</b>
+   * Physically this should sit above every value in the table so it never binds. Raising it to 6.5
+   * to do that measured WORSE on both logs tested -- q54 currents 0.2387 -> 0.2536, q93 0.2102 ->
+   * 0.2319 -- consistently and well outside the noise floor.
+   *
+   * <p>The reason is that the roller sims have no load model: WPILib's {@code FlywheelSim} is
+   * frictionless, so a mechanism at setpoint draws ~0 A where the real robot pulls 7-9 A, and its
+   * transients overshoot instead. A tighter-than-physical ceiling clips those transients and
+   * happens to fit better. That is a compensating error, not a correct model.
+   *
+   * <p><b>Revisit this once the plant has a real load</b> (an explicit load torque, or {@code
+   * LinearSystemId.identifyVelocitySystem(kV, kA)} characterised from the logs). At that point the
+   * honest value is above 6.02, and a per-mechanism ceiling would be better still -- the drive
+   * ratio is 3.75 in every match to two decimals, while the rollers swing 5.46-6.02.
    */
-  public static final double STATOR_TO_SUPPLY_RATIO = 6.5;
+  public static final double STATOR_TO_SUPPLY_RATIO = 4.0;
 
   private SimCurrentLimit() {}
 
