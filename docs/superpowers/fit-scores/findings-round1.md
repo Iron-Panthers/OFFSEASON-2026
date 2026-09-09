@@ -171,3 +171,75 @@ artifact of comparing two monotonically-increasing integrals, NOT evidence of "o
     reverse real motor directions.
 
 **No COMP-affecting change required for any shooter item.**
+
+---
+
+## Drivetrain agent findings — CORRECTS two earlier assumptions
+
+### Correction 1: current limits ARE enforced in Phoenix 6 sim, for the swerve
+
+The earlier working hypothesis ("limits are enforced nowhere in sim") is wrong for the drivetrain.
+Sim swerve currents clip hard at exactly the configured limits and match real closely:
+
+| signal | SIM | REAL | limit |
+| --- | --- | --- | --- |
+| Drive supply per module | p99 39.2-39.5 A | p99 37.5-40.6 A | 40 A |
+| Steer supply per module | p95 9.9-10.2 A | p95 7.3-8.2 A | 10 A |
+| 8-motor swerve sum | max 307.6 A | max 164.6 A | - |
+| Drive Amp-Seconds per module | 2698-2783 | 2401-2680 | within 4-12% |
+
+The 1172 A peak is **the shooter**, which bypasses the Talon entirely: omniwheel 952.2 A,
+accelerator 577.1 A, flywheel 445.5 A. Swerve can account for at most ~308 A. The limiting gap is
+specific to `GenericRollersIOSim`, not universal.
+
+### Correction 2: anchor drift is NOT contact — the sim drives 25% too slowly
+
+`DRIVE_CONFIG` SIM `maxLinearVelocity = 3.75` vs COMP `5` (verified: `DriveConstants.java:71-79`,
+SIM branch carries `3.75, // 3.75,`). Used by `Drive.java:256` desaturateWheelSpeeds and
+`TeleopTranslationController.java:85` (joystick magnitude x maxLinearVelocity), so in replay the
+**same stick deflection commands 25% less speed than the real robot**.
+
+Arithmetic matches the log to four decimals:
+- real cap 5.0 / 1.97 in = 99.924 rad/s; sim cap 3.75 / 1.925 in = 76.695 rad/s; difference 23.229
+- baseline report: `Module{0,1,2,3}/DriveVelRadsScalar peak_shift = -23.229` on **all four modules
+  identically**
+- pose-derived speed: sim median 0.866 m/s vs real 1.557 m/s
+
+A 0.69 m/s median deficit over a 10 s anchor window is ~6.9 m of path error, which fully accounts
+for the observed anchor drift (mean 3.897 m, max 13.695 m). **No contact or defense explanation is
+needed.** This invalidates the earlier reading of anchor error as evidence of defense.
+
+### Other SIM-ONLY findings, ranked
+
+3. `maxLinearAcceleration` SIM 6 vs COMP 8. Confirmed exactly in the log:
+   `Swerve/Acceleration` sim max 0.120 = 6 x 0.02, real max 0.160 = 8 x 0.02.
+4. SIM track geometry is **square** 22.5 x 22.5 in vs COMP rectangular 19.75 x 24.25 in
+   (`DriveConstants.java:72-73`). Feeds both KINEMATICS and `withCustomModuleTranslations`.
+5. `mapleSimConfig` never calls `.withBumperSize(...)`, so it uses the 0.76 x 0.76 m default vs
+   COMP's 33 x 37 in. Rotational inertia 5.24 vs 7.19 kg.m^2, collision footprint 25% small. Also
+   silently sizes the intake, which `RobotSimState.java:54-62` derives from the bumper dimensions.
+   `Replay/Anchor Error/Rotation Degrees` mean 84.08, max 171.40.
+6. SIM wheel radius 1.925 in vs COMP 1.97 in.
+7. SIM steer gains carry `kA = 0.387` where COMP has `kA = 0`, with MotionMagicAcceleration 64
+   rot/s^2 -- a 24.8 V feedforward on every ramp. Steer stator current churn 19.67 A/sample sim vs
+   6.05 A real, on nearly identical commanded motion.
+8. SIM drive gains kV 6% low, kA missing vs COMP.
+9. **`GyroIOSim.java:19-20` unit bug** (verified): `Units.degreesToRadians(...in(RadiansPerSecond))`
+   converts a rad/s value as if it were degrees, dividing by 57.3. Sim yaw rate range +-0.128 rad/s
+   vs real -5.014..+4.154. Logging-only today (nothing consumes the field) but silently invalidates
+   any yaw-rate comparison.
+10. `withRobotMass(54.4311 kg)` = 120 lb looks low for a Worlds robot, but the agent found **no log
+    evidence** either way and explicitly rated it low confidence. Needs a scale reading, not a log.
+
+11. Independently confirmed the maple-sim battery override (third agent to do so). Adds detail:
+    maple registers **only the 4 drive motors** as appliances (`SwerveModuleSimulation.java:87`),
+    and the arena runs 5 sub-ticks per loop, each overwriting VInVoltage after our write.
+
+### COMP-affecting — flagged, NOT recommended for fidelity work
+
+- `ModuleIOTalonFX.java:63-64, 76-77` configure only `SupplyCurrentLimit`; `StatorCurrentLimit` is
+  never set. Real drive stator reaches 149.96 A. Adding one is a hardware-safety decision.
+- `ModuleIOTalonFX.java:225` `setNeutralMode()` silently rewrites the drive supply limit to 30 A
+  (Brake) / 40 A (Coast) as a side effect. Surprising coupling; affects COMP.
+- `STEER_CURRENT_LIMIT_AMPS = 10` / `DRIVE_CURRENT_LIMIT_AMPS = 40` are shared SIM+COMP and are
+  **correct** (real p99 lands right at them). Do not touch.
