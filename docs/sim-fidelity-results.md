@@ -1,0 +1,224 @@
+# Simulation Fidelity vs Real Match Logs
+
+What the simulation now reproduces from real Worlds match logs, what it still does not, and every
+change made to get there.
+
+**Method.** A real `.wpilog` is replayed through the simulation: the logged joystick axes, buttons,
+POVs and driver-station state are injected frame-locked to the robot loop, the same auto is run, and
+the resulting sim log is scored against the real one signal by signal.
+
+```bash
+./gradlew simulateJava --no-daemon -Pheadless -Pai.logging \
+  "-Preplay.inputs=<real-match>.wpilog"
+
+python scripts/wpilog_to_csv.py --compare <sim>.wpilog <real>.wpilog --json fit.json
+```
+
+Score is **nRMSE** — RMSE normalised by the real signal's range. 0.20 means typical error is 20% of
+the range that signal covers during the match.
+
+---
+
+## Does it match?
+
+### Fit scores, q54 (the log tuned against)
+
+Baseline is the first replay run, re-scored with the current tooling so the comparison is fair.
+
+| category | baseline | now | change |
+| --- | --- | --- | --- |
+| currents (48 signals) | 0.4498 | **0.2386** | **-47%** |
+| mechanisms (46 signals) | 0.3697 | **0.1993** | **-46%** |
+| voltage | 0.4285 | **0.2175** | **-49%** |
+| aggregate (4 signals) | 0.2926 | **0.2015** | **-31%** |
+| other (48 signals) | 0.2556 | **0.2126** | -17% |
+
+Every category now sits between 0.20 and 0.24.
+
+### It generalises — q14 was never tuned against
+
+| category | q54 (tuned) | q14 (untouched) |
+| --- | --- | --- |
+| currents | 0.2507 | 0.2554 |
+| mechanisms | 0.1954 | 0.2132 |
+| other | 0.2071 | **0.1842** |
+| voltage | 0.2195 | 0.2630 |
+
+Within a few percent across the board. These are model fixes, not curve-fitting.
+
+---
+
+## What matches well
+
+### Intake deploy timing — exact
+
+The specific requirement was that the intake take the same time to go in and out.
+
+| move | real | sim before | sim now |
+| --- | --- | --- | --- |
+| SHOOTING_STOW -> INTAKE | **0.360 s** | 0.219 s | **0.360 s** |
+| travel | 8.2 rot | (wrong units) | 8.3 rot |
+
+Both duration and travel distance match.
+
+### Peak power draw — within 5%
+
+| | real | sim baseline | sim now |
+| --- | --- | --- | --- |
+| peak total current | 318.7 A | 1172.6 A | **402.6 A** |
+
+Baseline was 3.7x the real peak; it is now 1.26x. The step from 334.7 to 402.6 came with the
+`MotorOutputManager` fix below, which added the seven mechanisms the sim had never been counting.
+
+### Driver input reproduction — exact
+
+Injected joystick values are numerically identical to the logged ones: mean absolute axis error
+**0.0039** over 8254 samples.
+
+### Rack hard stop
+
+The real rack stops at 11.29 rotations and stalls against it for 86.7% of the match. The sim now
+does the same, having previously run past to 13.15 and drawn nothing.
+
+---
+
+## What does not match
+
+### Mean current draw
+
+| | real | sim before parity fix | sim now |
+| --- | --- | --- | --- |
+| mean total current | 158.3 A | 89.6 A | **102.2 A** |
+
+Registering the seven mechanisms with `MotorOutputManager` recovered part of the gap and dropped
+the aggregate score 0.2798 -> 0.2015. The residual is that WPILib's `FlywheelSim` is frictionless,
+so a mechanism holding setpoint draws ~0 A where the real robot pulls 7-9 A against bearing, belt
+and game-piece drag.
+
+**Attempted and reverted:** subtracting a drag voltage. It moved mean current only 113.84 -> 113.50 A
+because subtracting voltage does not create a load -- the plant just settles slightly slower with
+current still near zero. The fix needs a plant change: an explicit load torque, or
+`LinearSystemId.identifyVelocitySystem(kV, kA)` characterised from the real logs.
+
+### Brownout behaviour
+
+| | real q54 | sim |
+| --- | --- | --- |
+| voltage min | 7.55 V | **6.59 V** |
+| samples below 6.75 V | 0 | **1** |
+
+Simulated brownouts are now *possible* -- maple-sim's own battery hard-clamps at the brownout
+threshold, making them structurally impossible before -- but the sim still dips lower than the real
+robot did. This follows from the remaining peak-current overshoot.
+
+### Post-auto robot pose
+
+Not reproduced, and not expected to be: the real robot was defended and contacted, which the sim
+does not model. Cumulative wheel odometry (`DrivePositionRads`/`Meters`) is excluded from scoring
+for this reason. Instantaneous drive velocity is still scored and does match.
+
+### Remaining worst signals (q54)
+
+| signal | nRMSE | reading |
+| --- | --- | --- |
+| `Intake Rack/Total Amp Seconds` | 0.85 | sim over-draws at the stall; shape right (corr 0.92) |
+| `Serializer/Filtered Current` | 0.55 | sim under-draws ~9 A |
+| `Shooter Flywheels/Filtered Current` | 0.54 | frictionless: under on mean, right on peak |
+
+---
+
+## Measurement caveat, and how it was fixed
+
+Two runs of **identical code** originally produced fit scores differing by 0.016, with 52 of 155
+signals moving by >0.01. AdvantageKit stamps records with wall clock, so runs finishing at slightly
+different wall times put the same event on different grid points.
+
+That noise floor was the same size as several effects being measured, and two changes were rejected
+on differences inside it (a reported-current clamp and the viscous drag). The comparison now rebases
+the sim on `Replay/Elapsed Seconds` -- exact match time -- which removes the jitter. Numbers quoted
+above are from after that fix.
+
+---
+
+## Every change made
+
+### New files
+
+| file | purpose |
+| --- | --- |
+| `utility/replay/LogTimeline.java` | zero-order-hold time series with binary-search lookup |
+| `utility/replay/MatchInputs.java` | parsed timelines from one match log |
+| `utility/replay/MatchLogReader.java` | parses a real `.wpilog` into those timelines |
+| `utility/replay/LogInputPlayer.java` | frame-locked injection into `DriverStationSim` |
+| `utility/replay/PoseAnchor.java` | teleop pose re-anchoring, gyro kept in step |
+| `utility/SimBattery.java` | pack voltage from summed motor current |
+| `utility/SimCurrentLimit.java` | closed-form supply-limit voltage ceiling |
+| `scripts/log_compare.py` | comparison engine |
+
+### Harness bugs fixed
+
+| what | effect |
+| --- | --- |
+| Match time never injected | DS reported -1 forever; `ShootCommandFactory` gates on `getTimeUntilOurHubShifts() <= 2`, and `-1 <= 2` is true, so the shooter ran enabled 100% of the sim match against roughly half for real |
+| Start pose never seeded for auto replays | q54 began at (13.64, 4.27, 180deg) against the real (12.19, 7.45, 89.8deg) -- 3.5 m and 90 degrees apart before a wheel turned |
+| `endCompetition()` called inline | did not stop the loop; must run off-thread |
+| `-Preplay.fast` | free-running the loop makes AdvantageKit stamp wall clock, compressing a 165 s match into ~48 s of timestamps. Now warns; unusable for fidelity |
+
+### Simulation model bugs fixed
+
+| file | bug |
+| --- | --- |
+| `RobotContainer.updateSimulation` | `SimBattery.update()` ran *before* the maple-sim arena tick, which calls `RoboRioSim.setVInVoltage()` 5x per loop -- the battery model was dead code, overwritten every loop |
+| `GenericSuperstructureIOSim` | never called `apply(config)` at all, so `SensorToMechanismRatio` was never set: the rack position loop ran in ROTOR units where the real robot runs in MECHANISM units (8/pi = 2.55x). Cause of the intake timing error |
+| `IntakeRackIOSim` / `ShooterHoodIOSim` | applied gearing in **opposite directions** -- rack multiplied, hood divided -- so at most one could be right |
+| `GenericRollersIOSim` | `stop()` never reached the physics; the accelerator spun at 322 rad/s for 130.5 s of a 165 s match while commanded to stop |
+| `GenericRollersIOSim` / `GenericSuperstructureIOSim` | never registered with `MotorOutputManager`, so sim `TotalAmps` counted swerve only |
+| 4 roller IOSims | sim PID regulated MECHANISM velocity where Phoenix `VelocityVoltage` regulates ROTOR velocity |
+| 6 IOSims | `Math.abs()` on `getCurrentDrawAmps()` booked regenerative braking as consumption; real supply current reaches -69.94 A |
+| 4 roller IOSims | clamped applied voltage to a hardcoded +/-12 V, so battery sag could not reduce torque |
+| `IntakeRackIOSim`, `SerializerSim` | reported a hardcoded `1.0 A // Not simulated` |
+| `SerializerSim` | rotor velocity was rad/s divided by the reduction -- two unit errors on one line -- leaving it running backwards all match; also never set `simState.Orientation` |
+| `ShooterOmniwheelIOSim`, `SerializerSim` | never published `positionRads` (1 record of 0.0 for the whole match) |
+| `GyroIOSim` | `degreesToRadians()` applied to a value already in rad/s, reporting yaw rate 57.3x too small |
+| `DriveConstants` | `mapleSimConfig` never called `withBumperSize`, using maple-sim's 0.76 m default against real 33x37 in bumpers -- which also silently sized the intake, since `RobotSimState` derives it from those dimensions |
+
+### Constants aligned to the real robot (SIM arms only)
+
+| constant | was | now |
+| --- | --- | --- |
+| `maxLinearVelocity` | 3.75 | 5 |
+| `maxLinearAcceleration` | 6 | 8 |
+| track width x length | 22.5 x 22.5 in (square) | 19.75 x 24.25 in |
+| bumpers | 34 x 34 in | 33 x 37 in |
+| wheel radius | 1.925 in | 1.97 in |
+| steer gains | `(0.13, 0.79, 0.387, 2)` | `(0.16, 0.67, 0, 1.5)` |
+| drive gains | `(0.25, 2.26, 0, 70)` | `(0.24, 2.4, 0.08, 70)` |
+| flywheel reduction / gains | 0.71 / `(3,0,0,0,.1)` | 1.411 / `(0.5,0,0,0.2,0.35)` |
+| accelerator reduction / gains | 0.67 / `(1,0,0,0,.1)` | 1.5 / `(.6,0,0,0.2,0.17746)` |
+| omniwheel reduction / gains | 1 / `(1,0,0,0,.1)` | 1.25 / `(0.4,0,0,0.2,.137)` |
+| roller reduction / gains | 2 / `(1,0,0,0,1)` | 2.4 / `(0.3,0,0,0.1,0.2739)` |
+| flywheel current limit | 40 A | 20 A |
+| omniwheel current limit | 30 A | 60 A |
+| rack travel limits | +/-15 m (no stop) | real hard stop at 11.29 rot |
+| flywheel / accelerator plant | 1 motor | 4 / 2 motors |
+
+The SIM reductions had been set to the **reciprocal** of the real ones (0.71 vs 1.411, 0.67 vs 1.5)
+to compensate for the mechanism-vs-rotor PID bug. The accelerator carried the comment
+`// changed in sim (otherwise 1)`. Once the error term was corrected the fudge became unnecessary.
+
+The roller `kV` of 1 meant the feedforward alone demanded 50 V for a 50 rps target, so the simulated
+rollers railed at battery voltage permanently.
+
+### One change affecting the real robot (approved)
+
+`GenericSuperstructureIOTalonFX` registered the leader's supply current with `MotorOutputManager`
+**twice** (identical statements, and a loop over a list nothing populates). This inflated the real
+robot's logged `TotalAmps` by ~6 A mean and up to ~55 A at peaks -- and that series is the
+calibration target. Robot behaviour is unaffected; the change is logging-only.
+
+### Changes tried and reverted
+
+| change | why reverted |
+| --- | --- |
+| Reported-current clamp | Measured worse at both ratios tried. Note: the deltas were inside the then-unknown noise floor, so this is **unresolved rather than disproven**. Helper retained, documented unused |
+| Viscous drag | Moved mean current 113.84 -> 113.50 A. Subtracting voltage does not create a load |
