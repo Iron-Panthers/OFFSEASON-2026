@@ -63,12 +63,18 @@ class SimCurrentLimitTest {
     double out = SimCurrentLimit.clampToSupplyLimit(12.0, 0.0, 1.0, KRAKEN, BUS, limit);
     assertTrue(out < 12.0, "expected the clamp to bite, got " + out);
 
-    // Two constraints apply, and at stall the stator window is the tighter one: supply current
-    // is stator * dutyCycle, and dutyCycle is small here, so the supply limit alone would permit
-    // an unphysical stator draw.
+    // Two constraints apply -- the supply-limit quadratic and the stator window -- and which
+    // one binds depends on speed and on STATOR_TO_SUPPLY_RATIO. Assert the contract rather
+    // than which constraint wins, so this does not break when the ratio is retuned.
     double stator = Math.abs(out) / KRAKEN.rOhms;
-    assertEquals(limit * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO, stator, 1e-6);
-    assertTrue(supplyAmps(out, 0.0) <= limit + 1e-6, "supply current exceeded its limit");
+    double supply = supplyAmps(out, 0.0);
+    assertTrue(supply <= limit + 1e-6, "supply " + supply + " A exceeded its limit");
+    assertTrue(
+        stator <= limit * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO + 1e-6,
+        "stator " + stator + " A exceeded its window");
+    assertTrue(
+        supply >= limit - 1e-6 || stator >= limit * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO - 1e-6,
+        "neither constraint was binding, so the clamp is looser than intended");
   }
 
   @Test
@@ -121,8 +127,21 @@ class SimCurrentLimitTest {
   }
 
   @Test
+  void statorClampDoesNotTruncateRealPeaks() {
+    // The real intake rack reaches 130.5 A stator against a 27 A supply limit. The clamp must
+    // sit above that, or it removes real behaviour instead of artifacts.
+    assertTrue(
+        27.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO >= 130.5,
+        "stator ceiling would truncate the real rack peak");
+    assertEquals(130.5, SimCurrentLimit.clampStatorCurrent(130.5, 27.0), 1e-9);
+  }
+
+  @Test
   void statorClampPreservesSignAndSmallValues() {
-    assertEquals(-108.0, SimCurrentLimit.clampStatorCurrent(-206.0, 27.0), 1e-9);
+    assertEquals(
+        -27.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO,
+        SimCurrentLimit.clampStatorCurrent(-1000.0, 27.0),
+        1e-9);
     assertEquals(5.0, SimCurrentLimit.clampStatorCurrent(5.0, 27.0), 1e-9);
   }
 

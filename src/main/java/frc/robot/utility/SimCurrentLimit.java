@@ -23,10 +23,12 @@ public final class SimCurrentLimit {
    * <p>Supply limits do not bound stator current directly -- the controller is a buck converter, so
    * stator exceeds supply by roughly 1/dutyCycle. Measured on the real q54 log: the intake rack
    * holds 85-102 A stator against a 27 A supply limit (~3.8x) and the omniwheel reaches 160 A
-   * stator against 60 A supply (~2.7x). 4.0 is a deliberately generous bound -- it exists to stop
-   * unphysical blow-ups, not to be the binding constraint during normal operation.
+   * stator against 60 A supply (~2.7x). The largest measured ratio is the rack's 130.5 A / 27 A =
+   * 4.83x, so this sits just above it: the clamp exists to stop unphysical blow-ups, not to
+   * truncate real peaks. An earlier value of 4.0 capped the rack at 108 A and cut into its real
+   * 130.5 A peaks, which made the currents fit score worse rather than better.
    */
-  public static final double STATOR_TO_SUPPLY_RATIO = 4.0;
+  public static final double STATOR_TO_SUPPLY_RATIO = 5.0;
 
   private SimCurrentLimit() {}
 
