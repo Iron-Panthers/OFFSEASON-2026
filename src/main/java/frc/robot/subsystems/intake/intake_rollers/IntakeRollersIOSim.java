@@ -13,7 +13,7 @@ import frc.robot.lib.generic_subsystems.rollers.GenericRollersIOSim;
 
 public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRollersIO {
   private final FlywheelSim intakeRollersSim;
-  private final SimpleMotorFeedforward feedforward;
+  private final SimpleMotorFeedforward feedForward;
   private double rotorPositionRotations = 0.0;
   private double velocitySetpointRPS = 0.0;
 
@@ -27,7 +27,7 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     super.setSlot0(GAINS.kP(), GAINS.kI(), GAINS.kD(), GAINS.kS(), GAINS.kV(), GAINS.kA());
 
     // Create feedforward controller using configured gains
-    feedforward = new SimpleMotorFeedforward(GAINS.kS(), GAINS.kV(), GAINS.kA());
+    feedForward = new SimpleMotorFeedforward(GAINS.kS(), GAINS.kV(), GAINS.kA()); // move on
 
     intakeRollersSim =
         new FlywheelSim(
@@ -62,17 +62,17 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     talon.getSimState().setRotorVelocity(currentVelocityRPS);
 
     // Calculate applied voltage using feedforward + proportional feedback
-    double feedforwardVoltage = feedforward.calculate(velocitySetpointRPS);
+    double feedForwardVoltage = feedForward.calculate(velocitySetpointRPS);
     double error = velocitySetpointRPS - currentVelocityRPS;
     double proportionalVoltage = GAINS.kP() * error;
-    double appliedVoltage = feedforwardVoltage + proportionalVoltage;
+    double appliedVoltage = feedForwardVoltage + proportionalVoltage;
     appliedVoltage = Math.max(-12, Math.min(12, appliedVoltage)); // Clamp to battery voltage
 
     // Simulate physics
     intakeRollersSim.setInputVoltage(appliedVoltage);
     intakeRollersSim.update(0.02);
 
-    // Update position tracking
+    // Update position tracking very intresting
     currentVelocityRPS = intakeRollersSim.getAngularVelocityRadPerSec() / (2.0 * Math.PI);
     rotorPositionRotations += currentVelocityRPS * 0.02;
 
