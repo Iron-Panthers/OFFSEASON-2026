@@ -30,8 +30,37 @@ public final class SimBattery {
   /** Real q54 logs SystemStats/BrownoutVoltage = 6.75. */
   public static final double BROWNOUT_VOLTAGE = 6.75;
 
-  public static final double DEFAULT_NOMINAL_VOLTS = 12.8;
-  public static final double DEFAULT_RESISTANCE_OHMS = 0.02;
+  /**
+   * Open-circuit voltage at match start.
+   *
+   * <p>Fitted across four real matches (V = a + b*t + c*I over the enabled window): q54 12.451, q93
+   * 12.074, q14 12.162, q64 12.270. Battery condition varies between matches, so this is per-run
+   * tunable; the default is the middle of that range.
+   */
+  public static final double DEFAULT_NOMINAL_VOLTS = 12.24;
+
+  /**
+   * Pack internal resistance.
+   *
+   * <p>Fitted from the same regression: 11.96, 11.59, 10.51 and 10.90 mOhm across the four matches.
+   * That consistency makes it a genuine constant, unlike the open-circuit voltage and its droop.
+   * The previous 20 mOhm was almost double the real value, so the model sagged roughly twice as
+   * hard as the pack does for a given load.
+   */
+  public static final double DEFAULT_RESISTANCE_OHMS = 0.0112;
+
+  /**
+   * Open-circuit voltage droop as the pack discharges, in volts per minute.
+   *
+   * <p>A real battery's no-load voltage falls steadily through a match; without this the simulated
+   * pack ends the match as fresh as it started. Fitted per match: q54 -0.439, q93 -0.345, q14
+   * -0.652, q64 -1.019 V/min. Over a 165 s match that is 0.95 V to 2.80 V of droop.
+   *
+   * <p>It varies far more than the resistance does -- it depends on the battery's state of charge
+   * and health going in -- so it is per-run tunable. q64, the match where the real robot browned
+   * out worst, has by far the steepest droop.
+   */
+  public static final double DEFAULT_DROOP_VOLTS_PER_MINUTE = 0.6;
 
   /**
    * How far a source may transiently exceed its configured supply limit.
@@ -49,6 +78,8 @@ public final class SimBattery {
   private boolean pinnedAtFloor = false;
   private double nominalVolts = DEFAULT_NOMINAL_VOLTS;
   private double resistanceOhms = DEFAULT_RESISTANCE_OHMS;
+  private double droopVoltsPerMinute = DEFAULT_DROOP_VOLTS_PER_MINUTE;
+  private double enabledSeconds = 0.0;
   private double lastVoltage = DEFAULT_NOMINAL_VOLTS;
   private double lastCurrentAmps = 0.0;
   private boolean brownedOut = false;
@@ -90,8 +121,33 @@ public final class SimBattery {
     return currentSources.size();
   }
 
+  /** Open-circuit voltage right now, after discharge droop. */
+  public double openCircuitVolts() {
+    return nominalVolts - droopVoltsPerMinute * (enabledSeconds / 60.0);
+  }
+
+  /** Seconds the robot has been enabled, which is what drives the droop. */
+  public double enabledSeconds() {
+    return enabledSeconds;
+  }
+
+  /**
+   * Advance the discharge clock. Called once per simulation loop while enabled, so the pack ends a
+   * match measurably flatter than it started.
+   */
+  public void addEnabledTime(double seconds) {
+    enabledSeconds += seconds;
+  }
+
   /** Clear all sources and set new pack parameters. Intended for tests. */
   public void reset(double nominalVolts, double resistanceOhms) {
+    reset(nominalVolts, resistanceOhms, DEFAULT_DROOP_VOLTS_PER_MINUTE);
+  }
+
+  /** Clear all sources and set new pack parameters including droop. Intended for tests. */
+  public void reset(double nominalVolts, double resistanceOhms, double droopVoltsPerMinute) {
+    this.droopVoltsPerMinute = droopVoltsPerMinute;
+    this.enabledSeconds = 0.0;
     currentSources.clear();
     sourceLimitsAmps.clear();
     this.pinnedAtFloor = false;
@@ -113,16 +169,25 @@ public final class SimBattery {
       return;
     }
     String[] parts = property.split(":");
-    if (parts.length != 2) {
+    if (parts.length < 2 || parts.length > 3) {
       System.err.println("[SimBattery] Ignoring malformed battery config: " + property);
       return;
     }
     try {
       nominalVolts = Double.parseDouble(parts[0]);
       resistanceOhms = Double.parseDouble(parts[1]);
+      if (parts.length == 3) {
+        droopVoltsPerMinute = Double.parseDouble(parts[2]);
+      }
       lastVoltage = nominalVolts;
       System.out.println(
-          "[SimBattery] nominal=" + nominalVolts + "V, R=" + resistanceOhms + " ohm");
+          "[SimBattery] nominal="
+              + nominalVolts
+              + "V, R="
+              + resistanceOhms
+              + " ohm, droop="
+              + droopVoltsPerMinute
+              + " V/min");
     } catch (NumberFormatException e) {
       System.err.println("[SimBattery] Ignoring malformed battery config: " + property);
     }
@@ -158,12 +223,15 @@ public final class SimBattery {
     }
     lastCurrentAmps = total;
 
+    // Open-circuit voltage falls as the pack discharges, so the ceiling falls with it.
+    double ocv = openCircuitVolts();
+
     // Clamp the VOLTAGE rather than each current. Regen on the real robot never charges the
     // pack -- at its most negative (-101.7 A) the real pack still read 9.78 V -- so the model
     // must not rise above open-circuit voltage even though the signed sum goes negative.
-    double raw = nominalVolts - total * resistanceOhms;
+    double raw = ocv - total * resistanceOhms;
     pinnedAtFloor = raw < MIN_VOLTAGE;
-    lastVoltage = Math.max(MIN_VOLTAGE, Math.min(nominalVolts, raw));
+    lastVoltage = Math.max(MIN_VOLTAGE, Math.min(ocv, raw));
     brownedOut = lastVoltage < BROWNOUT_VOLTAGE;
     return lastVoltage;
   }
@@ -173,6 +241,11 @@ public final class SimBattery {
    * it. Call once per simulation loop.
    */
   public void update() {
+    // Only discharge while the robot is actually driving something.
+    if (edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
+      addEnabledTime(frc.robot.Constants.PERIODIC_LOOP_SEC);
+    }
+
     double voltage = computeVoltage();
 
     // Published once rather than every loop, and from here rather than getInstance() so that
@@ -191,5 +264,7 @@ public final class SimBattery {
     Logger.recordOutput("SimBattery/TotalCurrentAmps", lastCurrentAmps);
     Logger.recordOutput("SimBattery/BrownedOut", brownedOut);
     Logger.recordOutput("SimBattery/SourceCount", currentSources.size());
+    Logger.recordOutput("SimBattery/OpenCircuitVolts", openCircuitVolts());
+    Logger.recordOutput("SimBattery/EnabledSeconds", enabledSeconds);
   }
 }

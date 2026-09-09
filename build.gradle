@@ -243,6 +243,7 @@ tasks.withType(JavaExec).configureEach {
     if (project.hasProperty('replay.anchor')) {
         jvmArgs "-Dai.replay.anchor=${project.getProperty('replay.anchor')}"
     }
+    // -Preplay.battery=<nominalVolts>:<ohms>[:<droopVoltsPerMinute>]
     if (project.hasProperty('replay.battery')) {
         jvmArgs "-Dai.replay.battery=${project.getProperty('replay.battery')}"
     }

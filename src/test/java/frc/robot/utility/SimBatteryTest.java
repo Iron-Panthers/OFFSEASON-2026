@@ -11,7 +11,61 @@ class SimBatteryTest {
 
   @BeforeEach
   void reset() {
-    SimBattery.getInstance().reset(12.8, 0.02);
+    SimBattery.getInstance().reset(12.8, 0.02, 0.0);
+  }
+
+  @Test
+  void openCircuitVoltageDroopsAsThePackDischarges() {
+    // Real packs end a match measurably flatter than they start: fitted droop across four
+    // matches was 0.345 to 1.019 V/min. Without this the sim pack is as fresh at 165 s as at 0.
+    SimBattery.getInstance().reset(12.4, 0.0112, 0.6);
+    assertEquals(12.4, SimBattery.getInstance().openCircuitVolts(), 1e-9);
+    SimBattery.getInstance().addEnabledTime(60.0);
+    assertEquals(11.8, SimBattery.getInstance().openCircuitVolts(), 1e-9);
+    SimBattery.getInstance().addEnabledTime(105.0);
+    // 165 s at 0.6 V/min = 1.65 V of droop, matching the real q54 span of ~1.2 V.
+    assertEquals(12.4 - 1.65, SimBattery.getInstance().openCircuitVolts(), 1e-9);
+  }
+
+  @Test
+  void droopLowersTheLoadedVoltageToo() {
+    SimBattery.getInstance().reset(12.4, 0.0112, 0.6);
+    SimBattery.getInstance().register(() -> 100.0);
+    double fresh = SimBattery.getInstance().computeVoltage();
+    SimBattery.getInstance().addEnabledTime(60.0);
+    double tired = SimBattery.getInstance().computeVoltage();
+    assertEquals(0.6, fresh - tired, 1e-9);
+  }
+
+  @Test
+  void voltageCeilingFollowsTheDroopedOpenCircuitVoltage() {
+    // Regen must not push the pack back up to its START-of-match voltage.
+    SimBattery.getInstance().reset(12.4, 0.0112, 0.6);
+    SimBattery.getInstance().addEnabledTime(60.0);
+    SimBattery.getInstance().register(() -> -500.0);
+    assertEquals(11.8, SimBattery.getInstance().computeVoltage(), 1e-9);
+  }
+
+  @Test
+  void configStringAcceptsAnOptionalDroopField() {
+    SimBattery.getInstance().configureFromProperty("12.451:0.01196:0.439");
+    SimBattery.getInstance().addEnabledTime(60.0);
+    assertEquals(12.451 - 0.439, SimBattery.getInstance().openCircuitVolts(), 1e-9);
+  }
+
+  @Test
+  void configStringWithoutDroopKeepsTheDefault() {
+    SimBattery.getInstance().reset(12.4, 0.0112, 0.6);
+    SimBattery.getInstance().configureFromProperty("12.1:0.0135");
+    SimBattery.getInstance().addEnabledTime(60.0);
+    assertEquals(12.1 - 0.6, SimBattery.getInstance().openCircuitVolts(), 1e-9);
+  }
+
+  @Test
+  void configStringWithFourFieldsIsRejected() {
+    SimBattery.getInstance().reset(12.4, 0.0112, 0.6);
+    SimBattery.getInstance().configureFromProperty("1:2:3:4");
+    assertEquals(12.4, SimBattery.getInstance().openCircuitVolts(), 1e-9);
   }
 
   @Test
