@@ -68,16 +68,24 @@ public class DriveConstants {
             4.5,
             10,
             6);
+          // Matches COMP. maxLinearVelocity scales joystick magnitude directly
+          // (TeleopTranslationController) and caps desaturateWheelSpeeds, so the old 3.75 meant a
+          // replayed stick deflection commanded 25% less speed than the real robot: sim median
+          // speed 0.866 m/s against a real 1.557. That showed up as an exactly -23.229 rad/s
+          // peak_shift on all four DriveVelRadsScalar signals, matching
+          // 5.0/1.97in - 3.75/1.925in to four decimals.
+          //
+          // The track was also square (22.5 x 22.5) where the real robot is rectangular, which
+          // mis-maps omega to module speed, and the wheel radius was 1.925 vs 1.97 in.
         case SIM -> new DrivebaseConfig(
-            Units.inchesToMeters(1.925),
-            Units.inchesToMeters(22.5),
-            Units.inchesToMeters(22.5),
-            Units.inchesToMeters(34),
-            Units.inchesToMeters(34),
-            3.75, // 3.75,
+            Units.inchesToMeters(1.97),
+            Units.inchesToMeters(19.75),
+            Units.inchesToMeters(24.25),
+            Units.inchesToMeters(33),
+            Units.inchesToMeters(37),
+            5,
             10,
-            // TODO: make it actually max acceleration in m/s^2
-            6); // (multiply by max velocity to get m/s^2)
+            8);
       };
 
   // max velocity of the robot for shooting while moving
@@ -263,10 +271,14 @@ public class DriveConstants {
             (45.0 / 15) * (17.0 / 27) * (50.0 / 16), // MK4i L2.5 16 tooth
             150.0 / 7,
             3.125);
+          // Gains match COMP. The SIM steer gains carried kA = 0.387 against COMP's 0, which with
+          // MotionMagicAcceleration 64 is a ~25 V acceleration feedforward on every profile ramp:
+          // steer stator current churned 19.67 A per sample in sim against 6.05 A real, on
+          // near-identical commanded motion.
         case SIM -> new ModuleConstants(
-            new Gains(0.25, 2.26, 0, 70, 0, 0),
+            new Gains(0.24, 2.4, 0.08, 70, 0, 0),
             new MotionProfileGains(4, 64, 640),
-            new Gains(0.13, 0.79, 0.387, 2, 0, 0),
+            new Gains(0.16, 0.67, 0, 1.5, 0, 0),
             (30.0 / 15) * (25.0 / 32) * (54.0 / 14), // MK5n R2 ratio
             287.0 / 11,
             3.125);
@@ -283,6 +295,12 @@ public class DriveConstants {
       mapleSimConfig = // TODO: update this to be similar to comp bot drive base
       DriveTrainSimulationConfig.Default()
               .withRobotMass(Kilograms.of(54.4311))
+              // Was never set, so maple-sim used its 0.76 x 0.76 m default against the real
+              // 33 x 37 in bumpers. That understates rotational inertia (5.24 vs 7.19 kg m^2)
+              // and the collision footprint, and RobotSimState derives the intake width from
+              // these dimensions, so it silently sized the intake too.
+              .withBumperSize(
+                  Meters.of(DRIVE_CONFIG.bumperWidthX()), Meters.of(DRIVE_CONFIG.bumperWidthY()))
               .withCustomModuleTranslations(MODULE_TRANSLATIONS)
               .withGyro(COTS.ofPigeon2())
               .withSwerveModule(
