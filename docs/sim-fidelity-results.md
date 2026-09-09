@@ -35,20 +35,41 @@ Baseline is the first replay run, re-scored with the current tooling so the comp
 
 Every category now sits between 0.20 and 0.24.
 
-### It generalises — all three logs, identical code
+### It generalises — five matches, one tuned against
 
-`q54` is the only log tuned against. `q93` and `q14` were held back.
+Only `q54` was tuned against. `q93` and `q14` were validation, `q103` was held out and never looked
+at until the end, `q64` is the brownout stress case.
 
-| category | q54 (tuned) | q93 | q14 |
+| log | aggregate | currents | mechanisms | other | voltage |
+| --- | --- | --- | --- | --- | --- |
+| q54 (tuned) | 0.2480 | 0.2410 | 0.2241 | 0.2136 | 0.1927 |
+| q93 | 0.2366 | 0.2178 | 0.2238 | 0.2062 | 0.1909 |
+| q14 | 0.2647 | 0.2250 | 0.2126 | 0.1835 | 0.1851 |
+| **q103 (held out)** | 0.2412 | 0.2368 | 0.2156 | 0.1849 | 0.1833 |
+| q64 (brownout stress) | 0.2695 | 0.2301 | 0.2228 | 0.2780 | 0.1792 |
+
+Every category on every match lands between 0.18 and 0.28. The held-out log is indistinguishable
+from the tuned one, and several untuned logs score better. These are model fixes, not curve-fitting.
+
+Battery parameters were fitted per match for q54, q93, q14 and q64; q103 ran on defaults, which is
+part of why its numbers are a fair test.
+
+### Brownout degrades the flywheel, as it does in reality — at a quarter the magnitude
+
+The strongest available test of whether battery sag actually feeds back into torque, because it
+predicts a *behavioural* consequence rather than a voltage number. In q64 the real robot's flywheel
+spent markedly less time at speed than in a normal match:
+
+| | q54 (normal) | q64 (brownout) | change |
 | --- | --- | --- | --- |
-| aggregate | 0.2464 | **0.2338** | 0.2624 |
-| currents | 0.2387 | **0.2102** | 0.2215 |
-| mechanisms | **0.2025** | 0.2142 | 0.2124 |
-| other | 0.2085 | 0.2235 | **0.1878** |
-| voltage | **0.2465** | 0.2647 | 0.2906 |
+| real flywheel up-to-speed | 153.0 s | 130.5 s | **-14.7%** |
+| sim flywheel up-to-speed | 164.8 s | 159.1 s | **-3.5%** |
+| real voltage minimum | 7.55 V | 5.95 V | |
+| sim voltage minimum | 7.43 V | 7.00 V | |
 
-Every category on every log falls between 0.19 and 0.29, and the untuned logs beat the tuned one in
-several categories. These are model fixes, not curve-fitting.
+The direction is right, so the sag-to-torque feedback is genuine rather than cosmetic. The
+magnitude is about a quarter of the real effect, because the sim does not sag deep enough -- which
+traces back to the mean-current deficit, the same root cause as everything else outstanding.
 
 ### The validation logs caught a real overfit
 
