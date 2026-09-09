@@ -85,6 +85,69 @@ The file will be named with a timestamp, e.g., `robot_2026-05-17_14-30-00.wpilog
 
 ---
 
+## Log-Driven Replay (fidelity mode)
+
+Feed a **real match's driver inputs** through the simulation, then compare the output against the real log. This is the mode to use when the question is "does the sim behave like the real robot?" rather than "does my new feature work?".
+
+```bash
+./gradlew simulateJava --no-daemon -Pheadless -Pai.logging \
+  "-Preplay.inputs=C:\Users\bruce\Downloads\LOGS-2026-main\LOGS-2026-main\Worlds\akit_26-04-30_14-50-56_johnson_q54.wpilog"
+```
+
+The player reads `DriverStation/Joystick{0,1}/{AxisValues,ButtonValues,POVs}` plus the enable/autonomous/alliance timeline and the recorded auto chooser value, then injects them **frame-locked to the robot loop** (one 20 ms step per `robotPeriodic`, never wall clock). The robot runs the same auto the real match ran and hands over to teleop with the real driver's sticks.
+
+### Flags
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `-Preplay.inputs=<path>` | — | Real `.wpilog` to replay. Required to enter this mode. |
+| `-Preplay.anchor=<sec>` | `10.0` | Teleop pose re-anchor interval. `0` disables. |
+| `-Preplay.battery=<V>:<ohms>` | `12.8:0.02` | Per-match battery nominal voltage and internal resistance. |
+| `-Preplay.teleopOnly` | off | Skip auto, start at the logged teleop-entry pose. |
+| `-Preplay.fast` | off | **Smoke tests only — see warning below.** |
+
+### `-Preplay.fast` is not valid for fidelity work
+
+It calls `setUseTiming(false)` to free-run the loop. AdvantageKit then stamps records with **wall-clock** time, so a 165 s match lands in the log as roughly 48 s of timestamps and every signal is time-compressed against the real log. Control code that reads FPGA time deltas also sees ~6 ms instead of 20 ms. Use realtime (~3 min per match) for anything being measured. The sim prints a warning if you use it.
+
+### What is and is not trustworthy after auto
+
+- **Auto segment** — pose is trusted and free-running. Valid for comparison.
+- **Teleop** — the real robot got hit, defended and blocked; the sim does not model that. **Pose is not comparable after auto.** Power draw and mechanism curves still are.
+- The pose is snapped back to the logged pose every `-Preplay.anchor` seconds so the sim robot cannot wedge into a wall and draw current that never happened. Chassis speeds are captured and restored across the snap, because maple-sim's `setSimulationWorldPose` zeroes linear velocity.
+
+### `Replay/Anchor Error` measures drivetrain fidelity
+
+The drift accumulated in each anchor window is published before the correction:
+
+```bash
+python scripts/wpilog_to_csv.py build/ai-logs/<LOG>.wpilog \
+  --keys "RealOutputs/Replay/Anchor Error/Translation Meters,RealOutputs/Replay/Anchor Error/Rotation Degrees"
+```
+
+A drivetrain with the right mass, MOI and wheel friction drifts slowly and without systematic bias. Large or consistently-signed drift points at a specific modelling error. Only valid in stretches where the real robot was not being hit — inspect outliers rather than averaging them in.
+
+### Battery model
+
+`SimBattery` sums every simulated motor's supply current into `V = nominal - I * R_internal` and publishes it through `RoboRioSim.setVInVoltage()`. Every `*IOSim` already reads `RobotController.getBatteryVoltage()`, so the sag reaches all motors and reduces available torque — brownouts are physical, not cosmetic. Check it registered everything:
+
+```bash
+python scripts/wpilog_to_csv.py build/ai-logs/<LOG>.wpilog \
+  --keys "RealOutputs/SimBattery/SourceCount,RealOutputs/SimBattery/Voltage,RealOutputs/SimBattery/TotalCurrentAmps"
+```
+
+`SourceCount` should be **15** (7 mechanisms + 8 swerve motors). Lower means a registration was missed.
+
+### Then compare against the real log
+
+```bash
+python scripts/wpilog_to_csv.py --compare build/ai-logs/<LOG>.wpilog "<REAL_LOG>" --json build/ai-logs/fit.json
+```
+
+See the Comparison Mode section of `/log-analysis`.
+
+---
+
 ## Replaying a Match Log
 
 Replay mode runs the real robot's logged sensor inputs through the current code — deterministic, fast, no GUI needed.
