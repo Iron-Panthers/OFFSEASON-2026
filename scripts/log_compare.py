@@ -103,3 +103,62 @@ def score_pair(sim, real):
         correlation=_pearson(sim_vals, real_vals),
         samples=n,
     )
+
+
+def worst_windows(sim, real, grid, window_s=2.0, top=3):
+    """
+    Find the `top` non-overlapping time windows where sim diverges most.
+
+    Returns [(start_s, end_s, mean_abs_error), ...] worst first. Windows are
+    non-overlapping so the report shows distinct problem areas rather than
+    three views of the same spike.
+    """
+    if not grid:
+        return []
+    # Infer spacing from the grid actually passed in rather than assuming
+    # GRID_DT. Callers legitimately pass coarser grids, and silently treating
+    # them as 20ms would collapse the whole run into a single window.
+    spacing = (grid[1] - grid[0]) if len(grid) > 1 else GRID_DT
+    span = max(1, int(round(window_s / spacing))) if spacing > 0 else 1
+    scored = []
+    for start in range(0, len(grid), span):
+        chunk = [
+            (s, r)
+            for s, r in zip(sim[start : start + span], real[start : start + span])
+            if s is not None and r is not None
+        ]
+        if not chunk:
+            continue
+        err = sum(abs(s - r) for s, r in chunk) / len(chunk)
+        end_idx = min(start + span - 1, len(grid) - 1)
+        scored.append((grid[start], grid[end_idx], err))
+
+    scored.sort(key=lambda w: -w[2])
+    return scored[:top]
+
+
+def extract_events(series):
+    """[(ts, value), ...] reduced to points where the value changed."""
+    events, prev = [], object()  # sentinel: nothing equals a fresh object()
+    for ts, value in series:
+        if value != prev:
+            events.append((ts, value))
+            prev = value
+    return events
+
+
+def pair_events(sim_events, real_events):
+    """
+    Pair sim events against real events positionally, stopping at the first
+    state mismatch.
+
+    Returns [(state, sim_ts, real_ts, delta_s), ...]. Pairing stops at a
+    mismatch because once the two runs take different branches, later events
+    are not the same events and comparing their timing is noise.
+    """
+    pairs = []
+    for (sim_ts, sim_val), (real_ts, real_val) in zip(sim_events, real_events):
+        if sim_val != real_val:
+            break
+        pairs.append((real_val, sim_ts, real_ts, sim_ts - real_ts))
+    return pairs

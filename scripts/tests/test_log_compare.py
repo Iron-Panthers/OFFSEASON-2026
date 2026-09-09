@@ -78,3 +78,63 @@ def test_flat_real_series_uses_absolute_error():
     # real has zero range; nrmse would divide by zero, so fall back to abs error
     s = score_pair([2.0, 2.0], [1.0, 1.0])
     assert s.nrmse == 1.0
+
+
+from log_compare import extract_events, pair_events, worst_windows
+
+
+def test_worst_windows_finds_the_divergent_stretch():
+    grid = [i * 0.5 for i in range(10)]      # 0.0 .. 4.5
+    real = [0.0] * 10
+    sim = [0.0] * 10
+    sim[4] = 10.0                             # spike at t=2.0
+    sim[5] = 10.0                             # spike at t=2.5
+    windows = worst_windows(sim, real, grid, window_s=1.0, top=1)
+    assert len(windows) == 1
+    start, end, err = windows[0]
+    assert start <= 2.0 <= end
+    assert err > 0
+
+
+def test_worst_windows_returns_at_most_top_n():
+    grid = [i * 0.5 for i in range(20)]
+    real = [0.0] * 20
+    sim = [float(i) for i in range(20)]
+    assert len(worst_windows(sim, real, grid, window_s=1.0, top=3)) == 3
+
+
+def test_worst_windows_are_non_overlapping():
+    grid = [i * 0.5 for i in range(20)]
+    real = [0.0] * 20
+    sim = [float(i) for i in range(20)]
+    windows = worst_windows(sim, real, grid, window_s=1.0, top=3)
+    starts = [w[0] for w in windows]
+    assert len(set(starts)) == len(starts)
+
+
+def test_extract_events_returns_transitions_only():
+    series = [(1.0, "STOW"), (1.5, "STOW"), (2.0, "INTAKE"), (3.0, "STOW")]
+    assert extract_events(series) == [(1.0, "STOW"), (2.0, "INTAKE"), (3.0, "STOW")]
+
+
+def test_extract_events_on_empty_series():
+    assert extract_events([]) == []
+
+
+def test_pair_events_matches_same_sequence_and_reports_delta():
+    real = [(1.0, "STOW"), (2.0, "INTAKE")]
+    sim = [(1.0, "STOW"), (2.4, "INTAKE")]
+    pairs = pair_events(sim, real)
+    assert len(pairs) == 2
+    assert pairs[1][0] == "INTAKE"
+    assert pairs[1][3] == pytest.approx(0.4)
+
+
+def test_pair_events_stops_at_first_sequence_mismatch():
+    real = [(1.0, "STOW"), (2.0, "INTAKE"), (3.0, "EJECT")]
+    sim = [(1.0, "STOW"), (2.0, "REVERSE")]
+    pairs = pair_events(sim, real)
+    # Only the common prefix is comparable; after divergence the runs are
+    # doing different things and further pairing would be meaningless.
+    assert len(pairs) == 1
+    assert pairs[0][0] == "STOW"
