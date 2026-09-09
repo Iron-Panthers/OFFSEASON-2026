@@ -66,6 +66,16 @@ _EXCLUDED_PREFIXES = (
     "SystemStats/EpochTimeMicros",
     "SystemStats/CANBus/",
     "SystemStats/UserActive",
+    # Rails, match clock and per-camera vision distances are not modelled in
+    # simulation at all, so they diverge totally while telling us nothing about
+    # robot physics. They otherwise dominate the ranking.
+    "SystemStats/3v3Rail/",
+    "SystemStats/5vRail/",
+    "SystemStats/6vRail/",
+    "SystemStats/BatteryCurrent",
+    "DriverStation/MatchTime",
+    "RealOutputs/Match Time",
+    "RealOutputs/Vision/",
     "SystemStats/CPUTemp",
     "DriverStation/MatchNumber",
     "DriverStation/ReplayNumber",

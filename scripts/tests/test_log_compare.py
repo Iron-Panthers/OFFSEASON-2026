@@ -251,3 +251,22 @@ def test_abbreviated_velocity_key_is_a_mechanism():
     assert (
         categorize("RealOutputs/Swerve/Module3/DriveVelRadsScalar") == CATEGORY_MECHANISMS
     )
+
+
+def test_unmodelled_rails_and_clock_are_excluded():
+    # None of these are simulated, so they would diverge totally and crowd out
+    # the physics signals that actually matter.
+    for key in (
+        "SystemStats/3v3Rail/Current",
+        "SystemStats/5vRail/Voltage",
+        "SystemStats/6vRail/Current",
+        "DriverStation/MatchTime",
+        "RealOutputs/Match Time",
+        "RealOutputs/Vision/Camera0/Average Distance",
+    ):
+        assert is_excluded(key), key
+
+
+def test_battery_voltage_survives_the_rail_exclusions():
+    # The pack rail is the one voltage we DO model and must keep scoring.
+    assert not is_excluded("SystemStats/BatteryVoltage")
