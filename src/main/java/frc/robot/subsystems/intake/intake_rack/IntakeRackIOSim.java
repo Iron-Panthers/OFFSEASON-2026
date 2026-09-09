@@ -94,9 +94,7 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
     // Was a hardcoded 1.0 A "not simulated", which meant the intake rack
     // contributed a constant fake load and could never show a real current spike.
     double availableVolts = RobotController.getBatteryVoltage();
-    double statorAmps =
-        frc.robot.utility.SimCurrentLimit.clampStatorCurrent(
-            intakeRackSim.getCurrentDrawAmps(), IntakeRackConstants.SUPPLY_CURRENT_LIMIT);
+    double statorAmps = intakeRackSim.getCurrentDrawAmps();
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrent = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;

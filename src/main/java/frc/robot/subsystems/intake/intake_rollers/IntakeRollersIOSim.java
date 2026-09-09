@@ -77,6 +77,16 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     // while the motor still behaved as though it had a full 12 V to work with.
     double availableVolts = RobotController.getBatteryVoltage();
     appliedVoltage = Math.max(-availableVolts, Math.min(availableVolts, appliedVoltage));
+    // Steady-state drag. FlywheelSim is frictionless, so without this the mechanism draws
+    // ~0 A once it reaches setpoint while the real robot keeps pulling 12 A.
+    // Coefficient from the real q54 steady state: 12 A at 177 rad/s.
+    appliedVoltage -=
+        frc.robot.utility.SimCurrentLimit.dragVolts(
+            intakeRollersSim.getAngularVelocityRadPerSec(),
+            INTAKE_ROLLER_CONFIG.reduction(),
+            edu.wpi.first.math.system.plant.DCMotor.getKrakenX60Foc(1),
+            12.0 / 177.0);
+
     if (coasting) {
       // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
       appliedVoltage = 0.0;
@@ -114,9 +124,7 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     // Signed, not abs(): a negative draw is the mechanism back-driving and returning
     // energy. abs() booked every deceleration as consumption -- 47% of the omniwheel's
     // total error, and the real robot logs supply current down to -69.94 A.
-    double statorAmps =
-        frc.robot.utility.SimCurrentLimit.clampStatorCurrent(
-            intakeRollersSim.getCurrentDrawAmps(), CURRENT_LIMIT_AMPS);
+    double statorAmps = intakeRollersSim.getCurrentDrawAmps();
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;

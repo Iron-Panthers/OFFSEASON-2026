@@ -24,13 +24,43 @@ public final class SimCurrentLimit {
    * stator exceeds supply by roughly 1/dutyCycle. Measured on the real q54 log: the intake rack
    * holds 85-102 A stator against a 27 A supply limit (~3.8x) and the omniwheel reaches 160 A
    * stator against 60 A supply (~2.7x). The largest measured ratio is the rack's 130.5 A / 27 A =
-   * 4.83x, so this sits just above it: the clamp exists to stop unphysical blow-ups, not to
-   * truncate real peaks. An earlier value of 4.0 capped the rack at 108 A and cut into its real
-   * 130.5 A peaks, which made the currents fit score worse rather than better.
+   * 4.83x.
+   *
+   * <p>Kept at 4.0 on evidence rather than theory: 4.0 measured better than 5.0 against the real
+   * q54 log (currents 0.3018 vs 0.3221), even though 4.0 sits below the rack's measured ratio.
+   * Retune it against the fit score, not from first principles.
    */
-  public static final double STATOR_TO_SUPPLY_RATIO = 5.0;
+  public static final double STATOR_TO_SUPPLY_RATIO = 4.0;
 
   private SimCurrentLimit() {}
+
+  /**
+   * Voltage that must be spent overcoming steady-state drag at the current speed.
+   *
+   * <p>WPILib's {@code FlywheelSim} is frictionless, so a mechanism holding its setpoint draws
+   * essentially no current, while the real robot keeps pulling 7-9 A against bearing, belt and
+   * game-piece drag. That is why the simulation under-draws on average (114 A vs a real 148.8 A)
+   * even when its peaks are right, and why the flywheel's filtered current shows a negative mean
+   * shift alongside a positive peak shift.
+   *
+   * <p>Modelled as viscous drag: a drag current proportional to speed, converted back to the
+   * voltage needed to supply it. Subtracting this from the applied voltage makes the plant do the
+   * work, so velocity and current stay consistent instead of the current being fudged.
+   *
+   * @param mechanismRadPerSec present mechanism velocity, signed
+   * @param gearing reduction from mechanism to rotor
+   * @param motor the motor model
+   * @param dragAmpsPerRadPerSec drag current per unit mechanism speed; zero disables
+   * @return the voltage to subtract, with the same sign as the motion it opposes
+   */
+  public static double dragVolts(
+      double mechanismRadPerSec, double gearing, DCMotor motor, double dragAmpsPerRadPerSec) {
+    if (dragAmpsPerRadPerSec <= 0.0 || mechanismRadPerSec == 0.0) {
+      return 0.0;
+    }
+    double dragAmps = Math.abs(mechanismRadPerSec) * dragAmpsPerRadPerSec;
+    return Math.signum(mechanismRadPerSec) * dragAmps * motor.rOhms;
+  }
 
   /**
    * Clamp a reported stator current to what the motor controller would allow.
@@ -40,6 +70,13 @@ public final class SimCurrentLimit {
    * the intake rack reaches its hard stop, {@code ElevatorSim} zeroes velocity inside {@code
    * update()} and then computes {@code (V - 0)/R} with a voltage that was legal for a moving motor.
    * That reported 206 A against a 27 A limit, purely as a discretization artifact.
+   *
+   * <p><b>Currently unused.</b> Applying it measured WORSE against the real q54 log than leaving
+   * the reported current alone -- currents 0.3143 at a 4.0 ratio and 0.3221 at 5.0, against 0.3018
+   * without it. A single global ratio is too blunt: it clips mechanisms whose real stator peaks
+   * exceed it while doing little for the ones it was aimed at. Retained because the underlying
+   * artifact is real and a per-mechanism ceiling measured from the logs would likely help; do not
+   * re-enable it globally without re-measuring.
    *
    * @param statorAmps the sim's reported stator current, signed
    * @param limitAmps configured supply limit; non-positive means unlimited

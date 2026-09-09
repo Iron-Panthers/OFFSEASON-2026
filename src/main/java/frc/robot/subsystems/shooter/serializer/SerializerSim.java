@@ -78,9 +78,7 @@ public class SerializerSim extends GenericRollersIOSim {
     // appliedVolts too so the sim log carries the same key the real logs do.
     // supplyCurrentAmps was a hardcoded 1.0 A "not simulated".
     double availableVolts = RobotController.getBatteryVoltage();
-    double statorAmps =
-        frc.robot.utility.SimCurrentLimit.clampStatorCurrent(
-            serializerSim.getCurrentDrawAmps(), CURRENT_LIMIT_AMPS);
+    double statorAmps = serializerSim.getCurrentDrawAmps();
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVelocity) / availableVolts : 0.0;
 
     inputs.connected = true;
