@@ -11,6 +11,7 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import frc.robot.MotorOutputManager;
 
 public abstract class GenericSuperstructureIOSim implements GenericSuperstructureIO {
 
@@ -28,6 +29,9 @@ public abstract class GenericSuperstructureIOSim implements GenericSuperstructur
 
   /** Sensor-to-mechanism reduction, so subclasses can convert consistently. */
   protected final double mechanismReduction;
+
+  /** Last supply current reported by the subclass, in amps, for aggregate power bookkeeping. */
+  protected double reportedSupplyCurrentAmps = 0.0;
 
   public GenericSuperstructureIOSim(int id) {
     this(id, 1.0);
@@ -53,6 +57,10 @@ public abstract class GenericSuperstructureIOSim implements GenericSuperstructur
             // ~1.7x faster than the real one: it was moving 2.55x less actual distance.
             .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(reduction));
     talon.getConfigurator().apply(config);
+
+    // See GenericRollersIOSim: the TalonFX class registers with MotorOutputManager and the sim
+    // class did not, so simulated TotalAmps omitted every mechanism.
+    MotorOutputManager.getInstance().registerMotorOutputs(() -> reportedSupplyCurrentAmps);
   }
 
   @Override

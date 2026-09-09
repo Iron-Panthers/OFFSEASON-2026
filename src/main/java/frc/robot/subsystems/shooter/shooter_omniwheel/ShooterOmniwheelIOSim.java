@@ -127,5 +127,6 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 }

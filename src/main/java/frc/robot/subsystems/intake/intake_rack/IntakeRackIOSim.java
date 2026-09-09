@@ -97,6 +97,7 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
     inputs.statorCurrent = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
 
     // update the Sim State to match if it is up or down
     if (mechanismRotations < .1) {

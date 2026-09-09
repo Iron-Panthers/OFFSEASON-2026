@@ -124,5 +124,6 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 }

@@ -91,5 +91,6 @@ public class SerializerSim extends GenericRollersIOSim {
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 }

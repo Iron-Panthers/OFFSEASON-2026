@@ -84,6 +84,7 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
     inputs.statorCurrent = shooterHoodSim.getCurrentDrawAmps();
     inputs.supplyCurrentAmps = talon.getSimState().getSupplyCurrent();
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 
   @Override

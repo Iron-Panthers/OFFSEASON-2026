@@ -126,5 +126,6 @@ public class ShooterFlywheelIOSim extends GenericRollersIOSim implements Shooter
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 }

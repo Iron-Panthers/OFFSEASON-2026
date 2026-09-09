@@ -129,5 +129,6 @@ public class ShooterAcceleratorIOSim extends GenericRollersIOSim implements Shoo
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
     lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
   }
 }

@@ -7,6 +7,7 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import frc.robot.MotorOutputManager;
 
 public abstract class GenericRollersIOSim implements GenericRollersIO {
   protected final TalonFX talon;
@@ -22,6 +23,14 @@ public abstract class GenericRollersIOSim implements GenericRollersIO {
    * stop. Subclasses check this and apply 0 V.
    */
   protected boolean coasting = false;
+
+  /**
+   * Last supply current reported by the subclass, in amps.
+   *
+   * <p>Subclasses assign this at the end of {@code updateInputs} so the aggregate power bookkeeping
+   * below sees the same number the log does.
+   */
+  protected double reportedSupplyCurrentAmps = 0.0;
 
   private final double mechanismReduction;
   private final VelocityVoltage velocityControl = new VelocityVoltage(0).withUpdateFreqHz(0);
@@ -41,6 +50,13 @@ public abstract class GenericRollersIOSim implements GenericRollersIO {
     talon.getConfigurator().apply(config);
 
     talon.optimizeBusUtilization();
+
+    // GenericRollersIOTalonFX registers every motor with MotorOutputManager; the sim class did
+    // not, and it does not extend the TalonFX class, so in simulation TotalAmps counted the
+    // swerve modules ONLY (those inherit registration through ModuleIOTalonFX). All seven
+    // mechanisms were missing, which is why sim mean pack draw sat at 89.6 A against a real
+    // 158.3 A and why the aggregate fit category never improved.
+    MotorOutputManager.getInstance().registerMotorOutputs(() -> reportedSupplyCurrentAmps);
   }
 
   @Override
