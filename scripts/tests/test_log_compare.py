@@ -138,3 +138,69 @@ def test_pair_events_stops_at_first_sequence_mismatch():
     # doing different things and further pairing would be meaningless.
     assert len(pairs) == 1
     assert pairs[0][0] == "STOW"
+
+
+from log_compare import (
+    CATEGORY_AGGREGATE,
+    CATEGORY_CURRENTS,
+    CATEGORY_MECHANISMS,
+    CATEGORY_OTHER,
+    CATEGORY_VOLTAGE,
+    categorize,
+)
+
+
+def test_categorize_currents():
+    assert categorize("Swerve/Module0/DriveStatorCurrent") == CATEGORY_CURRENTS
+    assert categorize("Intake/Intake Rollers/SupplyCurrentAmps") == CATEGORY_CURRENTS
+
+
+def test_categorize_voltage():
+    assert categorize("SystemStats/BatteryVoltage") == CATEGORY_VOLTAGE
+
+
+def test_categorize_mechanisms():
+    assert categorize("Intake/Intake Rack/PositionRotations") == CATEGORY_MECHANISMS
+    assert (
+        categorize("RealOutputs/Shooter/Shooter Flywheels/Current Velocity")
+        == CATEGORY_MECHANISMS
+    )
+
+
+def test_categorize_aggregate():
+    assert categorize("RealOutputs/MotorOutputManager/TotalAmps") == CATEGORY_AGGREGATE
+
+
+def test_categorize_falls_back_to_other():
+    assert categorize("RealOutputs/Console") == CATEGORY_OTHER
+
+
+def test_applied_volts_is_not_miscategorized_as_battery_voltage():
+    # AppliedVolts is a per-motor output, not the battery rail.
+    assert categorize("Intake/Intake Rack/AppliedVolts") != CATEGORY_VOLTAGE
+
+
+def test_current_word_meaning_present_is_not_a_current_channel():
+    # These real log keys use "Current" to mean *present*, not amperage.
+    # Bucketing them as currents would pollute the currents fit score with
+    # mechanism and pose signals.
+    assert (
+        categorize("RealOutputs/Shooter/Shooter Flywheels/Current Velocity")
+        == CATEGORY_MECHANISMS
+    )
+    assert (
+        categorize("RealOutputs/Swerve/Heading Controller/Current Position")
+        == CATEGORY_MECHANISMS
+    )
+
+
+def test_real_current_keys_still_bucket_as_currents():
+    for key in (
+        "Swerve/Module0/DriveStatorCurrent",
+        "Swerve/Module3/SteerSupplyCurrent",
+        "Intake/Intake Rack/SupplyCurrentAmps",
+        "RealOutputs/Serializer/Filtered Current",
+        "SystemStats/3v3Rail/Current",
+        "RealOutputs/Intake/Intake Rack/Total Amp Seconds",
+    ):
+        assert categorize(key) == CATEGORY_CURRENTS, key

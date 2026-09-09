@@ -162,3 +162,47 @@ def pair_events(sim_events, real_events):
             break
         pairs.append((real_val, sim_ts, real_ts, sim_ts - real_ts))
     return pairs
+
+
+CATEGORY_MECHANISMS = "mechanisms"
+CATEGORY_CURRENTS = "currents"
+CATEGORY_VOLTAGE = "voltage"
+CATEGORY_AGGREGATE = "aggregate"
+CATEGORY_OTHER = "other"
+
+
+# Substrings that genuinely denote an electrical current channel.
+#
+# Deliberately explicit rather than a bare "Current" substring test: the logs
+# are full of keys like "Current Velocity", "Current Position" and "Current
+# Pose", where "Current" means *present*, not *amperage*. Matching those as
+# currents would file flywheel velocity and swerve pose into the currents
+# bucket and make that fit score meaningless.
+_CURRENT_MARKERS = (
+    "StatorCurrent",
+    "SupplyCurrent",
+    "Amps",
+    "Filtered Current",
+    "Rail/Current",
+    "BatteryCurrent",
+    "Amp Seconds",
+)
+
+
+def categorize(key):
+    """
+    Bucket a log key into a fidelity category.
+
+    Order matters: the most specific patterns are checked first, so that
+    MotorOutputManager/TotalAmps scores as aggregate rather than as just
+    another current channel.
+    """
+    if key.startswith("RealOutputs/MotorOutputManager/"):
+        return CATEGORY_AGGREGATE
+    if key in ("SystemStats/BatteryVoltage", "SystemStats/BatteryCurrent"):
+        return CATEGORY_VOLTAGE
+    if any(marker in key for marker in _CURRENT_MARKERS):
+        return CATEGORY_CURRENTS
+    if "Position" in key or "Velocity" in key or "Rotations" in key:
+        return CATEGORY_MECHANISMS
+    return CATEGORY_OTHER
