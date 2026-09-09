@@ -43,9 +43,17 @@ public final class SimCurrentLimit {
    * even when its peaks are right, and why the flywheel's filtered current shows a negative mean
    * shift alongside a positive peak shift.
    *
-   * <p>Modelled as viscous drag: a drag current proportional to speed, converted back to the
-   * voltage needed to supply it. Subtracting this from the applied voltage makes the plant do the
-   * work, so velocity and current stay consistent instead of the current being fudged.
+   * <p><b>Currently unused, and the approach is wrong as written.</b> Subtracting a voltage does
+   * not create a load: {@code FlywheelSim} has no opposing torque, so the plant simply settles at a
+   * slightly lower speed with its current still near zero. Measured against q54 it moved mean pack
+   * current only 113.84 -> 113.50 A (real: 148.8 A) while making the currents fit score worse
+   * (0.3018 -> 0.3159).
+   *
+   * <p>Closing the steady-state gap needs a change to the PLANT, not to the command: either an
+   * explicit load torque, or replacing {@code LinearSystemId.createFlywheelSystem} with {@code
+   * identifyVelocitySystem(kV, kA)} characterised from the real logs, so the terminal speed for a
+   * given voltage is right and the motor must genuinely work to hold setpoint. Retained as a
+   * starting point for that work.
    *
    * @param mechanismRadPerSec present mechanism velocity, signed
    * @param gearing reduction from mechanism to rotor

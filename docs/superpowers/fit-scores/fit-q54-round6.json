@@ -1,0 +1,1409 @@
+{
+  "sim": "build/ai-logs/akit_26-09-08_21-29-39.wpilog",
+  "real": "C:\\Users\\bruce\\Downloads\\LOGS-2026-main\\LOGS-2026-main\\Worlds/akit_26-04-30_14-50-56_johnson_q54.wpilog",
+  "duration_s": 165.097615,
+  "categories": {
+    "aggregate": 0.30593929082245225,
+    "currents": 0.3159325890788534,
+    "mechanisms": 0.2639515323909296,
+    "other": 0.22705264132194422,
+    "voltage": 0.2850653772658943
+  },
+  "signals": {
+    "Shooter/Shooter Flywheels/StatorCurrentAmps": {
+      "nrmse": 1.089144397718638,
+      "mean_shift": -12.594656817510817,
+      "p95_shift": 182.0773497798708,
+      "peak_shift": 201.3755757556731,
+      "correlation": 0.02078589012982496,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Intake/Intake Rack/Total Amp Seconds": {
+      "nrmse": 0.9135369732357108,
+      "mean_shift": 609.5940916014932,
+      "p95_shift": 1603.8746617065995,
+      "peak_shift": 1717.9428017833043,
+      "correlation": 0.9141005500883274,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module2/DrivePositionRads": {
+      "nrmse": 0.8471688454818522,
+      "mean_shift": -1473.763465867436,
+      "p95_shift": -1638.4295397327744,
+      "peak_shift": -715.2829695447715,
+      "correlation": 0.4351372032231393,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module2/DrivePositionMeters": {
+      "nrmse": 0.8425704236184324,
+      "mean_shift": -73.35303250840332,
+      "p95_shift": -81.97057147878405,
+      "peak_shift": -37.01511148486634,
+      "correlation": 0.43513720322313804,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Shooter/Shooter Flywheels/SupplyCurrentAmps": {
+      "nrmse": 0.8326738783226358,
+      "mean_shift": 6.3657386746096805,
+      "p95_shift": 54.75389393891817,
+      "peak_shift": 38.9507617756045,
+      "correlation": 0.00017632684199239527,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Shooter/Shooter Accelerator/Total Amp Seconds": {
+      "nrmse": 0.7630597873233463,
+      "mean_shift": 349.3838884668337,
+      "p95_shift": 782.8804576954509,
+      "peak_shift": 935.2177239717657,
+      "correlation": 0.9945674602617093,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module1/DrivePositionRads": {
+      "nrmse": 0.6717917297955597,
+      "mean_shift": 1400.3222013522793,
+      "p95_shift": 1007.6044844074108,
+      "peak_shift": -670.6211189054809,
+      "correlation": -0.8496694115771383,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module1/DrivePositionMeters": {
+      "nrmse": 0.6651851971879584,
+      "mean_shift": 69.33324738793785,
+      "p95_shift": 48.8267942818229,
+      "peak_shift": -35.27799860638835,
+      "correlation": -0.84966941157713,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooter/Shooter Omniwheel/Total Amp Seconds": {
+      "nrmse": 0.6496162631987896,
+      "mean_shift": 457.91318906043307,
+      "p95_shift": 1074.9977098375066,
+      "peak_shift": 1225.4549799545666,
+      "correlation": 0.9949872463654666,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Shooter/Shooter Accelerator/Filtered Current": {
+      "nrmse": 0.5929181101042594,
+      "mean_shift": 5.433657223648425,
+      "p95_shift": 32.64598723498551,
+      "peak_shift": 35.4428544999825,
+      "correlation": 0.7814250407362173,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Serializer/Filtered Current": {
+      "nrmse": 0.5453372649095247,
+      "mean_shift": -9.369125878356598,
+      "p95_shift": -18.15839999999352,
+      "peak_shift": -19.948399999992624,
+      "correlation": 0.41522946493454155,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Serializer/Total Amp Seconds": {
+      "nrmse": 0.5356431065074356,
+      "mean_shift": -707.6781998541906,
+      "p95_shift": -1449.802399999145,
+      "peak_shift": -1556.4235999990951,
+      "correlation": 0.9980792226478536,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Intake/Intake Rollers/Total Amp Seconds": {
+      "nrmse": 0.5311810216665439,
+      "mean_shift": -568.3924756623989,
+      "p95_shift": -1259.3499043679553,
+      "peak_shift": -1311.8106641296574,
+      "correlation": 0.8374205533443144,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Intake/Intake Rollers/VelocityRadsPerSec": {
+      "nrmse": 0.5306833252508003,
+      "mean_shift": 74.51892671249487,
+      "p95_shift": 112.02397619477549,
+      "peak_shift": 127.56917107410882,
+      "correlation": 0.5562453457751926,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module0/DrivePositionMeters": {
+      "nrmse": 0.49421040833831253,
+      "mean_shift": 38.309709357599814,
+      "p95_shift": 26.42464833881778,
+      "peak_shift": -58.824869286196666,
+      "correlation": -0.19338943029596947,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module0/DrivePositionRads": {
+      "nrmse": 0.4918899784135826,
+      "mean_shift": 760.0608659979125,
+      "p95_shift": 528.0483425370257,
+      "peak_shift": -1162.5380779646484,
+      "correlation": -0.1933894302959725,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Module1/DriveVelRadsScalar": {
+      "nrmse": 0.490656779901959,
+      "mean_shift": 42.47298027589555,
+      "p95_shift": -23.213608004238594,
+      "peak_shift": -23.229099004817357,
+      "correlation": 0.010192310569047972,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Module2/DriveVelRadsScalar": {
+      "nrmse": 0.4763020630630087,
+      "mean_shift": -18.658316255315725,
+      "p95_shift": -23.52511411601182,
+      "peak_shift": -23.22909801865525,
+      "correlation": -0.019464258602422187,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Shooter/Shooter Flywheels/AppliedVolts": {
+      "nrmse": 0.4711415049618298,
+      "mean_shift": -3.2542384145132863,
+      "p95_shift": -2.813280475675775,
+      "peak_shift": -3.4984580022606018,
+      "correlation": 0.032772485743662906,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Module3/DriveVelRadsScalar": {
+      "nrmse": 0.46944644240577105,
+      "mean_shift": 9.849057747168526,
+      "p95_shift": -23.30350677531571,
+      "peak_shift": -23.22909923647643,
+      "correlation": 0.03861992063050026,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Module2/Steer Setpoint": {
+      "nrmse": 0.46594370132360846,
+      "mean_shift": 0.6446488074369577,
+      "p95_shift": 0.0063496753453753385,
+      "peak_shift": 0.00021140996260493594,
+      "correlation": -0.08923442493103725,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Module0/DriveVelRadsScalar": {
+      "nrmse": 0.45874521964149184,
+      "mean_shift": 5.274770909486919,
+      "p95_shift": -23.251621941171635,
+      "peak_shift": -23.229099100095524,
+      "correlation": -0.0033320572695849766,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooter/Shooter Flywheels/Total Amp Seconds": {
+      "nrmse": 0.43976621331613036,
+      "mean_shift": 637.4254577869324,
+      "p95_shift": 1034.9535367200892,
+      "peak_shift": 1057.8716354003798,
+      "correlation": 0.9958413729250558,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Shooter/Shooter Flywheels/Filtered Current": {
+      "nrmse": 0.431270778666311,
+      "mean_shift": 6.383923236027927,
+      "p95_shift": 4.719989660096957,
+      "peak_shift": 22.68120534566564,
+      "correlation": -0.18051947487690556,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Intake/Intake Rack/Filtered Current": {
+      "nrmse": 0.4282395517365693,
+      "mean_shift": 10.372513928137908,
+      "p95_shift": -2.0919243787307487,
+      "peak_shift": 6.394681610333805,
+      "correlation": 0.11831904488338665,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Swerve/Module1/Steer Setpoint": {
+      "nrmse": 0.4100006355803518,
+      "mean_shift": 0.477879074837061,
+      "p95_shift": 0.07694084042373239,
+      "peak_shift": -0.0007719452902512636,
+      "correlation": 0.043563803718564116,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/MotorOutputManager/TotalAmpSecondsSquared": {
+      "nrmse": 0.38633446092686613,
+      "mean_shift": -1398558.982914595,
+      "p95_shift": -2966827.0201519923,
+      "peak_shift": -3180937.7613359904,
+      "correlation": 0.9968612301490484,
+      "samples": 8254,
+      "category": "aggregate"
+    },
+    "RealOutputs/Shooter/Shooter Omniwheel/Filtered Current": {
+      "nrmse": 0.3831370948283607,
+      "mean_shift": 7.250134087098375,
+      "p95_shift": 28.30189809520503,
+      "peak_shift": 26.094152734529267,
+      "correlation": 0.787661751114917,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Serializer/AppliedVolts": {
+      "nrmse": 0.3827786182565429,
+      "mean_shift": 3.1415503818719968,
+      "p95_shift": 0.9326269231455289,
+      "peak_shift": -1.0133296644037664,
+      "correlation": 0.32567438821655664,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Intake/Intake Rollers/PositionRads": {
+      "nrmse": 0.38200115718538546,
+      "mean_shift": 7178.251064676186,
+      "p95_shift": 12052.186850821257,
+      "peak_shift": 12470.82650641536,
+      "correlation": 0.9970329896346442,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Module0/Steer Setpoint": {
+      "nrmse": 0.37139155397584295,
+      "mean_shift": 0.34543631649657935,
+      "p95_shift": -0.06414253555993366,
+      "peak_shift": -0.00014313283654221465,
+      "correlation": 0.11475270576485479,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module1/DriveAppliedVolts": {
+      "nrmse": 0.3665275899878849,
+      "mean_shift": 2.931496244245228,
+      "p95_shift": -1.2699999999999996,
+      "peak_shift": -1.6099999999999994,
+      "correlation": 0.03430228314767827,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module2/DriveAppliedVolts": {
+      "nrmse": 0.361765200085448,
+      "mean_shift": -1.5756227283741213,
+      "p95_shift": -2.969999999999999,
+      "peak_shift": -1.6500000000000004,
+      "correlation": -0.054794667754096305,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Heading Controller/PID Output": {
+      "nrmse": 0.361339634132823,
+      "mean_shift": -2.8862138071484025,
+      "p95_shift": -15.753929739565123,
+      "peak_shift": -9.183719643847631,
+      "correlation": 0.09530424590456373,
+      "samples": 7980,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Module3/Steer Setpoint": {
+      "nrmse": 0.3596301506129317,
+      "mean_shift": 0.31152744312676284,
+      "p95_shift": -0.035261187628683466,
+      "peak_shift": -0.0007719452902512636,
+      "correlation": 0.0768678170496943,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Intake/Intake Rollers/AppliedVolts": {
+      "nrmse": 0.3590975166102708,
+      "mean_shift": 1.64773796003261,
+      "p95_shift": 2.6962519892094754,
+      "peak_shift": 2.925984703985229,
+      "correlation": 0.5563503930037779,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Serializer/StatorCurrentAmps": {
+      "nrmse": 0.354700327876569,
+      "mean_shift": -24.311410225337724,
+      "p95_shift": -32.45999999999017,
+      "peak_shift": -42.07999999998869,
+      "correlation": 0.5234211807439608,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module2/SteerStatorCurrent": {
+      "nrmse": 0.3475622492724314,
+      "mean_shift": -11.057567240125952,
+      "p95_shift": 7.98,
+      "peak_shift": 80.36000000000001,
+      "correlation": -0.04346821283826656,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module3/DriveAppliedVolts": {
+      "nrmse": 0.3466299950508656,
+      "mean_shift": -0.02648291737339903,
+      "p95_shift": -2.1000000000000014,
+      "peak_shift": -1.620000000000001,
+      "correlation": 0.07674596697523885,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module0/SteerStatorCurrent": {
+      "nrmse": 0.34397537415092977,
+      "mean_shift": -10.98243033680635,
+      "p95_shift": 9.199999999999996,
+      "peak_shift": 80.22,
+      "correlation": -0.0037257855246226857,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Intake/Intake Rollers/Filtered Current": {
+      "nrmse": 0.3323017979701009,
+      "mean_shift": -7.960788486199281,
+      "p95_shift": -19.869859863780196,
+      "peak_shift": -29.069330697562453,
+      "correlation": -0.39676196463751423,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module0/DriveAppliedVolts": {
+      "nrmse": 0.3297449153362401,
+      "mean_shift": -0.037209837654471056,
+      "p95_shift": -0.620000000000001,
+      "peak_shift": -1.4900000000000002,
+      "correlation": 0.11906093844758919,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module1/DriveVelocityRadsPerSec": {
+      "nrmse": 0.3226120794767962,
+      "mean_shift": 20.388672032556315,
+      "p95_shift": -18.309594684203006,
+      "peak_shift": -17.62237129123025,
+      "correlation": 0.03786485474587211,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Intake/Intake Rack/StatorCurrent": {
+      "nrmse": 0.32213542511944054,
+      "mean_shift": 52.11390241075814,
+      "p95_shift": 9.655605673789964,
+      "peak_shift": 125.50664209309733,
+      "correlation": 0.1300653437371529,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module1/DriveVelocityMetersPerSec": {
+      "nrmse": 0.3199638332391557,
+      "mean_shift": 1.010801988618634,
+      "p95_shift": -0.991891735119403,
+      "peak_shift": -0.9748274505824988,
+      "correlation": 0.03786485474587151,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/MotorOutputManager/TotalAmpSeconds": {
+      "nrmse": 0.31912561349818364,
+      "mean_shift": -6594.2974360552535,
+      "p95_shift": -13591.904799999993,
+      "peak_shift": -14577.491200000004,
+      "correlation": 0.9983368382378023,
+      "samples": 8254,
+      "category": "aggregate"
+    },
+    "Swerve/Module2/DriveVelocityRadsPerSec": {
+      "nrmse": 0.3166719072567068,
+      "mean_shift": -11.685319252057603,
+      "p95_shift": -32.16450916038613,
+      "peak_shift": -18.542759763961627,
+      "correlation": -0.025728755081970933,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Acceleration": {
+      "nrmse": 0.3149493891803286,
+      "mean_shift": -0.0016729081253573572,
+      "p95_shift": -0.04000000000000001,
+      "peak_shift": -0.04000000000000001,
+      "correlation": 0.53855381014949,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Shooter/Shooter Hood/Total Amp Seconds": {
+      "nrmse": 0.3139467539027797,
+      "mean_shift": -15.441369227042179,
+      "p95_shift": -35.175000000001674,
+      "peak_shift": -37.0046000000016,
+      "correlation": 0.9966995665834364,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module2/DriveVelocityMetersPerSec": {
+      "nrmse": 0.31392990133778925,
+      "mean_shift": -0.5785905072663159,
+      "p95_shift": -1.6770565013311356,
+      "peak_shift": -1.019815818236375,
+      "correlation": -0.025728755081970568,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module3/DriveVelocityRadsPerSec": {
+      "nrmse": 0.3115120999060982,
+      "mean_shift": 0.589359358661147,
+      "p95_shift": -25.930411238418884,
+      "peak_shift": -21.1321193339126,
+      "correlation": 0.042952096015100645,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module0/SteerSupplyCurrent": {
+      "nrmse": 0.3092235693561313,
+      "mean_shift": -1.9083183910831327,
+      "p95_shift": 1.46,
+      "peak_shift": 41.88,
+      "correlation": -0.011834898771024385,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module3/DriveVelocityMetersPerSec": {
+      "nrmse": 0.30898029765199525,
+      "mean_shift": 0.03527610872282694,
+      "p95_shift": -1.3667838892303457,
+      "peak_shift": -1.1473342912302158,
+      "correlation": 0.04295209601510082,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooting Predictor/Baseline Vv": {
+      "nrmse": 0.30815871866165695,
+      "mean_shift": 2.49372005359632,
+      "p95_shift": 3.0115381568970463,
+      "peak_shift": 5.649318330223924,
+      "correlation": 0.7119939014783089,
+      "samples": 8234,
+      "category": "other"
+    },
+    "Intake/Intake Rack/SupplyCurrentAmps": {
+      "nrmse": 0.3020216994226623,
+      "mean_shift": 10.37055336510048,
+      "p95_shift": 0.02288619563052663,
+      "peak_shift": 125.78672912698173,
+      "correlation": 0.06694477783527689,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module2/SteerSupplyCurrent": {
+      "nrmse": 0.2973463928185117,
+      "mean_shift": -1.7962224376060067,
+      "p95_shift": 1.1600000000000001,
+      "peak_shift": 52.80000000000001,
+      "correlation": -0.053743977249416444,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module0/DriveVelocityRadsPerSec": {
+      "nrmse": 0.29660642847621116,
+      "mean_shift": 1.7067128973654038,
+      "p95_shift": -8.087146713733091,
+      "peak_shift": -20.62897363548609,
+      "correlation": 0.1131811643958902,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module1/SteerSupplyCurrent": {
+      "nrmse": 0.2945185570958724,
+      "mean_shift": -1.7565035134480338,
+      "p95_shift": 1.1799999999999997,
+      "peak_shift": 54.540000000000006,
+      "correlation": -0.004066465240438553,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module0/DriveVelocityMetersPerSec": {
+      "nrmse": 0.2942505397733755,
+      "mean_shift": 0.08781076259914311,
+      "p95_shift": -0.4783890892869609,
+      "peak_shift": -1.1221719134926742,
+      "correlation": 0.11318116439588863,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module1/SteerStatorCurrent": {
+      "nrmse": 0.29208268651195307,
+      "mean_shift": -10.909394233099032,
+      "p95_shift": 8.98,
+      "peak_shift": 66.32,
+      "correlation": -0.016094869227220147,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/RobotState/Target Shooting State/Shooter Angle": {
+      "nrmse": 0.2889342989259049,
+      "mean_shift": 10.137758204995507,
+      "p95_shift": 8.044106217422211,
+      "peak_shift": 0.4984738225253835,
+      "correlation": 0.532111658683132,
+      "samples": 8234,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Adjusted Hood Angle": {
+      "nrmse": 0.2889342989259049,
+      "mean_shift": 10.137758204995507,
+      "p95_shift": 8.044106217422211,
+      "peak_shift": 0.4984738225253835,
+      "correlation": 0.532111658683132,
+      "samples": 8234,
+      "category": "other"
+    },
+    "Shooter/Shooter Accelerator/VelocityRadsPerSec": {
+      "nrmse": 0.28721173027433566,
+      "mean_shift": 8.521706529436592,
+      "p95_shift": 73.1733515223163,
+      "peak_shift": 65.79799271084534,
+      "correlation": 0.6570746911160587,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "SystemStats/BatteryVoltage": {
+      "nrmse": 0.2850653772658943,
+      "mean_shift": 0.3748086493414977,
+      "p95_shift": 0.10699682617187634,
+      "peak_shift": -0.5400976562499995,
+      "correlation": 0.30169750057915773,
+      "samples": 8254,
+      "category": "voltage"
+    },
+    "Swerve/Module3/SteerSupplyCurrent": {
+      "nrmse": 0.28395622249737235,
+      "mean_shift": -2.0065858977465583,
+      "p95_shift": -0.9000000000000004,
+      "peak_shift": 39.66,
+      "correlation": -0.04336061412850693,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Serializer/SupplyCurrentAmps": {
+      "nrmse": 0.26889556853648516,
+      "mean_shift": -9.46937484855284,
+      "p95_shift": -21.279999999992636,
+      "peak_shift": -27.739999999989713,
+      "correlation": 0.32688363356206845,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/RobotState/Target Shooting State/Shooter Speed": {
+      "nrmse": 0.26847892344067475,
+      "mean_shift": -1.0475104102228752,
+      "p95_shift": -2.4383726427029764,
+      "peak_shift": -3.0926329967535047,
+      "correlation": 0.4122261219544552,
+      "samples": 8234,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Adjusted Shooter Speed": {
+      "nrmse": 0.26847892344067475,
+      "mean_shift": -1.0475104102228752,
+      "p95_shift": -2.4383726427029764,
+      "peak_shift": -3.0926329967535047,
+      "correlation": 0.4122261219544552,
+      "samples": 8234,
+      "category": "other"
+    },
+    "Swerve/Module3/DrivePositionRads": {
+      "nrmse": 0.2683939970717052,
+      "mean_shift": -190.20080057654167,
+      "p95_shift": -475.3745102426086,
+      "peak_shift": -184.28018001027783,
+      "correlation": 0.5413261971307499,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module3/DrivePositionMeters": {
+      "nrmse": 0.2661671039895971,
+      "mean_shift": -9.124352303223162,
+      "p95_shift": -23.849373462927158,
+      "peak_shift": -10.232480203288702,
+      "correlation": 0.5413261971307478,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/MotorOutputManager/TotalAmps": {
+      "nrmse": 0.2649852791261459,
+      "mean_shift": -88.80933123334137,
+      "p95_shift": -113.94,
+      "peak_shift": -84.32000000000002,
+      "correlation": 0.42965217604569417,
+      "samples": 8254,
+      "category": "aggregate"
+    },
+    "Swerve/Module3/SteerStatorCurrent": {
+      "nrmse": 0.26333961241595943,
+      "mean_shift": -11.968160891688804,
+      "p95_shift": 5.220000000000002,
+      "peak_shift": 63.219999999999985,
+      "correlation": -0.03533003848697989,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Swerve/Heading Controller/Output": {
+      "nrmse": 0.2603439184311076,
+      "mean_shift": -2.7783451185691335,
+      "p95_shift": -15.809876815421326,
+      "peak_shift": -6.896037221480249,
+      "correlation": 0.053834408161800476,
+      "samples": 7980,
+      "category": "other"
+    },
+    "RealOutputs/Shooter/Shooter Accelerator/Target Velocity": {
+      "nrmse": 0.25475347315373187,
+      "mean_shift": -4.867312818027774,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.7655480272353746,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/MotorOutputManager/TotalAmpsSquared": {
+      "nrmse": 0.2533118097386133,
+      "mean_shift": -19355.94346251522,
+      "p95_shift": -41922.82239999999,
+      "peak_shift": -46628.96000000002,
+      "correlation": 0.34172800643595824,
+      "samples": 8254,
+      "category": "aggregate"
+    },
+    "RealOutputs/Serializer/Target Velocity": {
+      "nrmse": 0.24517885847594356,
+      "mean_shift": 6.398110007269203,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.5487794179604213,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooter/Shooter Omniwheel/Target Velocity": {
+      "nrmse": 0.2365858441302857,
+      "mean_shift": 1.6537436394475407,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.7748104988941461,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Serializer/VelocityRadsPerSec": {
+      "nrmse": 0.23477464952544977,
+      "mean_shift": 9.955906779681122,
+      "p95_shift": -51.151529708633845,
+      "peak_shift": -105.07630206718713,
+      "correlation": 0.28507125577814224,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Distance From Setpoint": {
+      "nrmse": 0.22894572997229407,
+      "mean_shift": -2.3907595892554703,
+      "p95_shift": -2.41163628707087,
+      "peak_shift": 0.34694723070998457,
+      "correlation": 0.8851360836037306,
+      "samples": 8246,
+      "category": "other"
+    },
+    "Shooter/Shooter Accelerator/SupplyCurrentAmps": {
+      "nrmse": 0.21014217023190468,
+      "mean_shift": 5.646700532903804,
+      "p95_shift": 30.76745449998264,
+      "peak_shift": -2.4338905125213586,
+      "correlation": 0.5787676116949736,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Shooter/Shooter Omniwheel/StatorCurrentAmps": {
+      "nrmse": 0.20682613258503535,
+      "mean_shift": 8.977710843468337,
+      "p95_shift": 118.73896871721695,
+      "peak_shift": 73.05781839478166,
+      "correlation": 0.14778301703379937,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Shooter/Shooter Flywheels/Current Velocity": {
+      "nrmse": 0.20596504662537216,
+      "mean_shift": 0.5066538214573271,
+      "p95_shift": 0.16970630164660072,
+      "peak_shift": -0.41179454402345783,
+      "correlation": 0.258796307929835,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Shooter/Shooter Flywheels/VelocityRadsPerSec": {
+      "nrmse": 0.20596504662537085,
+      "mean_shift": 13.298000574491653,
+      "p95_shift": 4.454233642805605,
+      "peak_shift": -10.808255757837003,
+      "correlation": 0.2587963079298353,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Shooter/Shooter Omniwheel/VelocityRadsPerSec": {
+      "nrmse": 0.20227491492214897,
+      "mean_shift": -9.586189848004828,
+      "p95_shift": -101.39370806390997,
+      "peak_shift": 35.44121012885955,
+      "correlation": 0.6036368564494436,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module2/DriveStatorCurrent": {
+      "nrmse": 0.19931116419769948,
+      "mean_shift": 7.628706081899832,
+      "p95_shift": 27.89999999999999,
+      "peak_shift": -9.5,
+      "correlation": 0.21634444359912394,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Shooter/Shooter Accelerator/AppliedVolts": {
+      "nrmse": 0.19766258654775132,
+      "mean_shift": -0.9794653180201927,
+      "p95_shift": -3.308004439786009,
+      "peak_shift": -4.016453812185318,
+      "correlation": 0.8458084465882215,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Robot State/Error": {
+      "nrmse": 0.1954615243581831,
+      "mean_shift": 30.7479115065575,
+      "p95_shift": 10.629620009365112,
+      "peak_shift": -17.318428310520744,
+      "correlation": 0.6306580769957522,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module1/DriveStatorCurrent": {
+      "nrmse": 0.1945317821505868,
+      "mean_shift": 9.239597770777678,
+      "p95_shift": 36.08,
+      "peak_shift": 2.819999999999993,
+      "correlation": 0.24029156543434999,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Intake/Intake Rack/Position Target Rotations Pid": {
+      "nrmse": 0.1915976878737141,
+      "mean_shift": 0.9425420385654419,
+      "p95_shift": 1.7695381108527908,
+      "peak_shift": 0.026328125000000924,
+      "correlation": 0.7859607911350186,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module0/DriveStatorCurrent": {
+      "nrmse": 0.19149916663325645,
+      "mean_shift": 8.353799370002438,
+      "p95_shift": 26.320000000000007,
+      "peak_shift": -2.0800000000000125,
+      "correlation": 0.2410988230100401,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module3/DriveStatorCurrent": {
+      "nrmse": 0.19054740324992436,
+      "mean_shift": 5.674870365883148,
+      "p95_shift": 19.439999999999998,
+      "peak_shift": -11.47999999999999,
+      "correlation": 0.2509902616896601,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Swerve/Estimated Y": {
+      "nrmse": 0.1865972461853525,
+      "mean_shift": 0.5960669630957725,
+      "p95_shift": 1.873956096297234,
+      "peak_shift": -0.07018188843543172,
+      "correlation": 0.8344634390767517,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Shooter/Shooter Accelerator/StatorCurrentAmps": {
+      "nrmse": 0.18441292200829537,
+      "mean_shift": 16.61704565927965,
+      "p95_shift": 117.41679434757366,
+      "peak_shift": 64.40981799993074,
+      "correlation": 0.3860117227209552,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Swerve/Estimated X": {
+      "nrmse": 0.18211724414877997,
+      "mean_shift": 0.6079396865318909,
+      "p95_shift": 0.5362664869745597,
+      "peak_shift": -0.48761889867505914,
+      "correlation": 0.6619488598738308,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Raw Vx": {
+      "nrmse": 0.18018972103003297,
+      "mean_shift": -0.49185215396173276,
+      "p95_shift": -1.3477458856537203,
+      "peak_shift": -1.0399240697437429,
+      "correlation": 0.6028560027969744,
+      "samples": 8234,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Filtered Vx": {
+      "nrmse": 0.17969518125236528,
+      "mean_shift": -0.4848671161956065,
+      "p95_shift": -1.311904760560676,
+      "peak_shift": -0.9738013875919154,
+      "correlation": 0.6125291309676503,
+      "samples": 8234,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Heading Target": {
+      "nrmse": 0.1791726109826828,
+      "mean_shift": -0.19351423638618714,
+      "p95_shift": -1.6962752578593812,
+      "peak_shift": 0.068718688659128,
+      "correlation": 0.9329312724830024,
+      "samples": 7980,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Magnitude": {
+      "nrmse": 0.17888127229317355,
+      "mean_shift": -2.9976236543380113,
+      "p95_shift": -23.40749084683655,
+      "peak_shift": -30.049353224674974,
+      "correlation": 0.29495792273746324,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module0/SteerAppliedVolts": {
+      "nrmse": 0.17884252230428585,
+      "mean_shift": -0.05760964380906227,
+      "p95_shift": -0.040000000000000036,
+      "peak_shift": 1.0599999999999996,
+      "correlation": 0.12357955531046293,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Shot Horizontal Speed": {
+      "nrmse": 0.17329830645605254,
+      "mean_shift": -1.1276219981000355,
+      "p95_shift": -1.6306014377729907,
+      "peak_shift": -1.225864259408926,
+      "correlation": 0.6303059536510065,
+      "samples": 8234,
+      "category": "other"
+    },
+    "Shooter/Shooter Omniwheel/SupplyCurrentAmps": {
+      "nrmse": 0.1722071935421053,
+      "mean_shift": 7.396550641837585,
+      "p95_shift": 15.084454598695395,
+      "peak_shift": 82.72452399428984,
+      "correlation": 0.48091853367158915,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module0/DriveSupplyCurrent": {
+      "nrmse": 0.16878233014075245,
+      "mean_shift": 0.9122413375333043,
+      "p95_shift": -0.9800000000000004,
+      "peak_shift": 5.18,
+      "correlation": 0.44426369781470615,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Shooting Predictor/Baseline Vh": {
+      "nrmse": 0.16747039446792364,
+      "mean_shift": -0.7622307171508149,
+      "p95_shift": -1.685354159733805,
+      "peak_shift": -1.4271656436994977,
+      "correlation": 0.6856144890445209,
+      "samples": 8234,
+      "category": "other"
+    },
+    "Shooter/Shooter Omniwheel/PositionRads": {
+      "nrmse": 0.16366628714156506,
+      "mean_shift": -996.564904557808,
+      "p95_shift": -1412.766208605969,
+      "peak_shift": -1494.5283558796846,
+      "correlation": 0.9740788045251478,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module3/DriveSupplyCurrent": {
+      "nrmse": 0.1581461714439452,
+      "mean_shift": -0.36576690089652075,
+      "p95_shift": -1.4000000000000021,
+      "peak_shift": -0.7000000000000028,
+      "correlation": 0.5054773241414862,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module1/DriveSupplyCurrent": {
+      "nrmse": 0.15649627180621645,
+      "mean_shift": 0.021395686939641223,
+      "p95_shift": -2.0,
+      "peak_shift": 3.039999999999992,
+      "correlation": 0.4911466597607181,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Shooter/Shooter Omniwheel/AppliedVolts": {
+      "nrmse": 0.1546411604146198,
+      "mean_shift": -0.2031742491575521,
+      "p95_shift": -2.952558895521185,
+      "peak_shift": 0.05415853013515459,
+      "correlation": 0.7220288892440014,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module2/DriveSupplyCurrent": {
+      "nrmse": 0.15138724105673745,
+      "mean_shift": 0.14153137872547106,
+      "p95_shift": -1.0800000000000018,
+      "peak_shift": -7.300000000000004,
+      "correlation": 0.41769935511062106,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Swerve/Heading Controller/Setpoint Position": {
+      "nrmse": 0.15131013609803573,
+      "mean_shift": -0.2254052921844094,
+      "p95_shift": -0.5419629014269063,
+      "peak_shift": -0.9645404577362715,
+      "correlation": 0.9150522368114352,
+      "samples": 7980,
+      "category": "mechanisms"
+    },
+    "Swerve/Module0/SteerVelocityRadsPerSec": {
+      "nrmse": 0.15095927835579123,
+      "mean_shift": -0.11265893891082722,
+      "p95_shift": 0.18407769454627676,
+      "peak_shift": -1.411262324854789,
+      "correlation": 0.12793825221408264,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module2/SteerAppliedVolts": {
+      "nrmse": 0.15021373904238527,
+      "mean_shift": -0.1186321783377772,
+      "p95_shift": -0.45999999999999996,
+      "peak_shift": 1.5799999999999992,
+      "correlation": 0.16147742651038974,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Module2/SteerError": {
+      "nrmse": 0.14991765709401508,
+      "mean_shift": 0.05017233864569521,
+      "p95_shift": -0.019146519585009347,
+      "peak_shift": 0.02208694007113099,
+      "correlation": -0.012071850220698269,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Raw Vy": {
+      "nrmse": 0.14921964219155034,
+      "mean_shift": -0.27336051687074175,
+      "p95_shift": -0.5356353620052006,
+      "peak_shift": -0.11759474656920377,
+      "correlation": 0.6417912748844482,
+      "samples": 8234,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Filtered Vy": {
+      "nrmse": 0.14895681801481572,
+      "mean_shift": -0.2743112876613927,
+      "p95_shift": -0.5479232457769876,
+      "peak_shift": -0.09206694862276388,
+      "correlation": 0.6470359278060703,
+      "samples": 8234,
+      "category": "other"
+    },
+    "RealOutputs/Shooting Predictor/Distance": {
+      "nrmse": 0.14668853525704537,
+      "mean_shift": -0.22018361503562645,
+      "p95_shift": -1.4366059873372858,
+      "peak_shift": -0.7823330427072097,
+      "correlation": 0.6816589116852394,
+      "samples": 8234,
+      "category": "other"
+    },
+    "Swerve/Module1/SteerAppliedVolts": {
+      "nrmse": 0.14594072737711208,
+      "mean_shift": -0.06140780227768312,
+      "p95_shift": -0.29000000000000004,
+      "peak_shift": 0.4800000000000004,
+      "correlation": 0.10252721273370317,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Intake/Intake Rollers/Target Velocity": {
+      "nrmse": 0.14492045560956146,
+      "mean_shift": 0.41252725951054003,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.9123284303133083,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooter/Shooter Hood/Target Position Manual": {
+      "nrmse": 0.1402681481886687,
+      "mean_shift": -0.004133072981147596,
+      "p95_shift": -0.011485622651150738,
+      "peak_shift": -0.0182240310187662,
+      "correlation": 0.8260891009138813,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Module0/SteerError": {
+      "nrmse": 0.1402034600661131,
+      "mean_shift": 0.03249791697135361,
+      "p95_shift": 0.10725940239041931,
+      "peak_shift": 0.0058102539230189265,
+      "correlation": -0.016411789898003088,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Module3/SteerAppliedVolts": {
+      "nrmse": 0.13978449616149927,
+      "mean_shift": -0.017475163557063175,
+      "p95_shift": -0.3599999999999999,
+      "peak_shift": 0.25,
+      "correlation": 0.23872011460224418,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Module1/SteerError": {
+      "nrmse": 0.13903028163964168,
+      "mean_shift": -0.0199751890131495,
+      "p95_shift": 0.03205302339900007,
+      "peak_shift": 0.005811769383408105,
+      "correlation": 0.03346674618623192,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Swerve/Gyro/YawVelocityRadPerSec": {
+      "nrmse": 0.13860448488167118,
+      "mean_shift": 0.01857363865094072,
+      "p95_shift": 1.418453460888365,
+      "peak_shift": 2.418409059522821,
+      "correlation": 0.694225354678016,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Shooter/Shooter Hood/PositionRotations": {
+      "nrmse": 0.13693047849165507,
+      "mean_shift": -0.0043840512729338395,
+      "p95_shift": -0.011810324240073215,
+      "peak_shift": 0.0003637817900899315,
+      "correlation": 0.865529095039335,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module2/SteerVelocityRadsPerSec": {
+      "nrmse": 0.13362020381067832,
+      "mean_shift": -0.30912147471039486,
+      "p95_shift": -0.4295146206079794,
+      "peak_shift": 0.1349903093339364,
+      "correlation": 0.16716222969090305,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Intake/Intake Rollers/SupplyCurrentAmps": {
+      "nrmse": 0.13333805646218388,
+      "mean_shift": -7.957294023432344,
+      "p95_shift": -28.394228660891866,
+      "peak_shift": -44.63030569341339,
+      "correlation": -0.038820634293701604,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Swerve/Module1/SteerVelocityRadsPerSec": {
+      "nrmse": 0.1308145587853072,
+      "mean_shift": -0.016873416972826946,
+      "p95_shift": 0.47860200582032064,
+      "peak_shift": -0.6135923151542535,
+      "correlation": 0.11288771758790923,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Swerve/Module3/SteerVelocityRadsPerSec": {
+      "nrmse": 0.13047737280878635,
+      "mean_shift": -0.07383476608401975,
+      "p95_shift": 0.6258641614573417,
+      "peak_shift": -0.7976700097005356,
+      "correlation": 0.2496623944160725,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Intake/Intake Rack/AppliedVolts": {
+      "nrmse": 0.12553003383176242,
+      "mean_shift": 1.1160177612317232,
+      "p95_shift": -0.17677018633540387,
+      "peak_shift": -0.9198282712769554,
+      "correlation": 0.15329481545519533,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Heading Controller/Absolute Error": {
+      "nrmse": 0.12227941707847469,
+      "mean_shift": 3.071990601631052,
+      "p95_shift": -2.7139387413344593,
+      "peak_shift": 38.93803330035814,
+      "correlation": -0.0009253388943898342,
+      "samples": 6495,
+      "category": "other"
+    },
+    "RealOutputs/Swerve/Module3/SteerError": {
+      "nrmse": 0.12085393645954437,
+      "mean_shift": -0.03269253045178991,
+      "p95_shift": -0.021710959561667464,
+      "peak_shift": 0.015746649642673916,
+      "correlation": -0.006903989157571214,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Serializer/PositionRads": {
+      "nrmse": 0.10521063940713572,
+      "mean_shift": 499.65275953356013,
+      "p95_shift": 1704.3625507883753,
+      "peak_shift": 1713.5285621937583,
+      "correlation": 0.9953479645311549,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Heading Controller/Current Position": {
+      "nrmse": 0.10431489691478806,
+      "mean_shift": 0.25563034234004967,
+      "p95_shift": -0.5587702352982431,
+      "peak_shift": -0.5820313132431938,
+      "correlation": 0.9614402691167291,
+      "samples": 7980,
+      "category": "mechanisms"
+    },
+    "DriverStation/Joystick0/ButtonValues": {
+      "nrmse": 0.10118403275973398,
+      "mean_shift": -0.007753816331475871,
+      "p95_shift": 0,
+      "peak_shift": 0,
+      "correlation": 0.956935674298153,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Intake/Intake Rack/PositionRotations": {
+      "nrmse": 0.09874206007449345,
+      "mean_shift": 0.5415144131199465,
+      "p95_shift": 0.039267578125000924,
+      "peak_shift": 0.0004492187500009237,
+      "correlation": 0.6578750193177751,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Intake/Intake Rack/Position Target Rotations": {
+      "nrmse": 0.09028221401542515,
+      "mean_shift": -0.1223891446572054,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.8082794229689495,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Intake/Intake Rack/Target Position": {
+      "nrmse": 0.09028221401542515,
+      "mean_shift": -0.1223891446572054,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.8082794229689495,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Intake/Intake Rack/VelocityRotPerSec": {
+      "nrmse": 0.08833135371340342,
+      "mean_shift": -0.07834546630890232,
+      "p95_shift": -3.21875,
+      "peak_shift": 9.424595315788345,
+      "correlation": 0.11893722975389318,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Heading Controller/Setpoint Velocity": {
+      "nrmse": 0.08011450015814153,
+      "mean_shift": 0.025150703325456502,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": -0.010083239574282773,
+      "samples": 7980,
+      "category": "mechanisms"
+    },
+    "Intake/Intake Rollers/StatorCurrentAmps": {
+      "nrmse": 0.07601524631281621,
+      "mean_shift": -9.89973885238387,
+      "p95_shift": -36.29691464356901,
+      "peak_shift": -150.33030569341338,
+      "correlation": -0.02477193244928551,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Shooter/Shooter Hood/StatorCurrent": {
+      "nrmse": 0.0751626787769233,
+      "mean_shift": -4.519037971997344,
+      "p95_shift": -15.620000000000001,
+      "peak_shift": 18.27759160041809,
+      "correlation": 0.02436585296509223,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Swerve/Module0/Total Amp Seconds": {
+      "nrmse": 0.07234032416454513,
+      "mean_shift": 164.16317165010582,
+      "p95_shift": 159.10919999998669,
+      "peak_shift": 158.1111999999871,
+      "correlation": 0.9984349805959581,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Shooter/Shooter Accelerator/PositionRads": {
+      "nrmse": 0.07090859569463448,
+      "mean_shift": -6.655126327500511,
+      "p95_shift": 1258.192421144664,
+      "peak_shift": 1502.3328531428888,
+      "correlation": 0.9827914702535607,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "Shooter/Shooter Hood/AppliedVolts": {
+      "nrmse": 0.0630816286560909,
+      "mean_shift": -0.23794493955725643,
+      "p95_shift": -0.49,
+      "peak_shift": -2.758533053398133,
+      "correlation": 0.3964362825551481,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Shooter/Shooter Flywheels/PositionRads": {
+      "nrmse": 0.06084823378181407,
+      "mean_shift": 2067.514403014822,
+      "p95_shift": 2470.255134288127,
+      "peak_shift": 2492.8356199230984,
+      "correlation": 0.9986293703807361,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooter/Shooter Flywheels/Manual Target": {
+      "nrmse": 0.05124289192974357,
+      "mean_shift": -0.4878419896780013,
+      "p95_shift": -0.21730266113678276,
+      "peak_shift": -2.1098595389333585,
+      "correlation": 0.7691165988593051,
+      "samples": 8254,
+      "category": "other"
+    },
+    "Shooter/Shooter Hood/VelocityRotPerSec": {
+      "nrmse": 0.05066450269585973,
+      "mean_shift": 0.0001351392012233662,
+      "p95_shift": -0.011718746457479102,
+      "peak_shift": 0.21580462367822184,
+      "correlation": 0.4631974331471593,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooter/Shooter Hood/Filtered Current": {
+      "nrmse": 0.04910816356620622,
+      "mean_shift": -0.22824303368063864,
+      "p95_shift": -0.3406666666666669,
+      "peak_shift": -7.49,
+      "correlation": 0.4639619457601867,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "Shooter/Shooter Hood/SupplyCurrentAmps": {
+      "nrmse": 0.044592343027493056,
+      "mean_shift": -0.22645384056213877,
+      "p95_shift": -0.7,
+      "peak_shift": -2.0500000000000007,
+      "correlation": 0.2522739624387824,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Time Until Our Hub Shifts": {
+      "nrmse": 0.03715449855940036,
+      "mean_shift": 0.01102495759631772,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.9880089893955345,
+      "samples": 8254,
+      "category": "other"
+    },
+    "RealOutputs/Shooter/Shooter Hood/Position Target Rotations": {
+      "nrmse": 0.03113241142980184,
+      "mean_shift": 0.0,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.9379730783321032,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Shooter/Shooter Hood/Target Position": {
+      "nrmse": 0.03113241142980184,
+      "mean_shift": 0.0,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.9379730783321032,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Module2/Total Amp Seconds": {
+      "nrmse": 0.02995912384083603,
+      "mean_shift": 66.15319210076996,
+      "p95_shift": 27.95599999998376,
+      "peak_shift": 30.802399999982754,
+      "correlation": 0.998865103748788,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Swerve/Module3/Total Amp Seconds": {
+      "nrmse": 0.02731071714154214,
+      "mean_shift": 48.20084346981639,
+      "p95_shift": -43.78360000001112,
+      "peak_shift": -50.86040000000958,
+      "correlation": 0.9984740782300217,
+      "samples": 8254,
+      "category": "currents"
+    },
+    "RealOutputs/Shooter/Shooter Flywheels/Target Velocity": {
+      "nrmse": 0.025800301537858613,
+      "mean_shift": -0.026114420529175675,
+      "p95_shift": 0.0,
+      "peak_shift": 0.0,
+      "correlation": 0.9880822154049519,
+      "samples": 8254,
+      "category": "mechanisms"
+    },
+    "RealOutputs/Swerve/Module1/Total Amp Seconds": {
+      "nrmse": 0.011116994964499263,
+      "mean_shift": 12.817079525040981,
+      "p95_shift": 18.464799999972,
+      "peak_shift": 12.901999999971395,
+      "correlation": 0.999547231324421,
+      "samples": 8254,
+      "category": "currents"
+    }
+  }
+}

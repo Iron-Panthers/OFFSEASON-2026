@@ -80,16 +80,6 @@ public class ShooterAcceleratorIOSim extends GenericRollersIOSim implements Shoo
     // while the motor still behaved as though it had a full 12 V to work with.
     double availableVolts = RobotController.getBatteryVoltage();
     appliedVoltage = Math.max(-availableVolts, Math.min(availableVolts, appliedVoltage));
-    // Steady-state drag. FlywheelSim is frictionless, so without this the mechanism draws
-    // ~0 A once it reaches setpoint while the real robot keeps pulling 5 A.
-    // Coefficient from the real q54 steady state: 5 A at 227 rad/s.
-    appliedVoltage -=
-        frc.robot.utility.SimCurrentLimit.dragVolts(
-            shooterAcceleratorSim.getAngularVelocityRadPerSec(),
-            SHOOTER_ACCELERATOR_CONFIG.reduction(),
-            edu.wpi.first.math.system.plant.DCMotor.getKrakenX60Foc(2),
-            5.0 / 227.0);
-
     if (coasting) {
       // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
       appliedVoltage = 0.0;
