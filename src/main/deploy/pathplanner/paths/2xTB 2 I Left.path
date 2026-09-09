@@ -125,7 +125,7 @@
       },
       "rotationOffset": 270.0,
       "minWaypointRelativePos": 2.3397075365579214,
-      "maxWaypointRelativePos": 4.566929133858248,
+      "maxWaypointRelativePos": 3.9811110879010707,
       "name": "Point Towards Zone"
     }
   ],
@@ -153,13 +153,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -55.0
+    "rotation": -36.12669746627898
   },
   "reversed": false,
   "folder": "Left Paths (auto generated)",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -55.0
+    "rotation": -36.12669746627898
   },
   "useDefaultConstraints": true
 }

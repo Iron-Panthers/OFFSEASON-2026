@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.038,
-        "y": 2.856
+        "x": 3.1303333333333336,
+        "y": 2.2328351126927632
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.675824436536181,
-        "y": 1.9199501779359442
+        "x": 2.6365222222222218,
+        "y": 1.3240777777777772
       },
       "isLocked": false,
       "linkedName": "Shooting Pose Right"
     },
     {
       "anchor": {
-        "x": 4.515041518386715,
-        "y": 0.5651601423487547
+        "x": 4.480755555555556,
+        "y": 0.6287111111111108
       },
       "prevControl": {
-        "x": 2.086107448066271,
-        "y": 0.565160142348755
+        "x": 3.126280703835507,
+        "y": 0.6519509687623566
       },
       "nextControl": {
-        "x": 5.3650177935943075,
-        "y": 0.5651601423487547
+        "x": 5.330606745551768,
+        "y": 0.6141295035935016
       },
       "isLocked": false,
       "linkedName": null
@@ -36,56 +36,56 @@
         "y": 0.9632502965599041
       },
       "prevControl": {
-        "x": 5.913736654804271,
-        "y": 0.5866785290628707
+        "x": 5.881566666666666,
+        "y": 0.6690222222222224
       },
       "nextControl": {
-        "x": 6.380814408037527,
-        "y": 2.630143699458342
+        "x": 6.26956394437732,
+        "y": 1.634484662725145
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 6.570047449584817,
-        "y": 3.3840688018979836
+        "x": 6.476155555555556,
+        "y": 3.732666666666667
       },
       "prevControl": {
-        "x": 5.408034264098819,
-        "y": 3.0693568974955254
+        "x": 5.89853032819296,
+        "y": 3.3858978647686833
       },
       "nextControl": {
-        "x": 7.602930011862397,
-        "y": 3.6638078291814953
+        "x": 7.3936175104423185,
+        "y": 4.283451445121906
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.635207591933572,
-        "y": 2.286631079478054
+        "x": 8.32038888888889,
+        "y": 2.4930999999999996
       },
       "prevControl": {
-        "x": 8.047825948038591,
-        "y": 2.655161867679458
+        "x": 8.92487294820318,
+        "y": 2.97337500603053
       },
       "nextControl": {
-        "x": 6.802866931299657,
-        "y": 1.5432245994294012
+        "x": 7.584711111111112,
+        "y": 1.9085888888888896
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.038,
-        "y": 2.856
+        "x": 3.1303333333333336,
+        "y": 2.2328351126927632
       },
       "prevControl": {
-        "x": 6.365622775800711,
-        "y": 2.597779359430605
+        "x": 4.611766666666667,
+        "y": 2.8055111111111115
       },
       "nextControl": null,
       "isLocked": false,
@@ -98,37 +98,20 @@
       "rotationDegrees": 180.0
     },
     {
-      "waypointRelativePos": 2.15,
-      "rotationDegrees": -90.0
-    }
-  ],
-  "constraintZones": [
+      "waypointRelativePos": 2.271929824561402,
+      "rotationDegrees": -87.86668774464484
+    },
     {
-      "name": "Intake",
-      "minWaypointRelativePos": 2.35,
-      "maxWaypointRelativePos": 3.2,
-      "constraints": {
-        "maxVelocity": 2.0,
-        "maxAcceleration": 4.0,
-        "maxAngularVelocity": 540.0,
-        "maxAngularAcceleration": 720.0,
-        "nominalVoltage": 12.0,
-        "unlimited": false
-      }
-    }
-  ],
-  "pointTowardsZones": [
+      "waypointRelativePos": 3.236842105263203,
+      "rotationDegrees": 153.13027030784036
+    },
     {
-      "fieldPosition": {
-        "x": 7.0,
-        "y": 2.7
-      },
-      "rotationOffset": -90.0,
-      "minWaypointRelativePos": 2.3397075365579214,
-      "maxWaypointRelativePos": 3.9811110879010707,
-      "name": "Point Towards Zone"
+      "waypointRelativePos": 3.9736842105263204,
+      "rotationDegrees": 70.2550473249365
     }
   ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
   "eventMarkers": [
     {
       "name": "Spin up shooter",
@@ -153,13 +136,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 36.12669746627897
+    "rotation": 50.54495239376823
   },
   "reversed": false,
   "folder": "Right Paths (make these)",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 36.12669746627897
+    "rotation": 50.54495239376823
   },
   "useDefaultConstraints": true
 }

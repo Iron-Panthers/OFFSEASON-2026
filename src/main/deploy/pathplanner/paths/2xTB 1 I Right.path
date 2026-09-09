@@ -16,44 +16,60 @@
     },
     {
       "anchor": {
-        "x": 7.33046446683114,
-        "y": 1.2669537246436402
+        "x": 7.979501779359431,
+        "y": 1.286026097271648
       },
       "prevControl": {
-        "x": 6.820747681540511,
-        "y": 0.9542135654898245
+        "x": 7.469784994068802,
+        "y": 0.9732859381178323
       },
       "nextControl": {
-        "x": 7.84018125212177,
-        "y": 1.579693883797456
+        "x": 8.489218564650061,
+        "y": 1.5987662564254637
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.7889256527549335,
-        "y": 3.541942931058114
+        "x": 8.485183867141163,
+        "y": 3.5239383155397386
       },
       "prevControl": {
-        "x": 7.799684846111992,
-        "y": 1.2932715194329671
+        "x": 8.546874934602625,
+        "y": 1.2760875442701263
       },
       "nextControl": {
-        "x": 7.783237974950353,
-        "y": 4.730667592215499
+        "x": 8.461477777777777,
+        "y": 4.387722222222222
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.038,
-        "y": 2.856
+        "x": 5.448222222222222,
+        "y": 2.533411111111111
       },
       "prevControl": {
-        "x": 7.108007117437722,
-        "y": 1.8661542111506515
+        "x": 6.64281158306966,
+        "y": 2.7603830896721253
+      },
+      "nextControl": {
+        "x": 4.440444444444445,
+        "y": 2.3419333333333325
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.1303333333333336,
+        "y": 2.2328351126927632
+      },
+      "prevControl": {
+        "x": 4.027255555555556,
+        "y": 2.5838
       },
       "nextControl": null,
       "isLocked": false,
@@ -70,7 +86,7 @@
     {
       "name": "Intake",
       "minWaypointRelativePos": 1.6265466816647827,
-      "maxWaypointRelativePos": 2.35,
+      "maxWaypointRelativePos": 2.7,
       "constraints": {
         "maxVelocity": 2.0,
         "maxAcceleration": 4.0,
@@ -104,13 +120,13 @@
     },
     {
       "name": "Spin up shooter",
-      "waypointRelativePos": 2.55,
+      "waypointRelativePos": 3.1,
       "endWaypointRelativePos": null,
       "command": null
     },
     {
       "name": "Intake mid",
-      "waypointRelativePos": 2.6591676040494816,
+      "waypointRelativePos": 3.3,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -125,7 +141,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 36.12669746627897
+    "rotation": 50.54495239376823
   },
   "reversed": false,
   "folder": "Right Paths (make these)",

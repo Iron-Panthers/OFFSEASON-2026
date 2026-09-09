@@ -13,7 +13,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2xTB 1 I Right"
+            "pathName": "2xB 1 Left"
           }
         },
         {
@@ -31,7 +31,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2xTB 2 I Right"
+            "pathName": "2xB 2 Left"
           }
         },
         {
@@ -49,13 +49,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "xT 2 Right"
+            "pathName": "xB Left"
           }
         }
       ]
     }
   },
-  "resetOdom": true,
-  "folder": "Right Autos (make these)",
+  "resetOdom": false,
+  "folder": "Left Autos (auto generated)",
   "choreoAuto": false
 }

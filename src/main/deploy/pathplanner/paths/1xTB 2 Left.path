@@ -9,7 +9,7 @@
       "prevControl": null,
       "nextControl": {
         "x": 3.516869517246131,
-        "y": 7.699759198563378
+        "y": 7.6997591985633775
       },
       "isLocked": false,
       "linkedName": "Shooting Pose 2 Left"
@@ -56,7 +56,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -55.0
+    "rotation": -36.12669746627898
   },
   "reversed": false,
   "folder": "Left Paths (auto generated)",
