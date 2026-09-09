@@ -59,16 +59,16 @@ class SimCurrentLimitTest {
 
   @Test
   void clampCutsRunawayCommand() {
-    double out = SimCurrentLimit.clampToSupplyLimit(12.0, 0.0, 1.0, KRAKEN, BUS, 20.0);
+    double limit = 20.0;
+    double out = SimCurrentLimit.clampToSupplyLimit(12.0, 0.0, 1.0, KRAKEN, BUS, limit);
     assertTrue(out < 12.0, "expected the clamp to bite, got " + out);
-    assertEquals(20.0, supplyAmps(out, 0.0), 1e-6);
-  }
 
-  @Test
-  void clampIsSymmetricForReverseCommands() {
-    double forward = SimCurrentLimit.clampToSupplyLimit(12.0, 0.0, 1.0, KRAKEN, BUS, 20.0);
-    double reverse = SimCurrentLimit.clampToSupplyLimit(-12.0, 0.0, 1.0, KRAKEN, BUS, 20.0);
-    assertEquals(forward, -reverse, 1e-9);
+    // Two constraints apply, and at stall the stator window is the tighter one: supply current
+    // is stator * dutyCycle, and dutyCycle is small here, so the supply limit alone would permit
+    // an unphysical stator draw.
+    double stator = Math.abs(out) / KRAKEN.rOhms;
+    assertEquals(limit * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO, stator, 1e-6);
+    assertTrue(supplyAmps(out, 0.0) <= limit + 1e-6, "supply current exceeded its limit");
   }
 
   @Test
@@ -78,6 +78,36 @@ class SimCurrentLimitTest {
     double direct = SimCurrentLimit.clampToSupplyLimit(12.0, 100.0, 1.0, KRAKEN, BUS, 20.0);
     double geared = SimCurrentLimit.clampToSupplyLimit(12.0, 100.0, 4.0, KRAKEN, BUS, 20.0);
     assertTrue(geared > direct, "expected " + geared + " > " + direct);
+  }
+
+  @Test
+  void brakingAFastWheelIsBoundedByTheBackEmfWindow() {
+    // Regression: a wheel spinning fast and commanded hard into reverse. Clamping symmetrically
+    // about zero permitted |V - backEmf| ~= 25 V here, which is how the simulated omniwheel
+    // reported 747 A on a spin-down.
+    double mechRadPerSec = 553.0;
+    double out = SimCurrentLimit.clampToSupplyLimit(-12.0, mechRadPerSec, 1.0, KRAKEN, BUS, 60.0);
+    double backEmf = mechRadPerSec / KRAKEN.KvRadPerSecPerVolt;
+    double statorAmps = Math.abs(out - backEmf) / KRAKEN.rOhms;
+    assertTrue(
+        statorAmps <= 60.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO + 1e-6,
+        "stator current " + statorAmps + " A exceeded the window");
+  }
+
+  @Test
+  void brakingClampIsNotSymmetricAboutZero() {
+    // The permitted window is centred on back-EMF, so it must NOT be symmetric when spinning.
+    double forward = SimCurrentLimit.clampToSupplyLimit(12.0, 400.0, 1.0, KRAKEN, BUS, 30.0);
+    double reverse = SimCurrentLimit.clampToSupplyLimit(-12.0, 400.0, 1.0, KRAKEN, BUS, 30.0);
+    assertTrue(forward != -reverse, "expected an asymmetric window while spinning");
+  }
+
+  @Test
+  void stationaryClampStaysSymmetric() {
+    // With no back-EMF the window IS centred on zero, so symmetry must hold.
+    double forward = SimCurrentLimit.clampToSupplyLimit(12.0, 0.0, 1.0, KRAKEN, BUS, 20.0);
+    double reverse = SimCurrentLimit.clampToSupplyLimit(-12.0, 0.0, 1.0, KRAKEN, BUS, 20.0);
+    assertEquals(forward, -reverse, 1e-9);
   }
 
   @Test

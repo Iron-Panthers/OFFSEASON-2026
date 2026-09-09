@@ -17,6 +17,17 @@ import edu.wpi.first.math.system.plant.DCMotor;
  */
 public final class SimCurrentLimit {
 
+  /**
+   * Stator current a motor may draw relative to its configured supply limit.
+   *
+   * <p>Supply limits do not bound stator current directly -- the controller is a buck converter, so
+   * stator exceeds supply by roughly 1/dutyCycle. Measured on the real q54 log: the intake rack
+   * holds 85-102 A stator against a 27 A supply limit (~3.8x) and the omniwheel reaches 160 A
+   * stator against 60 A supply (~2.7x). 4.0 is a deliberately generous bound -- it exists to stop
+   * unphysical blow-ups, not to be the binding constraint during normal operation.
+   */
+  public static final double STATOR_TO_SUPPLY_RATIO = 4.0;
+
   private SimCurrentLimit() {}
 
   /**
@@ -67,8 +78,34 @@ public final class SimCurrentLimit {
       DCMotor motor,
       double busVolts,
       double limitAmps) {
+    if (limitAmps <= 0.0 || busVolts <= 0.0) {
+      return Math.max(-busVolts, Math.min(busVolts, appliedVolts));
+    }
+
+    // Back-EMF is SIGNED. Clamping symmetrically about zero is wrong during braking: a wheel
+    // spinning at +553 rad/s commanded to reverse has V negative while back-EMF is positive, so
+    // |V - backEmf| is enormous and a symmetric clamp happily permits it. That is exactly how
+    // the simulated omniwheel reported 747 A on a spin-down.
+    //
+    // The physical constraint is a window CENTRED ON THE BACK-EMF: stator current is
+    // (V - backEmf)/R, so |V - backEmf| <= I_stator_max * R.
     double backEmf = (mechanismRadPerSec * gearing) / motor.KvRadPerSecPerVolt;
-    double ceiling = maxVoltageForSupplyLimit(backEmf, motor, busVolts, limitAmps);
-    return Math.max(-ceiling, Math.min(ceiling, appliedVolts));
+    double statorCeiling = limitAmps * STATOR_TO_SUPPLY_RATIO * motor.rOhms;
+    double low = backEmf - statorCeiling;
+    double high = backEmf + statorCeiling;
+
+    // Motoring is additionally bounded by the supply limit, which is the tighter constraint
+    // once the motor is up to speed.
+    double supplyCeiling = maxVoltageForSupplyLimit(backEmf, motor, busVolts, limitAmps);
+    low = Math.max(low, -supplyCeiling);
+    high = Math.min(high, supplyCeiling);
+
+    low = Math.max(low, -busVolts);
+    high = Math.min(high, busVolts);
+    if (low > high) {
+      // Back-EMF alone exceeds the bus (over-speed); the best we can do is the nearer rail.
+      return Math.max(-busVolts, Math.min(busVolts, backEmf));
+    }
+    return Math.max(low, Math.min(high, appliedVolts));
   }
 }
