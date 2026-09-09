@@ -259,3 +259,32 @@ calibration target. Robot behaviour is unaffected; the change is logging-only.
 | --- | --- |
 | Reported-current clamp | Measured worse at both ratios tried. Note: the deltas were inside the then-unknown noise floor, so this is **unresolved rather than disproven**. Helper retained, documented unused |
 | Viscous drag | Moved mean current 113.84 -> 113.50 A. Subtracting voltage does not create a load |
+
+---
+
+## Conclusions that rest on a single match, and could still be wrong
+
+Two constants derived from one log survived review, improved the tuning log, and were then
+disproved by a validation log. Both had strong-looking evidence.
+
+| inference | evidence from q54 | disproved by |
+| --- | --- | --- |
+| Intake rack has a hard stop at 11.29 rot | never exceeded 11.290; stalled 86.7% of the match; 930 amp-seconds | q93 reaches 11.68 freely with 0.32 V applied |
+| Stator ceiling of 4.0x the supply limit | rack 4.83x, omniwheel 2.66x, drive 3.75x | rollers are 5.46-6.02x across all three matches |
+
+Remaining single-log or single-source inferences, listed so they get checked rather than trusted:
+
+- **Drag coefficients** in `SimCurrentLimit.dragVolts` (unused, but recorded): flywheel 8 A at
+  240 rad/s, omniwheel 8 A at 425, accelerator 5 A at 227, rollers 12 A at 177 -- all from q54
+  steady states only.
+- **`withRobotMass(54.4311 kg)`** is unchanged and unverified. 120 lb is light for a Worlds robot;
+  the drivetrain analysis explicitly declined to change it without a scale reading, since no log
+  evidence distinguishes it. It sets both the traction limit and the dyn4j inertia.
+- **Battery nominal/resistance** are still the shipped 12.8 V / 20 mOhm. A regression on q54 fits
+  12.1 V / 13.5 mOhm, but that was measured before the current model was corrected and should be
+  refitted, not applied as-is.
+- The **q64 brownout stress case has never been run.** It is the one match where the real robot's
+  flywheel measurably degraded (up-to-speed time 130.5 s against ~158 s elsewhere, 27.1 s below
+  8 V, 5.95 V floor). It is the strongest available test of whether sag-to-torque feedback behaves,
+  and it remains untested.
+- **q103 is still held out** and has never been run.
