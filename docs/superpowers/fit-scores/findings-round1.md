@@ -243,3 +243,94 @@ needed.** This invalidates the earlier reading of anchor error as evidence of de
   (Brake) / 40 A (Coast) as a side effect. Surprising coupling; affects COMP.
 - `STEER_CURRENT_LIMIT_AMPS = 10` / `DRIVE_CURRENT_LIMIT_AMPS = 40` are shared SIM+COMP and are
   **correct** (real p99 lands right at them). Do not touch.
+
+---
+
+## Battery agent findings — CORRECTS the stated real-voltage baseline
+
+### Correction 3: real mean voltage 11.77 V was a full-log mean including ~400 s of idle
+
+Time-weighted over the actual 165.1 s match window:
+
+| | real (in-match) | sim |
+| --- | --- | --- |
+| BatteryVoltage mean | **10.02 V** | 10.37 V |
+| TotalAmps mean | **148.8 A** (time-weighted) | 157.7 A |
+| TotalAmps max | 318.7 A | 1171.4 A |
+
+**The sim does not sag too much on average -- it sags slightly less.** The divergence is entirely in
+the peaks. Do not "fix" the mean by lowering R.
+
+### Nuance on current limits: both agents are right about the data, and disagree on the verdict
+
+The drivetrain agent reports swerve drive p99 = 39.2-39.5 A against a 40 A limit ("enforced").
+The battery agent reports sim drive **max** 93.8 A against the same limit ("not enforced").
+Same data, different statistic. Reality: Phoenix limits are **soft** (`SupplyCurrentLowerLimit` /
+`SupplyCurrentLowerTime` default 40 A / 1.0 s), so both sim and real overshoot transiently -- real
+drive peaks 61.9 A (1.55x), sim 93.8 A (2.3x). Enforcement exists on the swerve but is looser than
+real. The shooter has no enforcement at all (32x over). Treat "limits are enforced" as
+mechanism-specific, not global.
+
+### SIM-ONLY, ranked
+
+1. **Clamp current in `SimBattery.register()`** with a per-source limit and a 1.5x overshoot factor
+   (matching the real drive motors' measured 1.55x). Measured on the q54 sim log:
+
+   | scenario | sim max | sim mean |
+   | --- | --- | --- |
+   | as shipped | 1171.4 | 157.7 |
+   | clamp at 1.0x limit | 283.4 | 94.1 |
+   | **clamp at 1.5x limit** | **344.4** | 101.8 |
+   | real reference | **318.7** | 148.8 |
+
+   At the 1171 A peak sample: omniwheel 692.4 + accelerator 365.7 = 90% of it.
+2. **`Math.abs()` on `getCurrentDrawAmps()`** in six IOSims turns every deceleration into a draw.
+   Sim omniwheel mean 62.8 A vs real 5.3 A -- 40% of the sim's entire mean pack draw.
+3. **Battery parameters: 12.8 V / 20 mOhm -> 12.1 V / 13.5 mOhm.** Least-squares on 8256 samples:
+   `V = 12.072 - 0.013461*I`, R^2 = 0.7009. Grid search best = 12.08 V / 13.50 mOhm, nrmse 0.100.
+   **Recommended `-Preplay.battery=12.1:0.0135` -- but only AFTER the current model is fixed.**
+   Fitting it against the broken current model would give 11.72/17.5 mOhm, which is roughly why the
+   shipped 12.8/0.020 looks superficially reasonable. Do not ship the compensated value.
+4. **Sum signed current, clamp the VOLTAGE at nominal** rather than clamping each current positive.
+   Real `TotalAmps` goes negative in only 25 of 8256 samples (0.30%), and when it does voltage does
+   not rise: at I = -101.7 A, V was 9.78 V. The real 13.34 V max occurred at I = **+71.5 A**, so it
+   is a rested-pack artifact, not regen.
+5. **Motor multiplicity.** Real registers the flywheel 4x with `MotorOutputManager`; sim models
+   `getKrakenX60Foc(1)` and registers 1x. Reconstruction of real TotalAmps from per-motor signals:
+   all-x1 rms err 50.13; flywheel-x4 31.02; flywheel-x4 + rack-x2 + hood-x2 **27.97**. Least-squares
+   solve for the flywheel multiplier alone returns **4.61**.
+6. **Serializer draws exactly 0.00 A all match** (min=max=mean=0.00) vs real mean 9.48 A.
+7. `BROWNOUT_VOLTAGE` should be **6.75** (real q54 logs `SystemStats/BrownoutVoltage = 6.75`), and
+   `RoboRioSim.setBrownoutVoltage()` should be hoisted out of the per-loop `update()`.
+8. The 4.0 V floor pinned 87 samples silently. Keep it as a guard but log when it is hit, so a
+   broken current model is visible instead of being reported as a plausible 10.37 V mean.
+9. **`-Preplay.battery` is silently ignored unless `-Preplay.inputs` is also given**
+   (`Robot.java:122-128`) -- the only call site is inside the replay-inputs guard, so battery
+   parameters cannot be swept without a replay file.
+
+### Brownout answer (question 5)
+
+Real q54 `SystemStats/BrownedOut` has exactly one record, at t=1.86 s, value False -- it never went
+true. Time below 6.8 V: **0.00 s**. Below 8.0 V: 0.22 s. Real min 7.554 V at I = 312.4 A.
+The sim spent **21.36 s browned out** with 87 samples pinned at the 4.0 V floor.
+
+### No RC filter needed (tested three ways)
+
+Low-pass sweep on I: R^2 is monotonically decreasing in tau (tau=0 is best, R^2 0.8008).
+Step response over 65 onset events: voltage reaches 63.2% of its excursion within **one 20 ms
+sample** -- no settling tail. Cross-correlation peaks at **-40 ms** (voltage *leads* current), which
+is a CAN-staleness logging artifact, not physics. The real residual is OCV droop over the match:
+adding a linear drift term lifts R^2 to 0.8008 (`V = 12.456 - 0.440*(t/min) - 0.011981*I`).
+Optional third field `nominal:R:droopVperMin` if the last increment of fidelity is wanted.
+
+### COMP-AFFECTING (item 10) -- VERIFIED DIRECTLY, changes the fit target
+
+`GenericSuperstructureIOTalonFX.java` registers the leader's supply current with
+`MotorOutputManager` **twice**: line 130 and line 138, identical statements. Confirmed by reading
+the file. Also `followerMotorSupplyCurrents` is never populated (only `followerMotors` is appended
+to, line 117), so the loop at lines 140-142 is dead code.
+
+Effect: `IntakeRack` and `ShooterHood` leaders are double-counted, inflating the REAL robot's logged
+`MotorOutputManager/TotalAmps` by ~6 A mean and up to ~55 A at peaks. **This is the reference series
+being fitted against.** Changes no robot behaviour -- only the logged diagnostic -- but it changes
+the target, so it should land before the next fit run.
