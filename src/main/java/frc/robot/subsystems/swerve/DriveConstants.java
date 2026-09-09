@@ -335,7 +335,7 @@ public class DriveConstants {
       };
   public static final double ROTATION_FINISH_PERCENT = 0.9;
 
-  public static final double PATHPLANNER_PID_OFFSET = 1.5;
+  public static final double PATHPLANNER_PID_OFFSET = 0.4;
 
   public static final double AUTOALIGN_POSITION_DEADBAND = 0.01;
 
