@@ -19,7 +19,8 @@ public class IntakeRack extends GenericSuperstructure<IntakeRack.IntakeRackTarge
     INTAKE(11.6, IntakeRackConstants.SUPPLY_CURRENT_LIMIT, Optional.empty()),
     MIDDLE(10.6, IntakeRackConstants.SUPPLY_CURRENT_LIMIT, Optional.empty()),
     SHOOTING_STOW(3, IntakeRackConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d)),
-    STOW(0, IntakeRackConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d));
+    STOW(0, IntakeRackConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d)),
+    ACTUAL_MIDDLE(5.8, IntakeRackConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d));
 
     private double position;
     private double supplyCurrentLimit;

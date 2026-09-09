@@ -120,4 +120,12 @@ public class ShootCommandFactory {
   public Command setJustShootCommand(boolean justShoot) {
     return Commands.runOnce(() -> this.justShoot = justShoot);
   }
+
+  public Command chunkShootGoBrrr(boolean justShoot) {
+    return Commands.runOnce(
+        () -> {
+          intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
+          this.justShoot = justShoot;
+        });
+  }
 }
