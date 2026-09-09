@@ -660,16 +660,24 @@ public class RobotContainer {
   public void updateSimulation() {
     if (Constants.getRobotMode() != Constants.Mode.SIM) return;
 
-    // Publish pack voltage FIRST: every *IOSim reads RobotController
-    // .getBatteryVoltage() this loop, so the sag has to be in place before they run.
-    SimBattery.getInstance().update();
-
     Logger.recordOutput("Testing/Blank Pose3d", new Pose3d());
 
     RobotSimState.getInstance().applyTerrainGravityForce();
     SimulatedArena.getInstance().simulationPeriodic();
     RobotSimState.getInstance().updateTerrainState();
     RobotSimState.getInstance().getFuelSim().updateSim();
+
+    // Publish pack voltage AFTER the arena tick, never before.
+    //
+    // maple-sim runs 5 sub-ticks per simulationPeriodic(), and each one ends with
+    // SimulatedBattery.simulationSubTick() calling RoboRioSim.setVInVoltage(). Writing our
+    // value first meant it was overwritten 5 times before any motor could read it -- the
+    // custom battery model was dead code. maple-sim's own model also hard-clamps at the
+    // brownout voltage and only counts its drivetrain motors, so it can neither brown out
+    // nor see the 7 mechanism sims. Writing last makes our value the one that survives into
+    // the next loop, which is when the *IOSims actually read it (simulationPeriodic runs
+    // after robotPeriodic).
+    SimBattery.getInstance().update();
     Logger.recordOutput(
         "Field Simulation/Robot Position", RobotSimState.getInstance().getRobotPose3d());
     Logger.recordOutput(

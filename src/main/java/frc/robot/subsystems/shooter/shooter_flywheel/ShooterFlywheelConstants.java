@@ -41,7 +41,9 @@ public class ShooterFlywheelConstants {
   public static final double VELOCITY_ADJUSTMENT = 0.98;
   public static final int CURRENT_LIMIT_AMPS =
       switch (Constants.getRobotType()) {
-        case SIM -> 40;
+          // SIM used to be 40 while the real robot runs 20; the sim should model the
+          // limit the real motor controller actually enforces.
+        case SIM -> 20;
         default -> 20;
       };
 

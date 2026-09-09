@@ -44,7 +44,9 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
             ? ChassisReference.Clockwise_Positive
             : ChassisReference.CounterClockwise_Positive;
     simState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
-    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
+
+    frc.robot.utility.SimBattery.getInstance()
+        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * 1.0);
   }
 
   /** Last computed supply current, published to SimBattery. */
@@ -75,6 +77,10 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     // while the motor still behaved as though it had a full 12 V to work with.
     double availableVolts = RobotController.getBatteryVoltage();
     appliedVoltage = Math.max(-availableVolts, Math.min(availableVolts, appliedVoltage));
+    if (coasting) {
+      // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
+      appliedVoltage = 0.0;
+    }
 
     // Simulate physics
     intakeRollersSim.setInputVoltage(appliedVoltage);
@@ -92,7 +98,10 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     // the duty cycle, since the motor controller is a buck converter. Reporting
     // stator as supply overstates pack draw and would make the battery model sag
     // far harder than the real robot does.
-    double statorAmps = Math.abs(intakeRollersSim.getCurrentDrawAmps());
+    // Signed, not abs(): a negative draw is the mechanism back-driving and returning
+    // energy. abs() booked every deceleration as consumption -- 47% of the omniwheel's
+    // total error, and the real robot logs supply current down to -69.94 A.
+    double statorAmps = intakeRollersSim.getCurrentDrawAmps();
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;

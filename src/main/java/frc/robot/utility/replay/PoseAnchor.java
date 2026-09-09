@@ -36,6 +36,19 @@ public final class PoseAnchor {
     this.intervalSeconds = intervalSeconds;
   }
 
+  /**
+   * Teleport the simulated drivetrain to {@code target}, keeping the gyro in step.
+   *
+   * <p>{@code setSimulationWorldPose} moves only the dyn4j body -- it does not touch {@code
+   * GyroSimulation}. Without the matching {@code setRotation} the robot's believed heading stays
+   * put while its actual heading jumps, so every field-relative driver command afterwards lands in
+   * a rotated frame.
+   */
+  public static void seedPose(SwerveDriveSimulation driveSimulation, Pose2d target) {
+    driveSimulation.setSimulationWorldPose(target);
+    driveSimulation.getGyroSimulation().setRotation(target.getRotation());
+  }
+
   /** True when anchoring is switched off entirely. */
   public boolean isDisabled() {
     return intervalSeconds <= 0.0;
@@ -87,7 +100,7 @@ public final class PoseAnchor {
     // Field-relative is the correct frame here: setRobotSpeeds converts through
     // toDyn4jLinearVelocity into dyn4j world coordinates.
     ChassisSpeeds speeds = driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative();
-    driveSimulation.setSimulationWorldPose(target);
+    seedPose(driveSimulation, target);
     driveSimulation.setRobotSpeeds(speeds);
 
     lastAnchorSeconds = now;

@@ -20,9 +20,13 @@ public class ModuleIOTalonFXSim extends ModuleIOTalonFX {
     // Eight motors (four drive, four steer) dominate the robot's power draw, so
     // omitting them would make the battery model far too optimistic.
     frc.robot.utility.SimBattery.getInstance()
-        .register(() -> driveTalon.getSimState().getSupplyCurrent());
+        .register(
+            () -> driveTalon.getSimState().getSupplyCurrent(),
+            DriveConstants.DRIVE_CURRENT_LIMIT_AMPS);
     frc.robot.utility.SimBattery.getInstance()
-        .register(() -> steerTalon.getSimState().getSupplyCurrent());
+        .register(
+            () -> steerTalon.getSimState().getSupplyCurrent(),
+            DriveConstants.STEER_CURRENT_LIMIT_AMPS);
   }
 
   @Override

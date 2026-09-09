@@ -27,19 +27,32 @@ public final class SimBattery {
   public static final double MIN_VOLTAGE = 4.0;
 
   /** roboRIO brownout threshold. */
-  public static final double BROWNOUT_VOLTAGE = 6.8;
+  /** Real q54 logs SystemStats/BrownoutVoltage = 6.75. */
+  public static final double BROWNOUT_VOLTAGE = 6.75;
 
   public static final double DEFAULT_NOMINAL_VOLTS = 12.8;
   public static final double DEFAULT_RESISTANCE_OHMS = 0.02;
 
+  /**
+   * How far a source may transiently exceed its configured supply limit.
+   *
+   * <p>Phoenix supply limits are soft -- {@code SupplyCurrentLowerLimit}/{@code
+   * SupplyCurrentLowerTime} default to 40 A / 1.0 s -- so the real robot overshoots too. Measured
+   * on q54: real drive motors peak at 1.55x their 40 A limit.
+   */
+  public static final double LIMIT_OVERSHOOT_FACTOR = 1.5;
+
   private static SimBattery instance;
 
   private final List<DoubleSupplier> currentSources = new ArrayList<>();
+  private final List<Double> sourceLimitsAmps = new ArrayList<>();
+  private boolean pinnedAtFloor = false;
   private double nominalVolts = DEFAULT_NOMINAL_VOLTS;
   private double resistanceOhms = DEFAULT_RESISTANCE_OHMS;
   private double lastVoltage = DEFAULT_NOMINAL_VOLTS;
   private double lastCurrentAmps = 0.0;
   private boolean brownedOut = false;
+  private boolean brownoutThresholdPublished = false;
 
   private SimBattery() {}
 
@@ -50,9 +63,26 @@ public final class SimBattery {
     return instance;
   }
 
-  /** Register a supply-current source, in amps. Called once per simulated motor at construction. */
-  public void register(DoubleSupplier supplyCurrentAmps) {
+  /**
+   * Register a supply-current source, in amps, with the supply limit its motor controller enforces.
+   *
+   * <p>The limit is applied here rather than trusted from the physics sims: WPILib's {@code
+   * FlywheelSim}/{@code ElevatorSim} {@code getCurrentDrawAmps()} is unbounded, and the roller
+   * IOSims drive those sims from their own PID without ever consulting the Talon, so the configured
+   * {@code SupplyCurrentLimit} never reaches the physics. Unclamped, the shooter alone reported 952
+   * A on a single mechanism.
+   *
+   * @param supplyCurrentAmps signed supply current; negative means regenerating
+   * @param limitAmps the configured supply limit, or a non-positive value for no limit
+   */
+  public void register(DoubleSupplier supplyCurrentAmps, double limitAmps) {
     currentSources.add(supplyCurrentAmps);
+    sourceLimitsAmps.add(limitAmps);
+  }
+
+  /** Register an unlimited source. Prefer the two-argument form. */
+  public void register(DoubleSupplier supplyCurrentAmps) {
+    register(supplyCurrentAmps, 0.0);
   }
 
   /** Number of registered current sources, for verifying nothing was missed. */
@@ -63,6 +93,9 @@ public final class SimBattery {
   /** Clear all sources and set new pack parameters. Intended for tests. */
   public void reset(double nominalVolts, double resistanceOhms) {
     currentSources.clear();
+    sourceLimitsAmps.clear();
+    this.pinnedAtFloor = false;
+    this.brownoutThresholdPublished = false;
     this.nominalVolts = nominalVolts;
     this.resistanceOhms = resistanceOhms;
     this.lastVoltage = nominalVolts;
@@ -106,16 +139,31 @@ public final class SimBattery {
   /** Sum the registered sources and return the resulting pack voltage. */
   public double computeVoltage() {
     double total = 0.0;
-    for (DoubleSupplier source : currentSources) {
-      double amps = source.getAsDouble();
-      // Braking motors can report negative draw. Treating that as a recharge
-      // would push the pack above nominal, which is not a behaviour we want.
-      if (amps > 0.0 && Double.isFinite(amps)) {
-        total += amps;
+    for (int i = 0; i < currentSources.size(); i++) {
+      double amps = currentSources.get(i).getAsDouble();
+      if (!Double.isFinite(amps)) {
+        // A diverging physics sim can emit NaN; letting it through would poison the pack
+        // voltage for every motor and silently wreck the whole run.
+        continue;
       }
+      double limit = sourceLimitsAmps.get(i);
+      if (limit > 0.0) {
+        double cap = limit * LIMIT_OVERSHOOT_FACTOR;
+        amps = Math.max(-cap, Math.min(cap, amps));
+      }
+      // Sum SIGNED current, matching the real robot's MotorOutputManager/TotalAmps, which
+      // reaches -101.7 A under regenerative braking. Discarding negatives per source made the
+      // two series different measurements and biased the sim mean by +7%.
+      total += amps;
     }
     lastCurrentAmps = total;
-    lastVoltage = Math.max(MIN_VOLTAGE, nominalVolts - total * resistanceOhms);
+
+    // Clamp the VOLTAGE rather than each current. Regen on the real robot never charges the
+    // pack -- at its most negative (-101.7 A) the real pack still read 9.78 V -- so the model
+    // must not rise above open-circuit voltage even though the signed sum goes negative.
+    double raw = nominalVolts - total * resistanceOhms;
+    pinnedAtFloor = raw < MIN_VOLTAGE;
+    lastVoltage = Math.max(MIN_VOLTAGE, Math.min(nominalVolts, raw));
     brownedOut = lastVoltage < BROWNOUT_VOLTAGE;
     return lastVoltage;
   }
@@ -126,9 +174,20 @@ public final class SimBattery {
    */
   public void update() {
     double voltage = computeVoltage();
+
+    // Published once rather than every loop, and from here rather than getInstance() so that
+    // computeVoltage()/register() stay callable without an initialised HAL -- unit tests
+    // exercise this class directly.
+    if (!brownoutThresholdPublished) {
+      RoboRioSim.setBrownoutVoltage(BROWNOUT_VOLTAGE);
+      brownoutThresholdPublished = true;
+    }
+
     RoboRioSim.setVInVoltage(voltage);
-    RoboRioSim.setBrownoutVoltage(BROWNOUT_VOLTAGE);
     Logger.recordOutput("SimBattery/Voltage", voltage);
+    // Surfaced so a broken current model is visible instead of being reported as a plausible
+    // mean: the floor silently pinned 87 samples in the baseline run.
+    Logger.recordOutput("SimBattery/VoltagePinnedAtFloor", pinnedAtFloor);
     Logger.recordOutput("SimBattery/TotalCurrentAmps", lastCurrentAmps);
     Logger.recordOutput("SimBattery/BrownedOut", brownedOut);
     Logger.recordOutput("SimBattery/SourceCount", currentSources.size());

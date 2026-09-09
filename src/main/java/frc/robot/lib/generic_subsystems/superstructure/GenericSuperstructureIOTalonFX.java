@@ -135,11 +135,12 @@ public abstract class GenericSuperstructureIOTalonFX implements GenericSuperstru
       talon.optimizeBusUtilization();
     }
 
-    MotorOutputManager.getInstance().registerMotorOutputs(() -> supplyCurrent.getValueAsDouble());
-
-    for (StatusSignal<Current> motorCurrent : followerMotorSupplyCurrents) {
-      MotorOutputManager.getInstance().registerMotorOutputs(() -> motorCurrent.getValueAsDouble());
-    }
+    // NOTE: the leader's supply current used to be registered a second time here, and a loop
+    // followed over followerMotorSupplyCurrents -- a list nothing ever appends to (followers are
+    // registered above, where they are constructed). The double registration inflated the logged
+    // MotorOutputManager/TotalAmps for IntakeRack and ShooterHood by ~6 A mean and up to ~55 A at
+    // peaks. That series is the reference the simulation is calibrated against, so it had to be
+    // correct. Robot behaviour is unaffected -- this is a logging-only diagnostic.
   }
 
   @Override

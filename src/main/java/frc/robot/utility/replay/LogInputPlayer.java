@@ -49,8 +49,16 @@ public final class LogInputPlayer {
         DriverStationSim.setAllianceStationId(ids[ordinal]);
       }
     }
+    if (inputs.gameMessage() != null) {
+      DriverStationSim.setGameSpecificMessage(inputs.gameMessage());
+    }
     DriverStationSim.setDsAttached(true);
     DriverStationSim.notifyNewData();
+  }
+
+  /** The logged robot pose at the moment the match was enabled, as {x, y, theta}, or null. */
+  public double[] startPose() {
+    return inputs.estimatedPose().valueAt(inputs.matchStartSeconds());
   }
 
   /** The auto selected in the source log, or null if it recorded none. */
@@ -143,6 +151,15 @@ public final class LogInputPlayer {
       controller.setPOV(0, povValues != null && povValues.length > 0 ? (int) povValues[0] : -1);
 
       controller.notifyNewData();
+    }
+
+    // Match time drives the hub-active gate in ShootCommandFactory. Without it the DS
+    // reports -1 forever, and the gate `getTimeUntilOurHubShifts() <= 2` is trivially
+    // satisfied by -1, leaving the shooter enabled for 100% of the sim match against
+    // roughly half for the real one.
+    Double matchTimeNow = inputs.matchTime().valueAt(now);
+    if (matchTimeNow != null) {
+      DriverStationSim.setMatchTime(matchTimeNow);
     }
 
     DriverStationSim.setEnabled(Boolean.TRUE.equals(inputs.enabled().valueAt(now, false)));

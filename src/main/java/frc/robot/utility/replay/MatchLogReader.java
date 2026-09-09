@@ -21,6 +21,8 @@ public final class MatchLogReader {
   private static final String KEY_STATION = "DriverStation/AllianceStation";
   private static final String KEY_POSE = "RealOutputs/Robot State/Estimated Pose";
   private static final String KEY_CHOOSER = "NetworkInputs/SmartDashboard/Auto Chooser";
+  private static final String KEY_MATCH_TIME = "DriverStation/MatchTime";
+  private static final String KEY_GAME_MESSAGE = "DriverStation/GameSpecificMessage";
 
   /** A struct:Pose2d payload is three little-endian doubles: x, y, then theta in radians. */
   private static final int POSE2D_BYTES = 24;
@@ -55,7 +57,9 @@ public final class MatchLogReader {
     LogTimeline.Builder<Boolean> autonomous = LogTimeline.builder();
     LogTimeline.Builder<Long> station = LogTimeline.builder();
     LogTimeline.Builder<double[]> pose = LogTimeline.builder();
+    LogTimeline.Builder<Double> matchTime = LogTimeline.builder();
     String autoName = null;
+    String gameMessage = null;
 
     for (DataLogRecord record : reader) {
       if (record.isControl()) {
@@ -79,6 +83,8 @@ public final class MatchLogReader {
         case KEY_AUTONOMOUS -> autonomous.add(seconds, record.getBoolean());
         case KEY_STATION -> station.add(seconds, record.getInteger());
         case KEY_CHOOSER -> autoName = record.getString();
+        case KEY_MATCH_TIME -> matchTime.add(seconds, record.getDouble());
+        case KEY_GAME_MESSAGE -> gameMessage = record.getString();
         case KEY_POSE -> {
           double[] parsed = parsePose2d(record.getRaw());
           if (parsed != null) {
@@ -131,7 +137,9 @@ public final class MatchLogReader {
         autonomous.build(),
         station.build(),
         pose.build(),
+        matchTime.build(),
         autoName,
+        gameMessage,
         start,
         end);
   }

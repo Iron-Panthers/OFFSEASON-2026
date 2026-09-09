@@ -15,6 +15,8 @@ package frc.robot.utility.replay;
  * @param autonomous true during autonomous
  * @param allianceStation raw AllianceStation enum ordinal from the log
  * @param estimatedPose robot pose as {x metres, y metres, theta radians}
+ * @param matchTime the driver station match countdown, in seconds
+ * @param gameMessage the game-specific message, or null if the log recorded none
  * @param autoName the auto selected on the dashboard, or null if the log did not record one
  * @param matchStartSeconds timestamp of the first enable — the replay time origin
  * @param matchEndSeconds timestamp of the final disable
@@ -27,7 +29,9 @@ public record MatchInputs(
     LogTimeline<Boolean> autonomous,
     LogTimeline<Long> allianceStation,
     LogTimeline<double[]> estimatedPose,
+    LogTimeline<Double> matchTime,
     String autoName,
+    String gameMessage,
     double matchStartSeconds,
     double matchEndSeconds) {
 

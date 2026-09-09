@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.MatchInputs;
 import frc.robot.utility.replay.MatchLogReader;
+import frc.robot.utility.replay.PoseAnchor;
 import java.io.File;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -162,15 +163,32 @@ public class Robot extends LoggedRobot {
       robotContainer.attachPoseAnchor(
           Double.parseDouble(System.getProperty("ai.replay.anchor", "10.0")));
 
+      // Seed the starting pose for every replay. Previously this happened only under
+      // -Preplay.teleopOnly, so an auto replay began wherever the drivetrain happened to be
+      // initialised: in q54 that was (13.64, 4.27, 180.0deg) against the real robot's
+      // (12.19, 7.45, 89.8deg) -- 3.5 m and 90 degrees apart before a wheel turned, which
+      // makes the whole auto segment a comparison between two robots in different places.
+      double[] startPose = replayPlayer.startPose();
+      if (startPose != null) {
+        PoseAnchor.seedPose(
+            RobotSimState.getInstance().getDriveSimulation(),
+            new Pose2d(startPose[0], startPose[1], new Rotation2d(startPose[2])));
+        System.out.println(
+            String.format(
+                "[Replay] seeded start pose (%.2f, %.2f, %.1fdeg)",
+                startPose[0], startPose[1], Math.toDegrees(startPose[2])));
+      } else {
+        System.err.println("[Replay] no logged pose at match start; using default start pose");
+      }
+
       if (Boolean.getBoolean("ai.replay.teleopOnly")) {
         double[] teleopPose = replayPlayer.seekToTeleop();
         if (teleopPose != null) {
           // Place the robot where the real one finished auto, otherwise teleop
           // would start from the drivetrain's initialisation pose instead.
-          RobotSimState.getInstance()
-              .getDriveSimulation()
-              .setSimulationWorldPose(
-                  new Pose2d(teleopPose[0], teleopPose[1], new Rotation2d(teleopPose[2])));
+          PoseAnchor.seedPose(
+              RobotSimState.getInstance().getDriveSimulation(),
+              new Pose2d(teleopPose[0], teleopPose[1], new Rotation2d(teleopPose[2])));
           System.out.println(
               "[Replay] teleopOnly: skipped to t="
                   + String.format("%.1f", replayPlayer.elapsedSeconds())

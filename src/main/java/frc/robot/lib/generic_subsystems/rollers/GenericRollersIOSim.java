@@ -12,6 +12,17 @@ public abstract class GenericRollersIOSim implements GenericRollersIO {
   protected final TalonFX talon;
 
   private final NeutralOut neutralOutput = new NeutralOut();
+
+  /**
+   * True while the subsystem has commanded a stop.
+   *
+   * <p>{@link #stop()} only put the Talon into NeutralOut, but every concrete IOSim drives its
+   * physics from its own PID and never reads the Talon, so neutral never reached the simulation:
+   * the accelerator kept spinning at 322 rad/s for 130.5 s of a 165 s match while commanded to
+   * stop. Subclasses check this and apply 0 V.
+   */
+  protected boolean coasting = false;
+
   private final double mechanismReduction;
   private final VelocityVoltage velocityControl = new VelocityVoltage(0).withUpdateFreqHz(0);
 
@@ -37,11 +48,13 @@ public abstract class GenericRollersIOSim implements GenericRollersIO {
 
   @Override
   public void runVelocity(double velocity) {
+    coasting = false;
     talon.setControl(velocityControl.withVelocity(velocity));
   }
 
   @Override
   public void stop() {
+    coasting = true;
     talon.setControl(neutralOutput);
   }
 

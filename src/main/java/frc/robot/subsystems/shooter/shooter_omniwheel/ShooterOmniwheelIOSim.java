@@ -44,7 +44,9 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
         SHOOTER_OMNIWHEEL_CONFIG.inverted()
             ? ChassisReference.Clockwise_Positive
             : ChassisReference.CounterClockwise_Positive;
-    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
+
+    frc.robot.utility.SimBattery.getInstance()
+        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * 1.0);
   }
 
   /** Last computed supply current, published to SimBattery. */
@@ -76,6 +78,10 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
     // while the motor still behaved as though it had a full 12 V to work with.
     double availableVolts = RobotController.getBatteryVoltage();
     appliedVoltage = Math.max(-availableVolts, Math.min(availableVolts, appliedVoltage));
+    if (coasting) {
+      // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
+      appliedVoltage = 0.0;
+    }
 
     // Simulate physics
     shooterOmniwheelsSim.setInputVoltage(appliedVoltage);
@@ -86,13 +92,19 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
     rotorPositionRotations += currentVelocityRPS * 0.02;
 
     inputs.connected = true;
+    // Was never published: the sim logged a single 0.0 record for the whole match
+    // while the real robot reached 6954.9 rad, scoring as a pure measurement hole.
+    inputs.positionRads = rotorPositionRotations * 2.0 * Math.PI;
     inputs.velocityRadsPerSec = shooterOmniwheelsSim.getAngularVelocityRadPerSec();
     inputs.appliedVolts = appliedVoltage;
     // getCurrentDrawAmps() is stator current. Supply current is lower by roughly
     // the duty cycle, since the motor controller is a buck converter. Reporting
     // stator as supply overstates pack draw and would make the battery model sag
     // far harder than the real robot does.
-    double statorAmps = Math.abs(shooterOmniwheelsSim.getCurrentDrawAmps());
+    // Signed, not abs(): a negative draw is the mechanism back-driving and returning
+    // energy. abs() booked every deceleration as consumption -- 47% of the omniwheel's
+    // total error, and the real robot logs supply current down to -69.94 A.
+    double statorAmps = shooterOmniwheelsSim.getCurrentDrawAmps();
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;

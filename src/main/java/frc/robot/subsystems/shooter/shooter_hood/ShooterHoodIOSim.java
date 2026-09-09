@@ -39,7 +39,8 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
         ShooterHoodConstants.MOTION_MAGIC_CONFIG.cruiseVelocity(),
         0,
         ShooterHoodConstants.GRAVITY_TYPE);
-    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
+    frc.robot.utility.SimBattery.getInstance()
+        .register(() -> lastSupplyCurrentAmps, ShooterHoodConstants.SUPPLY_CURRENT_LIMIT);
   }
 
   /** Last computed supply current, published to SimBattery. */

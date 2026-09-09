@@ -44,7 +44,11 @@ public class ShooterAcceleratorIOSim extends GenericRollersIOSim implements Shoo
         SHOOTER_ACCELERATOR_CONFIG.inverted()
             ? ChassisReference.Clockwise_Positive
             : ChassisReference.CounterClockwise_Positive;
-    frc.robot.utility.SimBattery.getInstance().register(() -> lastSupplyCurrentAmps);
+
+    // The real robot drives this mechanism with 2 motors and registers each with
+    // MotorOutputManager, so the pack sees 2x this current; the sim models one.
+    frc.robot.utility.SimBattery.getInstance()
+        .register(() -> lastSupplyCurrentAmps * 2, CURRENT_LIMIT_AMPS * 2.0);
   }
 
   /** Last computed supply current, published to SimBattery. */
@@ -76,6 +80,10 @@ public class ShooterAcceleratorIOSim extends GenericRollersIOSim implements Shoo
     // while the motor still behaved as though it had a full 12 V to work with.
     double availableVolts = RobotController.getBatteryVoltage();
     appliedVoltage = Math.max(-availableVolts, Math.min(availableVolts, appliedVoltage));
+    if (coasting) {
+      // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
+      appliedVoltage = 0.0;
+    }
 
     // Simulate physics
     shooterAcceleratorSim.setInputVoltage(appliedVoltage);
@@ -93,7 +101,10 @@ public class ShooterAcceleratorIOSim extends GenericRollersIOSim implements Shoo
     // the duty cycle, since the motor controller is a buck converter. Reporting
     // stator as supply overstates pack draw and would make the battery model sag
     // far harder than the real robot does.
-    double statorAmps = Math.abs(shooterAcceleratorSim.getCurrentDrawAmps());
+    // Signed, not abs(): a negative draw is the mechanism back-driving and returning
+    // energy. abs() booked every deceleration as consumption -- 47% of the omniwheel's
+    // total error, and the real robot logs supply current down to -69.94 A.
+    double statorAmps = shooterAcceleratorSim.getCurrentDrawAmps();
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
