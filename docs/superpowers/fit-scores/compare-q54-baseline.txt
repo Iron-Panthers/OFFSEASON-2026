@@ -1,0 +1,245 @@
+=== LOG COMPARISON ===
+sim:  build/ai-logs/akit_26-09-08_19-41-19.wpilog
+real: C:/Users/bruce/Downloads/LOGS-2026-main/LOGS-2026-main/Worlds/akit_26-04-30_14-50-56_johnson_q54.wpilog
+aligned on first-enable: sim t0=6.77s, real t0=242.83s
+compared span: 0.00s to 165.10s of enabled time (8254 grid points)
+
+--- TOP 35 DIVERGING SIGNALS (of 156 scored, 47 constant-on-both skipped) ---
+
+RealOutputs/Shooter/Shooter Omniwheel/Total Amp Seconds   [currents]
+  nrmse=5.213  mean_shift=+3550.121  p95_shift=+8403.237  peak_shift=+9513.299  corr=0.996  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=9477.077
+    worst  162.00s- 163.98s  mean_abs_err=9095.629
+    worst  160.00s- 161.98s  mean_abs_err=8999.030
+
+Serializer/AppliedVelocity   [mechanisms]
+  nrmse=2.757  mean_shift=-2.661  p95_shift=+0.000  peak_shift=+3.359  corr=0.000  n=8254
+    worst  132.00s- 133.98s  mean_abs_err=3.071
+    worst   56.00s-  57.98s  mean_abs_err=3.067
+    worst   84.00s-  85.98s  mean_abs_err=3.057
+
+RealOutputs/Shooter/Shooter Omniwheel/Filtered Current   [currents]
+  nrmse=2.726  mean_shift=+56.628  p95_shift=+258.764  peak_shift=+387.136  corr=0.661  n=8254
+    worst   98.00s-  99.98s  mean_abs_err=310.181
+    worst   56.00s-  57.98s  mean_abs_err=267.856
+    worst  150.00s- 151.98s  mean_abs_err=261.707
+
+Shooter/Shooter Accelerator/PositionRads   [mechanisms]
+  nrmse=2.558  mean_shift=+21328.087  p95_shift=+43112.445  peak_shift=+44785.649  corr=0.987  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=44746.051
+    worst  162.00s- 163.98s  mean_abs_err=44543.166
+    worst  160.00s- 161.98s  mean_abs_err=43976.442
+
+Shooter/Shooter Omniwheel/SupplyCurrentAmps   [currents]
+  nrmse=1.217  mean_shift=+57.602  p95_shift=+427.364  peak_shift=+880.765  corr=0.262  n=8254
+    worst   90.00s-  91.98s  mean_abs_err=348.000
+    worst  108.00s- 109.98s  mean_abs_err=296.154
+    worst   56.00s-  57.98s  mean_abs_err=286.969
+
+Intake/Intake Rollers/VelocityRadsPerSec   [mechanisms]
+  nrmse=1.011  mean_shift=+136.122  p95_shift=+163.102  peak_shift=+194.615  corr=0.393  n=8254
+    worst   18.00s-  19.98s  mean_abs_err=343.069
+    worst   20.00s-  21.98s  mean_abs_err=343.069
+    worst   22.00s-  23.98s  mean_abs_err=343.069
+
+Swerve/Module0/DrivePositionRads   [mechanisms]
+  nrmse=0.977  mean_shift=+1645.121  p95_shift=+1828.603  peak_shift=-326.014  corr=0.360  n=8254
+    worst  108.00s- 109.98s  mean_abs_err=2337.455
+    worst  110.00s- 111.98s  mean_abs_err=2324.868
+    worst  106.00s- 107.98s  mean_abs_err=2309.671
+
+Swerve/Module0/DrivePositionMeters   [mechanisms]
+  nrmse=0.968  mean_shift=+81.585  p95_shift=+90.015  peak_shift=-17.923  corr=0.360  n=8254
+    worst  108.00s- 109.98s  mean_abs_err=115.405
+    worst  110.00s- 111.98s  mean_abs_err=114.753
+    worst  106.00s- 107.98s  mean_abs_err=114.039
+
+Shooter/Shooter Accelerator/VelocityRadsPerSec   [mechanisms]
+  nrmse=0.919  mean_shift=+270.796  p95_shift=+177.824  peak_shift=+130.233  corr=0.121  n=8254
+    worst  116.00s- 117.98s  mean_abs_err=446.803
+    worst  122.00s- 123.98s  mean_abs_err=446.802
+    worst  120.00s- 121.98s  mean_abs_err=446.801
+
+Intake/Intake Rollers/AppliedVolts   [other]
+  nrmse=0.758  mean_shift=+4.072  p95_shift=+4.660  peak_shift=+5.546  corr=0.367  n=8254
+    worst   56.00s-  57.98s  mean_abs_err=13.510
+    worst   16.00s-  17.98s  mean_abs_err=13.500
+    worst   18.00s-  19.98s  mean_abs_err=13.500
+
+RealOutputs/Intake/Intake Rack/Total Amp Seconds   [currents]
+  nrmse=0.709  mean_shift=-621.078  p95_shift=-854.668  peak_shift=-867.418  corr=0.863  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=866.610
+    worst  162.00s- 163.98s  mean_abs_err=864.132
+    worst  160.00s- 161.98s  mean_abs_err=861.263
+
+Intake/Intake Rollers/PositionRads   [mechanisms]
+  nrmse=0.677  mean_shift=+12595.618  p95_shift=+21819.469  peak_shift=+22626.993  corr=0.997  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=22632.917
+    worst  162.00s- 163.98s  mean_abs_err=22624.281
+    worst  160.00s- 161.98s  mean_abs_err=22399.062
+
+RealOutputs/Shooter/Shooter Accelerator/Filtered Current   [currents]
+  nrmse=0.673  mean_shift=+2.929  p95_shift=+8.075  peak_shift=+119.476  corr=0.409  n=8254
+    worst    6.00s-   7.98s  mean_abs_err=102.460
+    worst    4.00s-   5.98s  mean_abs_err=28.852
+    worst  112.00s- 113.98s  mean_abs_err=26.281
+
+RealOutputs/Intake/Intake Rollers/Filtered Current   [currents]
+  nrmse=0.653  mean_shift=+0.812  p95_shift=+29.706  peak_shift=+33.451  corr=-0.355  n=8254
+    worst   56.00s-  57.98s  mean_abs_err=57.880
+    worst  132.00s- 133.98s  mean_abs_err=52.311
+    worst  150.00s- 151.98s  mean_abs_err=49.786
+
+Serializer/AppliedVolts   [other]
+  nrmse=0.626  mean_shift=-6.271  p95_shift=-7.810  peak_shift=-7.751  corr=-0.355  n=8254
+    worst    6.00s-   7.98s  mean_abs_err=12.894
+    worst   98.00s-  99.98s  mean_abs_err=10.459
+    worst   36.00s-  37.98s  mean_abs_err=10.257
+
+RealOutputs/Shooter/Shooter Flywheels/Filtered Current   [currents]
+  nrmse=0.620  mean_shift=-6.238  p95_shift=-10.469  peak_shift=+68.888  corr=0.019  n=8254
+    worst    0.00s-   1.98s  mean_abs_err=52.301
+    worst    2.00s-   3.98s  mean_abs_err=28.202
+    worst  134.00s- 135.98s  mean_abs_err=16.070
+
+Swerve/Module2/DrivePositionMeters   [mechanisms]
+  nrmse=0.594  mean_shift=-48.210  p95_shift=-56.377  peak_shift=-63.483  corr=-0.571  n=8254
+    worst   44.00s-  45.98s  mean_abs_err=84.152
+    worst   64.00s-  65.98s  mean_abs_err=79.966
+    worst   30.00s-  31.98s  mean_abs_err=78.004
+
+Swerve/Module2/DrivePositionRads   [mechanisms]
+  nrmse=0.593  mean_shift=-959.547  p95_shift=-1114.995  peak_shift=-1256.606  corr=-0.571  n=8254
+    worst   44.00s-  45.98s  mean_abs_err=1679.666
+    worst   64.00s-  65.98s  mean_abs_err=1598.323
+    worst   30.00s-  31.98s  mean_abs_err=1557.770
+
+RealOutputs/Shooter/Shooter Accelerator/Total Amp Seconds   [currents]
+  nrmse=0.575  mean_shift=+310.149  p95_shift=+493.146  peak_shift=+473.692  corr=0.983  n=8254
+    worst  156.00s- 157.98s  mean_abs_err=482.528
+    worst  164.00s- 165.06s  mean_abs_err=482.521
+    worst  162.00s- 163.98s  mean_abs_err=479.686
+
+Serializer/PositionRads   [mechanisms]
+  nrmse=0.571  mean_shift=-4865.913  p95_shift=-9016.746  peak_shift=-9616.048  corr=0.000  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=9551.892
+    worst  162.00s- 163.98s  mean_abs_err=9474.168
+    worst  160.00s- 161.98s  mean_abs_err=9406.145
+
+Shooter/Shooter Omniwheel/StatorCurrentAmps   [currents]
+  nrmse=0.547  mean_shift=+47.767  p95_shift=+423.617  peak_shift=+792.565  corr=0.140  n=8254
+    worst   90.00s-  91.98s  mean_abs_err=352.498
+    worst   56.00s-  57.98s  mean_abs_err=291.575
+    worst  108.00s- 109.98s  mean_abs_err=281.708
+
+RealOutputs/Serializer/Filtered Current   [currents]
+  nrmse=0.545  mean_shift=-9.369  p95_shift=-18.158  peak_shift=-19.948  corr=0.417  n=8254
+    worst   62.00s-  63.98s  mean_abs_err=18.747
+    worst  138.00s- 139.98s  mean_abs_err=18.051
+    worst   86.00s-  87.98s  mean_abs_err=17.901
+
+RealOutputs/Serializer/Total Amp Seconds   [currents]
+  nrmse=0.536  mean_shift=-707.678  p95_shift=-1449.802  peak_shift=-1556.424  corr=0.998  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=1545.935
+    worst  162.00s- 163.98s  mean_abs_err=1530.217
+    worst  160.00s- 161.98s  mean_abs_err=1513.849
+
+RealOutputs/Swerve/Module2/DriveVelRadsScalar   [mechanisms]
+  nrmse=0.515  mean_shift=-15.161  p95_shift=-23.251  peak_shift=-23.229  corr=-0.201  n=8254
+    worst  124.00s- 125.98s  mean_abs_err=173.875
+    worst   46.00s-  47.98s  mean_abs_err=169.702
+    worst   70.00s-  71.98s  mean_abs_err=166.915
+
+Shooter/Shooter Omniwheel/PositionRads   [mechanisms]
+  nrmse=0.505  mean_shift=-3026.991  p95_shift=-6074.262  peak_shift=-6899.752  corr=0.000  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=6729.768
+    worst  160.00s- 161.98s  mean_abs_err=6557.585
+    worst  162.00s- 163.98s  mean_abs_err=6553.058
+
+RealOutputs/Time Until Our Hub Shifts   [other]
+  nrmse=0.482  mean_shift=-15.039  p95_shift=-30.000  peak_shift=-34.000  corr=0.000  n=8254
+    worst   26.00s-  27.98s  mean_abs_err=34.080
+    worst   28.00s-  29.98s  mean_abs_err=32.160
+    worst   30.00s-  31.98s  mean_abs_err=30.260
+
+RealOutputs/Swerve/Module1/DriveVelRadsScalar   [mechanisms]
+  nrmse=0.472  mean_shift=+22.508  p95_shift=-23.225  peak_shift=-23.229  corr=-0.014  n=8254
+    worst  124.00s- 125.98s  mean_abs_err=174.841
+    worst   32.00s-  33.98s  mean_abs_err=173.066
+    worst   38.00s-  39.98s  mean_abs_err=171.949
+
+RealOutputs/Swerve/Module0/DriveVelRadsScalar   [mechanisms]
+  nrmse=0.459  mean_shift=+5.399  p95_shift=-23.199  peak_shift=-23.229  corr=0.019  n=8254
+    worst  124.00s- 125.98s  mean_abs_err=174.953
+    worst   52.00s-  53.98s  mean_abs_err=168.654
+    worst   60.00s-  61.98s  mean_abs_err=163.627
+
+Shooter/Shooter Flywheels/AppliedVolts   [other]
+  nrmse=0.452  mean_shift=-3.231  p95_shift=-3.476  peak_shift=+3.012  corr=0.022  n=8254
+    worst   34.00s-  35.98s  mean_abs_err=4.006
+    worst   84.00s-  85.98s  mean_abs_err=3.984
+    worst    6.00s-   7.98s  mean_abs_err=3.980
+
+RealOutputs/Swerve/Module3/DriveVelRadsScalar   [mechanisms]
+  nrmse=0.441  mean_shift=-0.701  p95_shift=-23.322  peak_shift=-23.229  corr=0.130  n=8254
+    worst  124.00s- 125.98s  mean_abs_err=175.006
+    worst   70.00s-  71.98s  mean_abs_err=168.301
+    worst   68.00s-  69.98s  mean_abs_err=167.248
+
+Shooter/Shooter Accelerator/SupplyCurrentAmps   [currents]
+  nrmse=0.435  mean_shift=+2.851  p95_shift=-15.498  peak_shift=+512.687  corr=0.182  n=8254
+    worst    4.00s-   5.98s  mean_abs_err=133.213
+    worst  110.00s- 111.98s  mean_abs_err=41.967
+    worst   84.00s-  85.98s  mean_abs_err=33.522
+
+RealOutputs/Swerve/Module1/Steer Setpoint   [other]
+  nrmse=0.434  mean_shift=+0.175  p95_shift=+0.168  peak_shift=-0.002  corr=-0.115  n=8254
+    worst   32.00s-  33.98s  mean_abs_err=4.412
+    worst  158.00s- 159.98s  mean_abs_err=4.256
+    worst  108.00s- 109.98s  mean_abs_err=4.238
+
+SystemStats/BatteryVoltage   [voltage]
+  nrmse=0.432  mean_shift=+2.260  p95_shift=+0.807  peak_shift=+1.586  corr=0.396  n=8254
+    worst  164.00s- 165.06s  mean_abs_err=4.573
+    worst  134.00s- 135.98s  mean_abs_err=4.113
+    worst  158.00s- 159.98s  mean_abs_err=3.914
+
+RealOutputs/Swerve/Module2/Steer Setpoint   [other]
+  nrmse=0.425  mean_shift=+0.469  p95_shift=-0.001  peak_shift=+0.000  corr=0.022  n=8254
+    worst   60.00s-  61.98s  mean_abs_err=4.377
+    worst  112.00s- 113.98s  mean_abs_err=4.351
+    worst   46.00s-  47.98s  mean_abs_err=4.268
+
+RealOutputs/Shooting Predictor/Baseline Vv   [other]
+  nrmse=0.418  mean_shift=+3.067  p95_shift=+5.947  peak_shift=+8.509  corr=0.549  n=8232
+    worst  118.00s- 119.98s  mean_abs_err=12.221
+    worst  122.00s- 123.98s  mean_abs_err=11.951
+    worst  120.00s- 121.98s  mean_abs_err=10.918
+
+--- EVENT-ALIGNED STATE TIMING ---
+
+--- FIT SCORE BY CATEGORY (mean nrmse, lower is better) ---
+  aggregate    0.2949   (4 signals)
+  currents     0.4510   (48 signals)
+  mechanisms   0.4008   (55 signals)
+  other        0.2679   (48 signals)
+  voltage      0.4321   (1 signals)
+
+--- UNCOMPARABLE KEYS: 18 sim-only, 17 real-only ---
+  real-only: NetworkInputs/Tuning/Shooter/5.2m/shooterAngle
+  real-only: NetworkInputs/Tuning/Shooter/5.2m/shooterSpeed
+  real-only: NetworkInputs/Tuning/Shooter/5.2m/timeOfFlight
+  real-only: RealOutputs/Vision/Camera1/Angle
+  real-only: RealOutputs/Vision/Camera1/Average Distance
+  real-only: RealOutputs/Vision/Camera2/Angle
+  real-only: RealOutputs/Vision/Camera2/Average Distance
+  real-only: SystemStats/NTClients/Elastic@2/Connected
+  real-only: SystemStats/NTClients/Elastic@2/IPAddress
+  real-only: SystemStats/NTClients/Elastic@2/RemotePort
+  real-only: SystemStats/NTClients/PV4@1/Connected
+  real-only: SystemStats/NTClients/PV4@1/IPAddress
+  real-only: SystemStats/NTClients/PV4@1/RemotePort
+  real-only: Vision/Camera 1/Connected
+  real-only: Vision/Camera 1/TagIDs
+
+Wrote fit scores to docs/superpowers/fit-scores/fit-q54-baseline.json
