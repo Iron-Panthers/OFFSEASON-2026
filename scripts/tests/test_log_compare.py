@@ -300,3 +300,16 @@ def test_power_distribution_is_excluded():
     # The PDH is not simulated; its voltage scored nrmse 12.0 as pure noise.
     assert is_excluded("PowerDistribution/Voltage")
     assert is_excluded("PowerDistribution/ChannelCurrent")
+
+
+def test_cumulative_wheel_odometry_is_excluded():
+    # Integrates the whole match's driving; diverges because the sim takes a different path
+    # after auto, not because the drivetrain model is wrong.
+    assert is_excluded("Swerve/Module2/DrivePositionRads")
+    assert is_excluded("Swerve/Module0/DrivePositionMeters")
+
+
+def test_instantaneous_drive_velocity_is_still_scored():
+    # The signal that actually reflects the drivetrain model must survive.
+    assert not is_excluded("RealOutputs/Swerve/Module3/DriveVelRadsScalar")
+    assert not is_excluded("Swerve/Module0/DriveVelocityRadPerSec")

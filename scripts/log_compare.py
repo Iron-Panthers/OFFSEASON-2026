@@ -78,6 +78,13 @@ _EXCLUDED_PREFIXES = (
     "RealOutputs/Vision/",
     # The PDH is not simulated at all; its voltage sits at a constant 12 V in sim.
     "PowerDistribution/",
+    # Cumulative wheel odometry integrates the entire match's driving. After autonomous the
+    # simulated robot necessarily takes a different path -- the real one was being defended and
+    # contacted, which the simulation does not model -- so these diverge for reasons that have
+    # nothing to do with mechanism fidelity. Reproducing post-auto pose is an explicit non-goal
+    # (see the design spec); scoring it here would just conflate path divergence with model
+    # error. Instantaneous drive VELOCITY is still scored, and that is the signal that actually
+    # reflects the drivetrain model.
     "SystemStats/CPUTemp",
     "DriverStation/MatchNumber",
     "DriverStation/ReplayNumber",
@@ -128,8 +135,14 @@ def replay_time_base(data):
     return to_match_time
 
 
+# Suffixes excluded wherever they appear, rather than by prefix.
+_EXCLUDED_SUFFIXES = ("/DrivePositionRads", "/DrivePositionMeters")
+
+
 def is_excluded(key):
     """True for metadata keys that should never enter the fidelity ranking."""
+    if any(key.endswith(suffix) for suffix in _EXCLUDED_SUFFIXES):
+        return True
     return any(key.startswith(prefix) for prefix in _EXCLUDED_PREFIXES)
 
 
