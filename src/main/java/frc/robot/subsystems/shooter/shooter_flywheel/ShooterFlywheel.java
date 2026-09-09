@@ -14,6 +14,7 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
     INTAKE(8.5, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
     SHOOT(RobotBase.isReal() ? 8.6 : 8.6, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
     SPEEDY_SHOOT(9, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
+    WARMUP_FLYWHEEL(10.3, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
     PASS(9, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS); // TODO: make this uniform
 
     private double velocity;

@@ -200,7 +200,11 @@ public class ShooterController extends SubsystemBase {
 
       // Flywheels
       if (targetState == ShooterState.DEFAULT_SHOOT) {
-        shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.SHOOT);
+        if (shooterOmniwheel.getCurrentVelocity().in(Units.RadiansPerSecond) < 350) {
+          shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.WARMUP_FLYWHEEL);
+        } else {
+          shooterFlywheel.setVelocityTarget(ShooterFlywheelTarget.SHOOT);
+        }
       } else {
         shooterFlywheel.setVelocityManual(
             shotState.shooterSpeed(), targetState.flywheelTarget.getSupplyCurrentLimit());
