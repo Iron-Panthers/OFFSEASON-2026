@@ -33,19 +33,23 @@ public final class SimCurrentLimit {
    * </table>
    *
    * <p><b>Deliberately set BELOW the rollers' measured ratio, as a compensating approximation.</b>
-   * Physically this should sit above every value in the table so it never binds. Raising it to 6.5
-   * to do that measured WORSE on both logs tested -- q54 currents 0.2387 -> 0.2536, q93 0.2102 ->
-   * 0.2319 -- consistently and well outside the noise floor.
+   * Physically this should sit above every value in the table so it never binds.
    *
-   * <p>The reason is that the roller sims have no load model: WPILib's {@code FlywheelSim} is
-   * frictionless, so a mechanism at setpoint draws ~0 A where the real robot pulls 7-9 A, and its
-   * transients overshoot instead. A tighter-than-physical ceiling clips those transients and
-   * happens to fit better. That is a compensating error, not a correct model.
+   * <p>Retested at 6.5 after the mechanism load model landed, because the earlier note said to
+   * revisit once the plant had a real load. The load model shrank the penalty by roughly an order
+   * of magnitude but did not remove it -- currents scored q54 0.1966 -> 0.1951 (better), q93 0.1836
+   * -> 0.2027 (worse), q14 0.1561 -> 0.1603 (worse). Two of three worse, so 4.0 stands. For
+   * reference, before the load model the same experiment measured q54 0.2387 -> 0.2536 and q93
+   * 0.2102 -> 0.2319.
    *
-   * <p><b>Revisit this once the plant has a real load</b> (an explicit load torque, or {@code
-   * LinearSystemId.identifyVelocitySystem(kV, kA)} characterised from the logs). At that point the
-   * honest value is above 6.02, and a per-mechanism ceiling would be better still -- the drive
-   * ratio is 3.75 in every match to two decimals, while the rollers swing 5.46-6.02.
+   * <p>What remains is that the roller sims still overshoot on transients -- the load model
+   * corrects their steady-state draw, not their slew. The clearest case is the omniwheel, which
+   * produces 110 A mean stator on its own spin-ups against a real 41 A. A tighter-than-physical
+   * ceiling clips that and happens to fit better. It is still a compensating error.
+   *
+   * <p><b>Revisit again once the mechanisms slew correctly</b>, not merely once they have a load. A
+   * per-mechanism ceiling would be better than any single number -- the drive ratio is 3.75 in
+   * every match to two decimals, while the rollers swing 5.46-6.02.
    */
   public static final double STATOR_TO_SUPPLY_RATIO = 4.0;
 
@@ -54,37 +58,100 @@ public final class SimCurrentLimit {
   /**
    * Voltage that must be spent overcoming steady-state drag at the current speed.
    *
-   * <p>WPILib's {@code FlywheelSim} is frictionless, so a mechanism holding its setpoint draws
-   * essentially no current, while the real robot keeps pulling 7-9 A against bearing, belt and
-   * game-piece drag. That is why the simulation under-draws on average (114 A vs a real 148.8 A)
-   * even when its peaks are right, and why the flywheel's filtered current shows a negative mean
-   * shift alongside a positive peak shift.
+   * <p>WPILib's {@code FlywheelSim} is frictionless, and worse than that, its reported current is
+   * <em>structurally</em> zero at steady state. {@code FlywheelSim} derives its gearing back out of
+   * the plant matrices ({@code G = -Kv*A/B}) and then reports {@code (V - omega*G/Kv)/R}. Any
+   * linear plant it is handed settles where {@code A*omega + B*V = 0}, which is exactly where
+   * {@code omega*G = Kv*V}, so the two terms cancel. That holds for {@code createFlywheelSystem}
+   * and equally for {@code identifyVelocitySystem(kV, kA)} -- characterising the plant from real
+   * logs cannot fix it, because the current is not derived from the plant's physics but from an
+   * inverse of the plant itself.
    *
-   * <p><b>Currently unused, and the approach is wrong as written.</b> Subtracting a voltage does
-   * not create a load: {@code FlywheelSim} has no opposing torque, so the plant simply settles at a
-   * slightly lower speed with its current still near zero. Measured against q54 it moved mean pack
-   * current only 113.84 -> 113.50 A (real: 148.8 A) while making the currents fit score worse
-   * (0.3018 -> 0.3159).
+   * <p>So the real robot pulling 3-4 A per motor to hold the shooter flywheel at speed, or 23 A to
+   * hold the serializer, has no representation at all: measured over q54, mean supply current was
+   * 0.30 A simulated against 9.62 A real for the flywheel, 0.00 vs 9.47 for the serializer, 0.08 vs
+   * 8.02 for the intake rollers. Summed over every mechanism and every motor that is roughly 74 A,
+   * which is essentially the whole of the pack-current gap.
    *
-   * <p>Closing the steady-state gap needs a change to the PLANT, not to the command: either an
-   * explicit load torque, or replacing {@code LinearSystemId.createFlywheelSystem} with {@code
-   * identifyVelocitySystem(kV, kA)} characterised from the real logs, so the terminal speed for a
-   * given voltage is right and the motor must genuinely work to hold setpoint. Retained as a
-   * starting point for that work.
+   * <p>The fix has two halves and only works with both:
+   *
+   * <ol>
+   *   <li>Subtract this voltage from the plant input, so the mechanism must genuinely work to hold
+   *       its setpoint and coasts down at the right rate.
+   *   <li>Report stator current from {@link #statorAmps}, evaluated against the <em>commanded</em>
+   *       voltage rather than the reduced one, instead of from {@code getCurrentDrawAmps()}.
+   * </ol>
+   *
+   * <p>An earlier attempt did only the first half and moved mean pack current 113.84 -> 113.50 A,
+   * because the sim kept reporting its structural zero. The two together make the steady-state
+   * current come out at exactly {@code dragAmpsPerRadPerSec * omega}, which is what was measured.
    *
    * @param mechanismRadPerSec present mechanism velocity, signed
-   * @param gearing reduction from mechanism to rotor
-   * @param motor the motor model
-   * @param dragAmpsPerRadPerSec drag current per unit mechanism speed; zero disables
+   * @param motor the plant's motor model, however many motors it represents
+   * @param dragAmpsPerRadPerSec drag stator current per unit mechanism speed, referred to the same
+   *     motor count as {@code motor}; zero disables
    * @return the voltage to subtract, with the same sign as the motion it opposes
    */
   public static double dragVolts(
-      double mechanismRadPerSec, double gearing, DCMotor motor, double dragAmpsPerRadPerSec) {
+      double mechanismRadPerSec, DCMotor motor, double dragAmpsPerRadPerSec) {
     if (dragAmpsPerRadPerSec <= 0.0 || mechanismRadPerSec == 0.0) {
       return 0.0;
     }
     double dragAmps = Math.abs(mechanismRadPerSec) * dragAmpsPerRadPerSec;
     return Math.signum(mechanismRadPerSec) * dragAmps * motor.rOhms;
+  }
+
+  /**
+   * Applies a constant load: the part of the command that is spent holding, not moving.
+   *
+   * <p>The viscous model in {@link #dragVolts} is useless for a mechanism that spends most of the
+   * match stationary. The intake rack is deployed and stopped for 66-75% of every match logged, and
+   * while stopped the real robot holds it with a consistently POSITIVE 0.28-0.78 V against zero
+   * back-EMF -- 9-28 A of stator current doing no work at all. {@code ElevatorSim} is frictionless,
+   * so the simulated rack reached its target, needed nothing to stay there, and drew 0.14 A mean
+   * against a real 5.67 A.
+   *
+   * <p>Modelled as a constant force rather than as friction because the sign says so. Friction
+   * opposes whichever way the mechanism is pushed, so a controller holding against it settles into
+   * a symmetric dither and its mean current is zero -- measured at -0.01 A when that was tried. The
+   * real holding voltage never changes sign, which is a load pulling the rack back toward stow, and
+   * the motor fighting it.
+   *
+   * @param appliedVolts the voltage the controller wants to apply
+   * @param loadVolts voltage the load costs, signed in the direction the load pulls
+   * @return the voltage the plant should actually see
+   */
+  public static double applyConstantLoad(double appliedVolts, double loadVolts) {
+    return appliedVolts - loadVolts;
+  }
+
+  /**
+   * Stator current a motor draws applying {@code appliedVolts} while spinning at the given speed.
+   *
+   * <p>{@code I = (V - backEmf) / R}, the textbook relation, evaluated directly instead of through
+   * {@code FlywheelSim.getCurrentDrawAmps()}. Two reasons to bypass the sim:
+   *
+   * <ul>
+   *   <li>Its answer is zero at every steady state -- see {@link #dragVolts}.
+   *   <li>It multiplies by {@code signum(u)}, which flips the sign of a braking current instead of
+   *       reporting it as regen. A wheel spinning forwards while commanded backwards has {@code V -
+   *       backEmf} large and negative; the sign flip booked that as a large positive draw, which is
+   *       how the simulated omniwheel reported 747 A on a spin-down.
+   * </ul>
+   *
+   * <p>Pass the voltage the controller <em>commanded</em>, not the value handed to the plant after
+   * {@link #dragVolts} was subtracted. The difference between the two is precisely the drag, and it
+   * is what makes a mechanism holding its setpoint draw current rather than nothing.
+   *
+   * @param appliedVolts commanded motor voltage
+   * @param mechanismRadPerSec present mechanism velocity, signed
+   * @param gearing reduction from mechanism to rotor (rotor = mechanism * gearing)
+   * @param motor the plant's motor model; the result is that whole group's current
+   */
+  public static double statorAmps(
+      double appliedVolts, double mechanismRadPerSec, double gearing, DCMotor motor) {
+    double backEmf = (mechanismRadPerSec * gearing) / motor.KvRadPerSecPerVolt;
+    return (appliedVolts - backEmf) / motor.rOhms;
   }
 
   /**

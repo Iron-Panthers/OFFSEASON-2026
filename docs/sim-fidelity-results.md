@@ -27,13 +27,11 @@ Baseline is the first replay run, re-scored with the current tooling so the comp
 
 | category | baseline | now | change |
 | --- | --- | --- | --- |
-| currents (48 signals) | 0.4498 | **0.2386** | **-47%** |
-| mechanisms (46 signals) | 0.3697 | **0.1993** | **-46%** |
-| voltage | 0.4285 | **0.2175** | **-49%** |
-| aggregate (4 signals) | 0.2926 | **0.2015** | **-31%** |
-| other (48 signals) | 0.2556 | **0.2126** | -17% |
-
-Every category now sits between 0.20 and 0.24.
+| aggregate (4 signals) | 0.2926 | **0.1315** | **-55%** |
+| currents (48 signals) | 0.4498 | **0.1966** | **-56%** |
+| voltage | 0.4285 | **0.1364** | **-68%** |
+| mechanisms (43 signals) | 0.3697 | **0.2333** | **-37%** |
+| other (48 signals) | 0.2556 | **0.2111** | -17% |
 
 ### It generalises — five matches, one tuned against
 
@@ -42,17 +40,34 @@ at until the end, `q64` is the brownout stress case.
 
 | log | aggregate | currents | mechanisms | other | voltage |
 | --- | --- | --- | --- | --- | --- |
-| q54 (tuned) | 0.2480 | 0.2410 | 0.2241 | 0.2136 | 0.1927 |
-| q93 | 0.2366 | 0.2178 | 0.2238 | 0.2062 | 0.1909 |
-| q14 | 0.2647 | 0.2250 | 0.2126 | 0.1835 | 0.1851 |
-| **q103 (held out)** | 0.2412 | 0.2368 | 0.2156 | 0.1849 | 0.1833 |
-| q64 (brownout stress) | 0.2695 | 0.2301 | 0.2228 | 0.2780 | 0.1792 |
+| q54 (tuned) | 0.1315 | 0.1966 | 0.2333 | 0.2111 | 0.1364 |
+| q93 | 0.1554 | 0.1836 | 0.2298 | 0.2120 | 0.1601 |
+| q14 | 0.0872 | 0.1561 | 0.2160 | 0.1810 | 0.1231 |
+| **q103 (held out)** | 0.1263 | 0.1751 | 0.2292 | 0.1796 | 0.1535 |
+| q64 (brownout stress) | 0.1141 | 0.1853 | 0.2570 | 0.2818 | 0.1510 |
 
-Every category on every match lands between 0.18 and 0.28. The held-out log is indistinguishable
-from the tuned one, and several untuned logs score better. These are model fixes, not curve-fitting.
+The held-out log is indistinguishable from the tuned one, and `q14` — never tuned against — is the
+best-fitting match of the five. These are model fixes, not curve-fitting.
 
 Battery parameters were fitted per match for q54, q93, q14 and q64; q103 ran on defaults, which is
 part of why its numbers are a fair test.
+
+#### What the mechanism load model changed
+
+The load model (see *Mechanisms had no load at all*, below) was the single largest improvement made,
+and it moved every match in the same direction:
+
+| log | aggregate | currents | voltage | mechanisms |
+| --- | --- | --- | --- | --- |
+| q54 | 0.2480 → **0.1315** | 0.2410 → **0.1966** | 0.1927 → **0.1364** | 0.2241 → 0.2333 |
+| q93 | 0.2366 → **0.1554** | 0.2178 → **0.1836** | 0.1909 → **0.1601** | 0.2238 → 0.2298 |
+| q14 | 0.2647 → **0.0872** | 0.2250 → **0.1561** | 0.1851 → **0.1231** | 0.2126 → 0.2160 |
+| q103 | 0.2412 → **0.1263** | 0.2368 → **0.1751** | 0.1833 → **0.1535** | 0.2156 → 0.2292 |
+| q64 | 0.2695 → **0.1141** | 0.2301 → **0.1853** | 0.1792 → **0.1510** | 0.2228 → 0.2570 |
+
+`mechanisms` got slightly worse on all five, by 0.003 to 0.034. That is a real cost and it is
+tracked in *The rack trade-off*, below — it is not noise, because it is consistent in sign across
+five independent matches.
 
 ### Brownout degrades the flywheel, as it does in reality — at a quarter the magnitude
 
@@ -94,6 +109,89 @@ With the bound raised above all observed travel, `q93` currents fell 0.3433 -> *
 ## What matches well
 
 Measured on q54 against the committed build.
+
+### Mechanisms had no load at all — the single biggest fix
+
+Every roller and the intake rack drew essentially nothing between transients, because WPILib's
+`FlywheelSim` and `ElevatorSim` are frictionless. Measured on q54, mean supply current per motor:
+
+| mechanism | sim (before) | real |
+| --- | --- | --- |
+| shooter flywheel | 0.30 A | 9.62 A |
+| serializer | 0.00 A | 9.47 A |
+| intake rollers | 0.08 A | 8.02 A |
+| intake rack | 0.18 A | 5.67 A |
+
+Scaled by motor count that is roughly 74 A, which is essentially the whole of the pack-current gap.
+The drivetrain was never the problem.
+
+#### Why the previously documented fix could not have worked
+
+The earlier version of this document proposed replacing `createFlywheelSystem` with
+`identifyVelocitySystem(kV, kA)` characterised from the logs. **That cannot fix anything.**
+
+`FlywheelSim` does not derive current from physics; it derives it from an inverse of its own plant.
+Its constructor recovers the gearing from the plant matrices, `G = -Kv*A/B`, and then reports
+`(V - omega*G/Kv)/R`. Any linear plant settles where `A*omega + B*V = 0`, which is exactly where
+`omega*G = Kv*V` — so the two terms cancel identically. **Reported current is structurally zero at
+every steady state, for every plant it can be given**, `identifyVelocitySystem` included.
+
+#### What actually works — and it needs both halves
+
+1. **Subtract a drag voltage from the plant input**, so the mechanism has to work to hold setpoint
+   and coasts down at the real rate. `SimCurrentLimit.dragVolts`.
+2. **Compute stator current explicitly**, `(V - backEmf)/R`, evaluated against the **commanded**
+   voltage rather than the reduced one. `SimCurrentLimit.statorAmps`.
+
+The difference between those two voltages *is* the drag, and it is what makes the steady-state
+current come out at `coefficient * omega` instead of zero. An earlier attempt did only the first
+half and moved mean pack current 113.84 → 113.50 A, which is why it was recorded as a failure.
+
+Computing the current directly also removes a WPILib quirk: `getCurrentDrawAmps()` multiplies by
+`signum(u)`, which flips the sign of a braking current and books regen as a large positive draw.
+That is where the simulated omniwheel's 747 A spin-down came from.
+
+The rack needed a different shape. It is deployed and stationary for two thirds to three quarters
+of every match, so a speed-proportional model gives it nothing. It gets a constant directional
+load instead — `SimCurrentLimit.applyConstantLoad`.
+
+#### How the coefficients were measured
+
+Not tuned against a fit score. For each mechanism, the median real mean stator current while
+spinning, taken across all five matches, then solved for the coefficient that lands the simulation
+on it given the transient current the plant already produces on its own:
+
+| mechanism | coefficient (A per motor per mech rad/s) | sim stator | median real stator |
+| --- | --- | --- | --- |
+| shooter flywheel | 0.0341 | 7.92 A | 8.22 A |
+| shooter accelerator | 0.0267 | 21.66 A | 21.64 A |
+| intake rollers | 0.1068 | 15.85 A | 16.56 A |
+| serializer | 0.2237 | 24.56 A | 25.47 A |
+| shooter omniwheel | 0.0552 | 118.51 A | 41.13 A |
+| intake rack | 0.61 V constant | — | — |
+
+**These are lumped average match loads, not bearing friction.** Unloaded steady state measures 2-3x
+lower on every mechanism; the rest is work done on game pieces, which nothing in the sim models.
+That is a fitted parameter and is labelled as one in the source — but it is fitted to a five-log
+median of a directly measured physical quantity, not to a fit score.
+
+The omniwheel is the exception and is deliberately left at its unloaded value: its transient
+current alone is 110 A mean against a real 41 A, so the solve returns a *negative* coefficient. No
+drag value can fix it. See *The omniwheel slews too hard*, below.
+
+#### A logging bug this exposed
+
+The roller IOSims published the whole motor group's current, while `GenericRollersIOTalonFX` on the
+real robot logs the leader Talon only. The flywheel signal was therefore 4x the real one. Fixed:
+logged signals are now per motor, and the battery and `MotorOutputManager` see the group. This also
+corrected the intake rollers and serializer, whose plants model one motor where the real mechanism
+has two — the pack had been seeing half their draw.
+
+#### The buck-converter model was worth checking, and holds
+
+`supply = stator * dutyCycle` is assumed throughout. Measured against the real robot, binned by
+duty cycle, measured-over-ideal comes out at 0.95-1.08 for every mechanism in every bin. The one
+place it is not the limiting assumption is the rack — see below.
 
 ### Battery discharge through the match — now modelled
 
@@ -141,12 +239,17 @@ brownout was *structurally impossible* in simulation -- maple-sim's own battery 
 threshold -- and the custom model was being overwritten every loop, so the number was fiction
 either way.
 
-### Intake deploy timing — within 6%
+### Intake deploy timing — within 16%, and moving the right way
 
-| move | real | sim baseline | sim now |
-| --- | --- | --- | --- |
-| SHOOTING_STOW -> INTAKE | **0.360 s** | 0.219 s | **0.340 s** |
-| travel | 8.2 rot | (wrong units) | 8.6 rot |
+| move | real | sim baseline | before load model | sim now |
+| --- | --- | --- | --- | --- |
+| STOW -> deployed (1 to 10 rot) | **0.500 s** | 0.219 s | 0.340 s | **0.420 s** |
+| travel | 8.2 rot | (wrong units) | 8.6 rot | 8.6 rot |
+
+The rack's constant load slowed deployment toward the real figure without being tuned for it — the
+load was measured from holding voltage, and the timing improvement is a consequence. The remaining
+19% suggests the simulated rack is still too light; its SIM mass is 0.1 kg, which is not a measured
+value.
 
 ### Peak power draw — within 8%
 
@@ -162,23 +265,94 @@ Mean absolute axis error **0.0039** over 8254 samples against the logged values.
 
 ## What does not match
 
-### Mean current draw — the main remaining gap
+### Mean current draw — closed
 
-| | real | sim |
-| --- | --- | --- |
-| mean total current | 158.3 A | **85.4 A** |
+| | real | sim (before) | sim (now) |
+| --- | --- | --- | --- |
+| mean pack current, q54 | 148.7 A | 85.4 A | **160.5 A** |
 
-WPILib's `FlywheelSim` and `ElevatorSim` are frictionless, so a mechanism holding setpoint draws
-~0 A where the real robot pulls 7-9 A against bearing, belt and game-piece drag. Peaks are right;
-the sustained draw between them is not.
+Across all five matches:
 
-**Attempted and reverted:** subtracting a drag voltage. It moved mean current only 113.84 -> 113.50 A,
-because subtracting voltage does not create a load -- the plant just settles slightly slower with
-its current still near zero. The fix is a plant change: an explicit load torque, or
-`LinearSystemId.identifyVelocitySystem(kV, kA)` characterised from the real logs.
+| log | sim mean | real mean | sim peak | real peak | sim V min | real V min |
+| --- | --- | --- | --- | --- | --- | --- |
+| q54 | 160.5 | 148.7 | 357.1 | 318.7 | 7.3 | 7.6 |
+| q93 | 165.0 | 145.0 | 364.9 | 344.1 | 7.1 | 7.7 |
+| q14 | 167.4 | 166.9 | 368.1 | 365.4 | 6.9 | 7.0 |
+| q103 | 170.1 | 154.4 | 349.9 | 373.2 | 6.9 | 7.4 |
+| q64 | 165.9 | 154.7 | 357.4 | 364.9 | 6.2 | 5.9 |
 
-This is also why one constant is deliberately unphysical -- see the compensating approximation
-below.
+Now overshooting by about 8% rather than undershooting by 46%. The residual overshoot is traced,
+not mysterious: the simulated serializer spins for 92% of the match against the real robot's 72%
+(see *The serializer runs too much*, below), and it is one of the two heaviest mechanisms.
+
+### The rack trade-off, and why `mechanisms` got slightly worse
+
+The constant load fixed the rack's level and cost some of its timing. Both are real:
+
+| | before | after | real |
+| --- | --- | --- | --- |
+| mean position error | +0.787 rot | **+0.157 rot** | — |
+| peak position error | +1.074 rot | **+0.307 rot** | — |
+| mean position | 11.325 rot | **10.623 rot** | 10.474 rot |
+| fraction deployed | 0.96 | **0.89** | 0.88 |
+| deploy time | 0.340 s | **0.420 s** | 0.500 s |
+| mean supply current | 0.18 A | **2.52 A** | 5.67 A |
+| position nRMSE | **0.118** | 0.215 | — |
+| position correlation | **0.629** | 0.284 | — |
+
+Every physical measure improved; the correlation halved. The cause is `SHOOTING_STOW`, which
+targets 3 rotations at 6 rot/s: the simulated rack obeys it and retracts ~2.4 rotations in 0.44 s,
+while the real rack, given the same command at the same moment, moved 0.15 rotations in 0.98 s. The
+real rack often simply does not retract. That is a real-robot behaviour the simulation has no way
+to know about, in the same category as being defended.
+
+This is the whole of the `mechanisms` regression seen on all five matches, and it was kept because
+the level, the current and the deploy timing all moved toward reality while one correlation moved
+away. It is recorded here rather than buried so the decision can be revisited.
+
+### The rack's load is bimodal, so one constant cannot capture it
+
+`LOAD_VOLTS` is a single number, and the real rack does not behave like one. Applied voltage while
+deployed and stationary:
+
+| log | mean | p50 | p75 | p90 | fraction above 0.2 V |
+| --- | --- | --- | --- | --- | --- |
+| q54 | 0.730 | 0.00 | 2.37 | 2.63 | 0.28 |
+| q93 | 0.282 | 0.32 | 0.37 | 0.46 | 0.76 |
+| q14 | 0.605 | 0.69 | 0.76 | 0.85 | 0.97 |
+| q103 | 0.483 | 0.40 | 0.83 | 1.10 | 0.96 |
+| q64 | 0.777 | 0.00 | 2.29 | 2.42 | 0.33 |
+
+In q93, q14 and q103 the rack holds continuously at a low voltage. In q54 and q64 it is idle two
+thirds of the time and then pushes hard. Stator current is linear in voltage but supply current
+goes as voltage squared, so the constant that reproduces mean *stator* current (the mean, 0.61 V)
+is not the constant that reproduces mean *supply* current (the RMS, nearer 1.3 V). The mean was
+kept, which is why simulated rack supply current sits at 2.52 A against a real 5.67 A. Fitting the
+RMS instead would double its stator current error. Neither is right; the load is not constant.
+
+### The serializer runs too much
+
+Its stator current matches — 24.5 A simulated against 25.1 A real — but its supply current does
+not, 17.3 A against 12.3 A, because the simulated serializer spins for 92% of the match where the
+real one spins for 72%.
+
+This is control flow, not plant. The targets are identical (`SPIN_UP` 10, `SHOOT` 100, `SLOW` 40
+rot/s) and the replayed commands arrive at the same moments, but the real robot cycles
+`SPIN_UP` ↔ `SHOOT` 36 times in q54 where the simulation cycles 20 — the real robot's readiness
+gating takes longer to satisfy. The plant is right; it is being asked to run more.
+
+This is the largest single contributor to the remaining 8% pack-current overshoot.
+
+### The omniwheel slews too hard
+
+Mean stator current while spinning is 118 A simulated against 41 A real, while its mean speed is
+183 rad/s against a real 327. It is saturating its controller and taking too long to reach speed,
+so it spends the match at high current and low speed.
+
+Its mean *supply* current is nonetheless close (5.78 A against 5.24 A) because its duty cycle is
+low, which is why this was invisible until the stator current became honest. No drag coefficient
+can fix it — the solve returns a negative value — so it is left at its measured unloaded value and
+recorded here as an open plant or gain problem.
 
 ### Regenerative current overshoots
 
@@ -201,21 +375,33 @@ match.
 
 ---
 
-## A deliberate compensating approximation
+## A deliberate compensating approximation — retested, and it survives
 
 `SimCurrentLimit.STATOR_TO_SUPPLY_RATIO` is set to **4.0**, which is *below* the intake rollers'
-real measured ratio in all three matches (5.46, 6.02, 5.68). The physically honest value clears
-every mechanism.
+real measured ratio in every match (5.46, 6.02, 5.68). The physically honest value clears every
+mechanism.
 
-Setting it to the honest 6.5 measured **worse** on both logs tested -- q54 currents 0.2387 ->
-0.2536, q93 0.2102 -> 0.2319 -- consistently and outside the noise floor. The tighter ceiling clips
-roller transients that overshoot because those sims have no load, so it compensates for the missing
-friction model.
+The previous version of this document said to revisit it once the plant had a real load. That
+condition is now met, so it was retested at 6.5 on three matches:
+
+| log | currents at 4.0 | currents at 6.5 | before the load model existed |
+| --- | --- | --- | --- |
+| q54 | 0.1966 | **0.1951** | 0.2387 -> 0.2536 |
+| q93 | **0.1836** | 0.2027 | 0.2102 -> 0.2319 |
+| q14 | **0.1561** | 0.1603 | not tested |
+
+The load model shrank the penalty by roughly an order of magnitude but did not remove it. Two of
+three matches are still worse at the honest value, so **4.0 stands**.
+
+The reason has changed, though, and that is worth recording. It used to be that the mechanisms had
+no load at all, so they overshot everywhere. Now they have the right steady-state load but still
+**slew too hard** — the omniwheel produces 110 A mean stator on its own spin-ups against a real
+41 A. The tight ceiling clips that. So the revisit condition is no longer "give the plant a load";
+it is "make the mechanisms accelerate correctly", and a per-mechanism ceiling would be better than
+any single number regardless.
 
 It is labelled as such in the constant's javadoc and pinned by a test, so it is not "corrected" by
-accident. **When the plant gains a real load, this should go back above 6.02**, and ideally become
-per-mechanism -- the drive ratio is 3.75 in every match to two decimals, while the rollers swing
-5.46-6.02.
+accident.
 
 ---
 
@@ -271,8 +457,21 @@ above are from after that fix.
 | `IntakeRackIOSim`, `SerializerSim` | reported a hardcoded `1.0 A // Not simulated` |
 | `SerializerSim` | rotor velocity was rad/s divided by the reduction -- two unit errors on one line -- leaving it running backwards all match; also never set `simState.Orientation` |
 | `ShooterOmniwheelIOSim`, `SerializerSim` | never published `positionRads` (1 record of 0.0 for the whole match) |
+| 5 roller/serializer IOSims | published the whole motor group's current where `GenericRollersIOTalonFX` logs the leader Talon only -- the flywheel signal was 4x the real one. The rollers and serializer had the reverse problem, with the pack seeing one motor where the mechanism has two |
 | `GyroIOSim` | `degreesToRadians()` applied to a value already in rad/s, reporting yaw rate 57.3x too small |
 | `DriveConstants` | `mapleSimConfig` never called `withBumperSize`, using maple-sim's 0.76 m default against real 33x37 in bumpers -- which also silently sized the intake, since `RobotSimState` derives it from those dimensions |
+
+### Mechanism load model added
+
+| file | change |
+| --- | --- |
+| `SimCurrentLimit.dragVolts` | rewritten and put to use. Viscous drag subtracted from the plant input, so a mechanism must work to hold setpoint |
+| `SimCurrentLimit.statorAmps` | new. `(V - backEmf)/R` against the COMMANDED voltage, replacing `getCurrentDrawAmps()` — which is structurally zero at every steady state, and sign-flips regen |
+| `SimCurrentLimit.applyConstantLoad` | new. A directional load for the rack, which is stationary two thirds of the match and so gets nothing from a speed-proportional model |
+| `SimCurrentLimit.applyCoulombFriction` | written, measured, and removed. Symmetric friction let the rack dither about its target, giving a mean supply current of -0.01 A against a real 5.67 A. The real holding voltage never changes sign |
+| 4 roller IOSims + `SerializerSim` | drag coefficient measured per mechanism from five matches; current reported per motor rather than per motor group |
+| `IntakeRackIOSim` | constant load; explicit stator current, which also removes the 206 A artifact from `ElevatorSim` evaluating current after zeroing velocity at a hard stop |
+| all of the above | `SimBattery` and `MotorOutputManager` now see the whole motor group where the logged signal is one motor |
 
 ### Constants aligned to the real robot (SIM arms only)
 
@@ -293,6 +492,7 @@ above are from after that fix.
 | omniwheel current limit | 30 A | 60 A |
 | rack travel limits | +/-15 m (no stop) | real hard stop at 11.29 rot |
 | flywheel / accelerator plant | 1 motor | 4 / 2 motors |
+| serializer reduction / gains | 5 / `(1,0,0,0,1)` | 2.833333 / `(0.5,0,0,0.2,0.344827586)` |
 
 The SIM reductions had been set to the **reciprocal** of the real ones (0.71 vs 1.411, 0.67 vs 1.5)
 to compensate for the mechanism-vs-rotor PID bug. The accelerator carried the comment
@@ -300,6 +500,9 @@ to compensate for the mechanism-vs-rotor PID bug. The accelerator carried the co
 
 The roller `kV` of 1 meant the feedforward alone demanded 50 V for a 50 rps target, so the simulated
 rollers railed at battery voltage permanently.
+
+The serializer was the last SIM reduction still at a made-up value; the other four were corrected
+earlier and it was missed. It ran the simulated serializer at 80.2 rad/s against a real 58.7.
 
 ### One change affecting the real robot (approved)
 
@@ -313,33 +516,42 @@ calibration target. Robot behaviour is unaffected; the change is logging-only.
 | change | why reverted |
 | --- | --- |
 | Reported-current clamp | Measured worse at both ratios tried. Note: the deltas were inside the then-unknown noise floor, so this is **unresolved rather than disproven**. Helper retained, documented unused |
-| Viscous drag | Moved mean current 113.84 -> 113.50 A. Subtracting voltage does not create a load |
+| Viscous drag, first attempt | Moved mean current 113.84 -> 113.50 A. **Later revived and it works** -- the failure was doing only half of it. Subtracting voltage from the plant does nothing on its own, because the sim kept reporting its structural zero; the current has to be computed against the commanded voltage as well |
+| Symmetric Coulomb friction on the rack | Gave the rack a mean supply current of -0.01 A against a real 5.67 A. A controller dithering about its target has zero mean, and the real holding voltage never changes sign. Replaced with a directional constant load |
+| `STATOR_TO_SUPPLY_RATIO` at its honest 6.5 | Retested after the load model landed, on three matches. Currents worse on two of three. See the compensating-approximation section |
 
 ---
 
 ## Conclusions that rest on a single match, and could still be wrong
 
-Two constants derived from one log survived review, improved the tuning log, and were then
-disproved by a validation log. Both had strong-looking evidence.
+Three constants derived from one log survived review, improved the tuning log, and were then
+disproved. Two by a validation log, one by a direct physical argument.
 
-| inference | evidence from q54 | disproved by |
+| inference | evidence that looked strong | disproved by |
 | --- | --- | --- |
 | Intake rack has a hard stop at 11.29 rot | never exceeded 11.290; stalled 86.7% of the match; 930 amp-seconds | q93 reaches 11.68 freely with 0.32 V applied |
-| Stator ceiling of 4.0x the supply limit | rack 4.83x, omniwheel 2.66x, drive 3.75x | rollers are 5.46-6.02x across all three matches |
+| Stator ceiling of 4.0x the supply limit is physical | rack 4.83x, omniwheel 2.66x, drive 3.75x | rollers are 5.46-6.02x in every match; it is a compensating error, retested and kept |
+| `identifyVelocitySystem(kV, kA)` would fix the current gap | it is the textbook fix for a mis-characterised plant | `FlywheelSim` derives current from an inverse of its own plant, so it reports zero at every steady state regardless |
+| The rack holds against symmetric friction | its holding current is large and its position barely moves | the holding voltage never changes sign; friction gave a mean supply current of -0.01 A |
 
 Remaining single-log or single-source inferences, listed so they get checked rather than trusted:
 
-- **Drag coefficients** in `SimCurrentLimit.dragVolts` (unused, but recorded): flywheel 8 A at
-  240 rad/s, omniwheel 8 A at 425, accelerator 5 A at 227, rollers 12 A at 177 -- all from q54
-  steady states only.
+- **The load coefficients are lumped average match loads, not friction.** They reproduce the median
+  real stator current across five matches, which is the honest claim. They do not distinguish
+  bearing drag from work done on game pieces, and they cannot -- every match runs each mechanism at
+  essentially one speed, so Coulomb and viscous terms are indistinguishable from the data. A match
+  with an unusual amount of game-piece contact will draw the wrong current.
+- **The flywheel's q54 measurement is excluded as an outlier.** It measured 0.051 A per rad/s where
+  the other four matches measured 0.0128-0.0161. Excluding it is a judgement call; if q54 was
+  normal and the other four were the anomaly, the flywheel coefficient is 3x too low.
+- **The rack's load is bimodal in two of five matches** and is modelled as a constant. Its mean
+  stator current is right and its mean supply current is 2.5x low as a direct consequence.
 - **`withRobotMass(54.4311 kg)`** is unchanged and unverified. 120 lb is light for a Worlds robot;
   the drivetrain analysis explicitly declined to change it without a scale reading, since no log
   evidence distinguishes it. It sets both the traction limit and the dyn4j inertia.
-- **Battery nominal/resistance** are still the shipped 12.8 V / 20 mOhm. A regression on q54 fits
-  12.1 V / 13.5 mOhm, but that was measured before the current model was corrected and should be
-  refitted, not applied as-is.
-- The **q64 brownout stress case has never been run.** It is the one match where the real robot's
-  flywheel measurably degraded (up-to-speed time 130.5 s against ~158 s elsewhere, 27.1 s below
-  8 V, 5.95 V floor). It is the strongest available test of whether sag-to-torque feedback behaves,
-  and it remains untested.
-- **q103 is still held out** and has never been run.
+- **The rack's SIM mass of 0.1 kg is not a measured value**, and the rack still deploys 16% faster
+  than the real one. That is the obvious next thing to try, and it was not tried here because it
+  would have confounded the load-model measurement.
+- **Battery parameters are fitted per match** for q54, q93, q14 and q64. q103 runs on defaults,
+  which is what makes it a fair held-out test. Nothing validates the fitting procedure itself on a
+  match it did not see.

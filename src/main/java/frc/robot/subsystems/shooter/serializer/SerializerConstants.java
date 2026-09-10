@@ -7,7 +7,15 @@ public class SerializerConstants {
   public static final SerializerConfig SERIALIZER_CONFIG =
       switch (Constants.getRobotType()) {
         case SIM -> new SerializerConfig(
-            CAN.at(32, "Serializer"), CAN.at(0, "Serializer 2"), 5, true, false, true);
+            CAN.at(32, "Serializer"),
+            CAN.at(0, "Serializer 2"),
+            // Was 5, the last SIM reduction still left at a made-up value after the other four
+            // rollers were aligned to their real ones. It ran the simulated serializer at
+            // 80.2 rad/s against the real 58.7.
+            2.833333,
+            true,
+            false,
+            true);
         case COMP -> new SerializerConfig(
             CAN.at(41, "Serializer Left"),
             CAN.at(33, "Serializer Right"),
@@ -21,7 +29,9 @@ public class SerializerConstants {
 
   public static final PIDGains GAINS =
       switch (Constants.getRobotType()) {
-        case SIM -> new PIDGains(1, 0, 0, 0, 1, 0, 0);
+          // SIM shares COMP's gains. SerializerSim drives the physics from the Talon's own
+          // simulated control loop, so different gains here mean a different closed loop.
+        case SIM -> new PIDGains(0.5, 0, 0, 0.2, 0.344827586, 0, 0);
         case COMP -> new PIDGains(0.5, 0, 0, 0.2, 0.344827586, 0, 0);
         default -> new PIDGains(0, 0, 0, 0, 0, 0, 0);
       };

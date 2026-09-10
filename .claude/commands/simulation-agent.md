@@ -138,6 +138,26 @@ python scripts/wpilog_to_csv.py build/ai-logs/<LOG>.wpilog \
 
 `SourceCount` should be **15** (7 mechanisms + 8 swerve motors). Lower means a registration was missed.
 
+### Mechanism load model — do not "fix" the coefficients
+
+WPILib's `FlywheelSim` and `ElevatorSim` are frictionless, and worse, `getCurrentDrawAmps()` is
+**structurally zero at every steady state** — the sim recovers gearing from its own plant matrices
+and then reports `(V - omega*G/Kv)/R`, so the two terms cancel for any plant it is given. Swapping
+in `identifyVelocitySystem(kV, kA)` does not help; this has been tried and the reason is algebraic.
+
+Each roller IOSim therefore does two things together, and both are required:
+
+1. subtracts `SimCurrentLimit.dragVolts(...)` from the plant input, and
+2. reports `SimCurrentLimit.statorAmps(...)` against the **commanded** voltage, not the reduced one.
+
+`DRAG_AMPS_PER_RAD_PER_SEC` in each IOSim, and `LOAD_VOLTS` in `IntakeRackIOSim`, are **calibrated
+against five real matches** — each is set so the simulated mean stator current lands on the median
+real one. They are lumped average match loads, not bearing friction, and they are documented as
+such in each file. Changing one without re-measuring against the logs will break the current fit.
+
+If mean pack current is wrong, check the mechanism *duty cycles* first — how much of the match each
+mechanism spends running — before touching a coefficient. That is where the current known error is.
+
 ### Then compare against the real log
 
 ```bash

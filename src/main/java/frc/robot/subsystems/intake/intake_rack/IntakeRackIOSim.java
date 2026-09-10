@@ -11,6 +11,23 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
   private final ElevatorSim intakeRackSim;
   private final double reduction;
 
+  /**
+   * Load the rack holds against, in volts, signed toward stow.
+   *
+   * <p>Measured as the mean applied voltage over every sample where the real rack was deployed and
+   * stationary, which is two thirds to three quarters of each match: 0.73 V in q54, 0.61 in q14,
+   * 0.78 in q64, 0.48 in q103, 0.28 in q93. The median is used, and the spread is real -- the rack
+   * gets leaned on by other robots. At zero back-EMF that voltage is entirely stator current (0.73
+   * V over a Kraken's 0.0248 ohm is 29 A, and the real rack logs 25.9 A mean while held), so it is
+   * the whole explanation for a mechanism that draws 5.67 A mean supply while barely moving.
+   *
+   * <p>The rack is deployed for all but 18 samples of every match measured, so this is only ever
+   * observed in one direction and is modelled as a constant rather than as position-dependent.
+   */
+  private static final double LOAD_VOLTS = 0.61;
+
+  private static final DCMotor MOTOR = DCMotor.getKrakenX60Foc(1);
+
   public IntakeRackIOSim() {
     super(
         IntakeRackConstants.INTAKE_RACK_CONFIG.motorID(),
@@ -20,7 +37,7 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
 
     intakeRackSim =
         new ElevatorSim(
-            DCMotor.getKrakenX60Foc(1),
+            MOTOR,
             reduction,
             IntakeRackConstants.PHYSICAL_CONSTANTS.massInKilograms(),
             IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters(),
@@ -64,12 +81,14 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
             intakeRackSim.getVelocityMetersPerSecond()
                 / IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters(),
             reduction,
-            DCMotor.getKrakenX60Foc(1),
+            MOTOR,
             RobotController.getBatteryVoltage(),
             IntakeRackConstants.SUPPLY_CURRENT_LIMIT);
 
-    // Simulate physics
-    intakeRackSim.setInputVoltage(appliedVoltage);
+    // Simulate physics. ElevatorSim is frictionless, so the rack reaches its target and then
+    // needs nothing at all to stay there, while the real one is held against its stop all match.
+    intakeRackSim.setInputVoltage(
+        frc.robot.utility.SimCurrentLimit.applyConstantLoad(appliedVoltage, LOAD_VOLTS));
     intakeRackSim.update(0.02);
 
     // Mechanism units first, then convert up to rotor units for the sensor. The TalonFX sim
@@ -92,7 +111,17 @@ public class IntakeRackIOSim extends GenericSuperstructureIOSim implements Intak
     // Was a hardcoded 1.0 A "not simulated", which meant the intake rack
     // contributed a constant fake load and could never show a real current spike.
     double availableVolts = RobotController.getBatteryVoltage();
-    double statorAmps = intakeRackSim.getCurrentDrawAmps();
+    // Computed against the COMMANDED voltage rather than read back from the plant, which sees
+    // the post-friction value. The difference between the two is the holding current, and it is
+    // also what ElevatorSim cannot produce: it evaluates current after integrating, so the rack
+    // hitting its hard stop reported 206 A purely because update() had just zeroed the velocity.
+    double statorAmps =
+        frc.robot.utility.SimCurrentLimit.statorAmps(
+            appliedVoltage,
+            intakeRackSim.getVelocityMetersPerSecond()
+                / IntakeRackConstants.PHYSICAL_CONSTANTS.drumRadiusMeters(),
+            reduction,
+            MOTOR);
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrent = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;

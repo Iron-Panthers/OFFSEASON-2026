@@ -17,6 +17,43 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
   private double rotorPositionRotations = 0.0;
   private double velocitySetpointRPS = 0.0;
 
+  /**
+   * Motors the plant models, and motors actually on the mechanism.
+   *
+   * <p>These differ where the plant lumps a multi-motor mechanism into one motor. The logged
+   * signals are PER MOTOR, because {@code GenericRollersIOTalonFX} reads the leader Talon only, but
+   * the battery and {@code MotorOutputManager} have to see every motor.
+   */
+  private static final int PLANT_MOTORS = 1;
+
+  private static final int PACK_MOTORS = 2;
+
+  private static final DCMotor MOTORS = DCMotor.getKrakenX60Foc(PLANT_MOTORS);
+
+  /**
+   * Steady-state drag, in stator amps per motor per mechanism rad/s.
+   *
+   * <p>Measured from real match logs: median stator current over samples where the mechanism was
+   * spinning, powered, and not accelerating, divided by the median speed. Measured 2.8-5.4 A per
+   * motor at 179 rad/s across five matches.
+   *
+   * <p>Modelled as viscous (through the origin) rather than Coulomb because every match runs this
+   * mechanism at essentially one speed, so the two are indistinguishable from the data. Viscous is
+   * the safer of the two: it goes to zero at rest instead of chattering there.
+   *
+   * <p>Calibrated against the median of five real matches, not against any one of them: the
+   * coefficient is set so that {@code transient + coeff * simSpeed} lands on the median real mean
+   * stator current, where {@code transient} is what the plant produces on its own (spin-ups,
+   * braking) and was measured from a run at the steady-state coefficient. This mechanism produced
+   * no transient current of its own, so the coefficient carries the whole load.
+   *
+   * <p>It is therefore a lumped AVERAGE MATCH LOAD, not pure bearing friction. Unloaded steady
+   * state measures 0.0231 (2.8-5.4 A per motor at 179 rad/s); the rest is work done on game pieces,
+   * which nothing in the sim models. That is a fitted parameter and is labelled as one -- but it is
+   * fitted to a five-log median of a directly measured physical quantity, not to a fit score.
+   */
+  private static final double DRAG_AMPS_PER_RAD_PER_SEC = 0.1068;
+
   public IntakeRollersIOSim() {
     super(
         INTAKE_ROLLER_CONFIG.motorID(),
@@ -35,7 +72,7 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
                 DCMotor.getKrakenX60Foc(1),
                 PHYSICAL_CONSTANTS.momentOfInertia(),
                 INTAKE_ROLLER_CONFIG.reduction()),
-            DCMotor.getKrakenX60Foc(1));
+            MOTORS);
 
     // Enable physics simulation for Phoenix
     var simState = talon.getSimState();
@@ -46,7 +83,7 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     simState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
     frc.robot.utility.SimBattery.getInstance()
-        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * 1.0);
+        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * PACK_MOTORS);
   }
 
   /** Last computed supply current, published to SimBattery. */
@@ -95,13 +132,20 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
               appliedVoltage,
               intakeRollersSim.getAngularVelocityRadPerSec(),
               INTAKE_ROLLER_CONFIG.reduction(),
-              edu.wpi.first.math.system.plant.DCMotor.getKrakenX60Foc(1),
+              MOTORS,
               availableVolts,
               CURRENT_LIMIT_AMPS * 1.0);
     }
 
-    // Simulate physics
-    intakeRollersSim.setInputVoltage(appliedVoltage);
+    // Simulate physics. FlywheelSim is frictionless, so the drag the real mechanism fights all
+    // match has to be injected by hand: spend the voltage it costs, and the mechanism settles
+    // where the real one does and coasts down at the real rate instead of freewheeling.
+    double dragVolts =
+        frc.robot.utility.SimCurrentLimit.dragVolts(
+            intakeRollersSim.getAngularVelocityRadPerSec(),
+            MOTORS,
+            DRAG_AMPS_PER_RAD_PER_SEC * PLANT_MOTORS);
+    intakeRollersSim.setInputVoltage(appliedVoltage - dragVolts);
     intakeRollersSim.update(0.02);
 
     // Update position tracking
@@ -112,18 +156,27 @@ public class IntakeRollersIOSim extends GenericRollersIOSim implements IntakeRol
     inputs.positionRads = rotorPositionRotations * 2.0 * Math.PI;
     inputs.velocityRadsPerSec = intakeRollersSim.getAngularVelocityRadPerSec();
     inputs.appliedVolts = appliedVoltage;
-    // getCurrentDrawAmps() is stator current. Supply current is lower by roughly
-    // the duty cycle, since the motor controller is a buck converter. Reporting
-    // stator as supply overstates pack draw and would make the battery model sag
-    // far harder than the real robot does.
-    // Signed, not abs(): a negative draw is the mechanism back-driving and returning
-    // energy. abs() booked every deceleration as consumption -- 47% of the omniwheel's
-    // total error, and the real robot logs supply current down to -69.94 A.
-    double statorAmps = intakeRollersSim.getCurrentDrawAmps();
+    // Stator current computed directly rather than read back from the plant. FlywheelSim
+    // reports zero at every steady state (it inverts its own plant to get back-EMF, so the two
+    // terms cancel), which is exactly the current the drag above is there to create.
+    //
+    // Reported PER MOTOR, because GenericRollersIOTalonFX logs the leader Talon only while the
+    // plant models the whole group. Supply current is lower than stator by roughly the duty
+    // cycle, since the motor controller is a buck converter.
+    double statorAmps =
+        coasting
+            ? 0.0
+            : frc.robot.utility.SimCurrentLimit.statorAmps(
+                    appliedVoltage,
+                    intakeRollersSim.getAngularVelocityRadPerSec(),
+                    INTAKE_ROLLER_CONFIG.reduction(),
+                    MOTORS)
+                / PLANT_MOTORS;
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
-    lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
-    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    // The pack sees every motor on the mechanism, not just the one the log reports.
+    lastSupplyCurrentAmps = inputs.supplyCurrentAmps * PACK_MOTORS;
+    reportedSupplyCurrentAmps = lastSupplyCurrentAmps;
   }
 }

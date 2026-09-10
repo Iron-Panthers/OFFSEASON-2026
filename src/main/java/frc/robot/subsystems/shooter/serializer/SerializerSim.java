@@ -12,6 +12,44 @@ public class SerializerSim extends GenericRollersIOSim {
   private final FlywheelSim serializerSim;
   private double rotorPositionRotations = 0.0;
 
+  /**
+   * Motors the plant models, and motors actually on the mechanism.
+   *
+   * <p>The plant lumps both serializer motors into one. The logged signals stay PER MOTOR, matching
+   * {@code GenericRollersIOTalonFX}, which reads the leader Talon only; the battery and {@code
+   * MotorOutputManager} see both.
+   */
+  private static final int PLANT_MOTORS = 1;
+
+  private static final int PACK_MOTORS = 2;
+
+  private static final DCMotor MOTORS = DCMotor.getKrakenX60Foc(PLANT_MOTORS);
+
+  /**
+   * Steady-state drag, in stator amps per motor per mechanism rad/s.
+   *
+   * <p>By far the largest of any mechanism: 21-24 A per motor at 118 rad/s, and the most consistent
+   * -- every one of the five matches measured lands in 0.176-0.206. That is unsurprising for a
+   * mechanism whose whole job is pushing game pieces against a wall, but it also cannot be
+   * explained by back-EMF alone. The textbook {@code (V - backEmf)/R} predicts 2.3 A at the logged
+   * 6.69 V and 118.5 rad/s, an order of magnitude under what the robot actually drew, so some of
+   * this coefficient is standing in for a reduction or motor constant that is not quite right.
+   * Calibrating on the measured current rather than on the constants makes the simulated draw come
+   * out correct either way.
+   *
+   * <p>Calibrated against the median of five real matches, not against any one of them: the
+   * coefficient is set so that {@code transient + coeff * simSpeed} lands on the median real mean
+   * stator current, where {@code transient} is what the plant produces on its own (spin-ups,
+   * braking) and was measured from a run at the steady-state coefficient. This mechanism produced
+   * 1.89 A of transient on its own, so the coefficient carries almost the whole load.
+   *
+   * <p>It is therefore a lumped AVERAGE MATCH LOAD, not pure bearing friction. Unloaded steady
+   * state measures 0.1984 (21-24 A per motor at 118 rad/s); the rest is work done on game pieces,
+   * which nothing in the sim models. That is a fitted parameter and is labelled as one -- but it is
+   * fitted to a five-log median of a directly measured physical quantity, not to a fit score.
+   */
+  private static final double DRAG_AMPS_PER_RAD_PER_SEC = 0.2237;
+
   public SerializerSim() {
     super(
         SERIALIZER_CONFIG.motorID(),
@@ -26,7 +64,7 @@ public class SerializerSim extends GenericRollersIOSim {
                 DCMotor.getKrakenX60Foc(1),
                 PHYSICAL_CONSTANTS.momentOfIntertia(),
                 SERIALIZER_CONFIG.reduction()),
-            DCMotor.getKrakenX60Foc(1));
+            MOTORS);
 
     // Every other roller IOSim sets this; SerializerSim did not, which left the Talon's
     // output sign inconsistent with the physics it drives.
@@ -36,7 +74,7 @@ public class SerializerSim extends GenericRollersIOSim {
             : com.ctre.phoenix6.sim.ChassisReference.CounterClockwise_Positive;
 
     frc.robot.utility.SimBattery.getInstance()
-        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS);
+        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * PACK_MOTORS);
   }
 
   /** Last computed supply current, published to SimBattery. */
@@ -55,12 +93,19 @@ public class SerializerSim extends GenericRollersIOSim {
             appliedVelocity,
             serializerSim.getAngularVelocityRadPerSec(),
             SERIALIZER_CONFIG.reduction(),
-            DCMotor.getKrakenX60Foc(1),
+            MOTORS,
             RobotController.getBatteryVoltage(),
             CURRENT_LIMIT_AMPS);
 
-    // Simulate physics
-    serializerSim.setInputVoltage(appliedVelocity);
+    // Simulate physics. FlywheelSim is frictionless, so the drag the real mechanism fights all
+    // match has to be injected by hand: spend the voltage it costs, and the mechanism settles
+    // where the real one does and coasts down at the real rate instead of freewheeling.
+    double dragVolts =
+        frc.robot.utility.SimCurrentLimit.dragVolts(
+            serializerSim.getAngularVelocityRadPerSec(),
+            MOTORS,
+            DRAG_AMPS_PER_RAD_PER_SEC * PLANT_MOTORS);
+    serializerSim.setInputVoltage(appliedVelocity - dragVolts);
     serializerSim.update(0.02);
 
     // Rotor velocity, not mechanism velocity: the Talon sim state expects rotor rot/s.
@@ -78,7 +123,14 @@ public class SerializerSim extends GenericRollersIOSim {
     // appliedVolts too so the sim log carries the same key the real logs do.
     // supplyCurrentAmps was a hardcoded 1.0 A "not simulated".
     double availableVolts = RobotController.getBatteryVoltage();
-    double statorAmps = serializerSim.getCurrentDrawAmps();
+    // Stator current computed directly rather than read back from the plant. FlywheelSim reports
+    // zero at every steady state (it inverts its own plant to get back-EMF, so the two terms
+    // cancel), which is exactly the current the drag above is there to create. Evaluated against
+    // the COMMANDED voltage, not the post-drag one -- the difference between them is the drag.
+    double statorAmps =
+        frc.robot.utility.SimCurrentLimit.statorAmps(
+                appliedVelocity, mechanismRadPerSec, SERIALIZER_CONFIG.reduction(), MOTORS)
+            / PLANT_MOTORS;
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVelocity) / availableVolts : 0.0;
 
     inputs.connected = true;
@@ -90,7 +142,8 @@ public class SerializerSim extends GenericRollersIOSim {
     inputs.appliedVolts = appliedVelocity;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
-    lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
-    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    // The pack sees both serializer motors, not just the one the log reports.
+    lastSupplyCurrentAmps = inputs.supplyCurrentAmps * PACK_MOTORS;
+    reportedSupplyCurrentAmps = lastSupplyCurrentAmps;
   }
 }

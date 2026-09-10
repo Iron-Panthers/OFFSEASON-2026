@@ -19,6 +19,42 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
   private double rotorPositionRotations = 0.0;
   private double velocitySetpointRPS = 0.0;
 
+  /**
+   * Motors the plant models, and motors actually on the mechanism.
+   *
+   * <p>These differ where the plant lumps a multi-motor mechanism into one motor. The logged
+   * signals are PER MOTOR, because {@code GenericRollersIOTalonFX} reads the leader Talon only, but
+   * the battery and {@code MotorOutputManager} have to see every motor.
+   */
+  private static final int PLANT_MOTORS = 1;
+
+  private static final int PACK_MOTORS = 1;
+
+  private static final DCMotor MOTORS = DCMotor.getKrakenX60Foc(PLANT_MOTORS);
+
+  /**
+   * Steady-state drag, in stator amps per motor per mechanism rad/s.
+   *
+   * <p>Measured from real match logs: median stator current over samples where the mechanism was
+   * spinning, powered, and not accelerating, divided by the median speed. Measured 9.8-35.1 A at
+   * 382 rad/s. The widest spread of any mechanism, because the omniwheel runs in short bursts and
+   * rarely holds a steady speed long enough to sample.
+   *
+   * <p>Modelled as viscous (through the origin) rather than Coulomb because every match runs this
+   * mechanism at essentially one speed, so the two are indistinguishable from the data. Viscous is
+   * the safer of the two: it goes to zero at rest instead of chattering there.
+   *
+   * <p><b>Left at the steady-state value, unlike the other rollers, because no drag coefficient can
+   * fix this mechanism.</b> The other four were retargeted so that {@code transient + coeff *
+   * speed} lands on the real mean; here the transient ALONE is 110 A mean stator while spinning,
+   * against a real mean of 41 A, so the solve returns a negative coefficient. The simulated
+   * omniwheel is generating far too much current on its own spin-ups and spin-downs -- it is
+   * commanded in short bursts and the plant slews much harder than the real one. Its mean SUPPLY
+   * current is nonetheless close (4.52 A simulated against 5.24 A real) because the duty cycle is
+   * low, which is why this was not visible before the stator current became honest.
+   */
+  private static final double DRAG_AMPS_PER_RAD_PER_SEC = 0.0552;
+
   public ShooterOmniwheelIOSim() {
     super(
         SHOOTER_OMNIWHEEL_CONFIG.motorID(),
@@ -36,7 +72,7 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
                 DCMotor.getKrakenX60Foc(1),
                 PHYSICAL_CONSTANTS.momentOfInertia(),
                 SHOOTER_OMNIWHEEL_CONFIG.reduction()),
-            DCMotor.getKrakenX60Foc(1));
+            MOTORS);
 
     // Enable physics simulation for Phoenix
     var simState = talon.getSimState();
@@ -46,7 +82,7 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
             : ChassisReference.CounterClockwise_Positive;
 
     frc.robot.utility.SimBattery.getInstance()
-        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * 1.0);
+        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * PACK_MOTORS);
   }
 
   /** Last computed supply current, published to SimBattery. */
@@ -96,13 +132,20 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
               appliedVoltage,
               shooterOmniwheelsSim.getAngularVelocityRadPerSec(),
               SHOOTER_OMNIWHEEL_CONFIG.reduction(),
-              edu.wpi.first.math.system.plant.DCMotor.getKrakenX60Foc(1),
+              MOTORS,
               availableVolts,
               CURRENT_LIMIT_AMPS * 1.0);
     }
 
-    // Simulate physics
-    shooterOmniwheelsSim.setInputVoltage(appliedVoltage);
+    // Simulate physics. FlywheelSim is frictionless, so the drag the real mechanism fights all
+    // match has to be injected by hand: spend the voltage it costs, and the mechanism settles
+    // where the real one does and coasts down at the real rate instead of freewheeling.
+    double dragVolts =
+        frc.robot.utility.SimCurrentLimit.dragVolts(
+            shooterOmniwheelsSim.getAngularVelocityRadPerSec(),
+            MOTORS,
+            DRAG_AMPS_PER_RAD_PER_SEC * PLANT_MOTORS);
+    shooterOmniwheelsSim.setInputVoltage(appliedVoltage - dragVolts);
     shooterOmniwheelsSim.update(0.02);
 
     // Update position tracking
@@ -115,18 +158,27 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
     inputs.positionRads = rotorPositionRotations * 2.0 * Math.PI;
     inputs.velocityRadsPerSec = shooterOmniwheelsSim.getAngularVelocityRadPerSec();
     inputs.appliedVolts = appliedVoltage;
-    // getCurrentDrawAmps() is stator current. Supply current is lower by roughly
-    // the duty cycle, since the motor controller is a buck converter. Reporting
-    // stator as supply overstates pack draw and would make the battery model sag
-    // far harder than the real robot does.
-    // Signed, not abs(): a negative draw is the mechanism back-driving and returning
-    // energy. abs() booked every deceleration as consumption -- 47% of the omniwheel's
-    // total error, and the real robot logs supply current down to -69.94 A.
-    double statorAmps = shooterOmniwheelsSim.getCurrentDrawAmps();
+    // Stator current computed directly rather than read back from the plant. FlywheelSim
+    // reports zero at every steady state (it inverts its own plant to get back-EMF, so the two
+    // terms cancel), which is exactly the current the drag above is there to create.
+    //
+    // Reported PER MOTOR, because GenericRollersIOTalonFX logs the leader Talon only while the
+    // plant models the whole group. Supply current is lower than stator by roughly the duty
+    // cycle, since the motor controller is a buck converter.
+    double statorAmps =
+        coasting
+            ? 0.0
+            : frc.robot.utility.SimCurrentLimit.statorAmps(
+                    appliedVoltage,
+                    shooterOmniwheelsSim.getAngularVelocityRadPerSec(),
+                    SHOOTER_OMNIWHEEL_CONFIG.reduction(),
+                    MOTORS)
+                / PLANT_MOTORS;
     double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
     inputs.statorCurrentAmps = statorAmps;
     inputs.supplyCurrentAmps = statorAmps * dutyCycle;
-    lastSupplyCurrentAmps = inputs.supplyCurrentAmps;
-    reportedSupplyCurrentAmps = inputs.supplyCurrentAmps;
+    // The pack sees every motor on the mechanism, not just the one the log reports.
+    lastSupplyCurrentAmps = inputs.supplyCurrentAmps * PACK_MOTORS;
+    reportedSupplyCurrentAmps = lastSupplyCurrentAmps;
   }
 }
