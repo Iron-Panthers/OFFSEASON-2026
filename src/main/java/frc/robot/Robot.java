@@ -334,7 +334,9 @@ public class Robot extends LoggedRobot {
 
   /** This function is called once when test mode is enabled. */
   @Override
-  public void testInit() {}
+  public void testInit() {
+    CommandScheduler.getInstance().cancelAll();
+  }
 
   /** This function is called periodically during test mode. */
   @Override
