@@ -125,4 +125,12 @@ public class ShootCommandFactory {
         .alongWith(
             new WaitCommand(1.5).andThen(intakeController.setTargetStateCommand(IntakeState.STOW)));
   }
+
+  public Command chunkShootGoBrrr(boolean justShoot) {
+    return Commands.runOnce(
+        () -> {
+          intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
+          this.justShoot = justShoot;
+        });
+  }
 }
