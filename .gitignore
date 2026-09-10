@@ -192,3 +192,7 @@ compile_commands.json
 # opencode — plugin dependencies
 .opencode/node_modules/__pycache__/
 docs/superpowers/fit-scores/*.json
+
+# Python bytecode caches
+__pycache__/
+*.pyc

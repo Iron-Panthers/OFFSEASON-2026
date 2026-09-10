@@ -25,7 +25,11 @@ public class VisionConstants {
   // index 0 -> arducam-1, etc
   public static final Transform3d[] CAMERA_TRANSFORM =
       switch (getRobotType()) {
-        case COMP -> new Transform3d[] {
+          // SIM shares COMP's cameras. The SIM arm used to declare FIVE cameras in entirely
+          // different places -- two of them rear-facing -- while RobotContainer wired up only
+          // one of them, index 3, a camera pointing backwards. The simulation was therefore
+          // localising off a single rear camera the real robot does not have.
+        case COMP, SIM -> new Transform3d[] {
           // new Transform3d(new Translation3d(), new Rotation3d())
           // arducam-7 (front in rollers)
           new Transform3d(
@@ -95,23 +99,81 @@ public class VisionConstants {
               new Rotation3d(
                   Math.toRadians(5.739), Math.toRadians(-19.623), Math.toRadians(34.632 - 180)))
         };
-        case SIM -> new Transform3d[] {
-          // arducam-1 (front left)
-          new Transform3d(
-              0.299, 0.2744, 0.3464, new Rotation3d(0, -Math.toRadians(35), Math.toRadians(55))),
-          // arducam-2 (front center)
-          new Transform3d(0.3017, 0, 0.3373, new Rotation3d(0, -Math.toRadians(35), 0)),
-          // arducam-3 (front right)
-          new Transform3d(
-              0.299, -0.2744, 0.3464, new Rotation3d(0, -Math.toRadians(35), -Math.toRadians(55))),
-          // arducam-4 (back right)
-          new Transform3d(
-              -0.17, -0.298, 0.3651, new Rotation3d(0, 0, Math.PI - Math.toRadians(12))),
-          // arducam-5 (back left)
-          new Transform3d(-0.17, 0.298, 0.3651, new Rotation3d(0, 0, -Math.PI + Math.toRadians(12)))
-        };
         default -> new Transform3d[0];
       };
+
+  /**
+   * Simulated camera model.
+   *
+   * <p>{@code new SimCameraProperties()} is PhotonVision's {@code PERFECT_90DEG}: a 960x720 camera
+   * with <b>zero</b> calibration error and <b>zero</b> latency. The simulated robot therefore
+   * localised perfectly at any range, which is the one thing real vision never does.
+   *
+   * <p>The important part is that the noise is injected <b>in pixels, on the detected tag
+   * corners</b>. A tag at 2 m spans many pixels and a tag at 8 m spans few, so the same pixel error
+   * produces a pose error that grows with distance on its own. Accuracy falling off with range is
+   * then a consequence of the optics rather than a curve someone tuned.
+   *
+   * <p><b>Measured from five real matches:</b> {@link #SIM_MAX_SIGHT_RANGE_METERS}. Per-camera
+   * maximum observed target distance ran 3.56-4.55 m for camera 0 (the one in the rollers, pitched
+   * down) and 7.11-10.13 m for the two side cameras.
+   *
+   * <p><b>Not measured, and worth revisiting:</b> resolution, field of view, latency, frame rate
+   * and calibration error. These are representative values for the Arducam OV9281 the robot runs,
+   * not values read off this robot's calibration. They cannot be measured from the logs, because
+   * {@code VisionIOInputs.observations} is never written to the log -- only tag IDs and average
+   * distance are -- so there is no recorded vision pose to compare against.
+   */
+  public static final int SIM_CAMERA_WIDTH_PX = 1280;
+
+  public static final int SIM_CAMERA_HEIGHT_PX = 800;
+
+  public static final double SIM_CAMERA_FOV_DIAGONAL_DEGREES = 70.0;
+
+  public static final double SIM_CAMERA_FPS = 40.0;
+
+  public static final double SIM_CAMERA_LATENCY_MS = 25.0;
+
+  public static final double SIM_CAMERA_LATENCY_STD_DEV_MS = 8.0;
+
+  /**
+   * Average and standard deviation of corner detection error, in pixels.
+   *
+   * <p>Calibrated against the one measurement of vision accuracy that does not depend on the pose
+   * estimator: when two cameras report a pose on the SAME loop they are looking at the same robot
+   * at the same instant, so their disagreement is vision error and nothing else. Measured on q54
+   * with {@code scripts/drive_vision_fidelity.py}:
+   *
+   * <table>
+   * <tr><th>target distance</th><th>real</th><th>simulated at 0.25 px</th></tr>
+   * <tr><td>2-3 m</td><td>0.073 m</td><td>0.030 m</td></tr>
+   * <tr><td>3-4 m</td><td>0.084 m</td><td>0.039 m</td></tr>
+   * <tr><td>4-5 m</td><td>0.207 m</td><td>0.026 m</td></tr>
+   * </table>
+   *
+   * <p>0.25 px is what a good calibration achieves on a bench. A camera bolted to a robot being
+   * driven hard does considerably worse -- vibration, focus, tag ambiguity at oblique angles -- and
+   * the measurement above says by roughly a factor of three.
+   */
+  public static final double SIM_CAMERA_CALIB_ERROR_PX = 0.75;
+
+  public static final double SIM_CAMERA_CALIB_ERROR_STD_DEV_PX = 0.25;
+
+  /**
+   * Beyond this a tag is not detected at all.
+   *
+   * <p>10.2 m, just past the 10.13 m furthest target any camera reported across q54, q93, q14, q103
+   * and q64. Without a limit the simulation happily reads tags across the whole field.
+   */
+  public static final double SIM_MAX_SIGHT_RANGE_METERS = 10.2;
+
+  /**
+   * Smallest fraction of the image a tag may occupy and still be detected, in percent.
+   *
+   * <p>Guards the same failure from the other side: a tag seen edge-on at range covers a handful of
+   * pixels and a real pipeline will not resolve its corners.
+   */
+  public static final double SIM_MIN_TARGET_AREA_PERCENT = 0.03;
 
   public static final List<TagCountDeviation> TAG_COUNT_DEVIATIONS =
       switch (getRobotType()) {

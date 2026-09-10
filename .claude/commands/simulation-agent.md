@@ -158,6 +158,35 @@ such in each file. Changing one without re-measuring against the logs will break
 If mean pack current is wrong, check the mechanism *duty cycles* first — how much of the match each
 mechanism spends running — before touching a coefficient. That is where the current known error is.
 
+### Drivetrain and vision fidelity
+
+`scripts/log_compare.py` scores signals but cannot say *why* the drivetrain diverges. This does:
+
+```bash
+python scripts/drive_vision_fidelity.py <sim>.wpilog <real>.wpilog
+```
+
+It reports, identically on both sides:
+
+- **module disagreement** -- fits a rigid-body motion to the four module states; whatever no rigid
+  body can explain is slip or scrub. Depends on nothing but module states, so pose drift cannot
+  contaminate it.
+- **gyro minus modules** -- the same thing from an independent sensor.
+- **wheel path / pose path** -- wheels that slip travel further than the robot does.
+- **vision error between two cameras on the same loop** -- both saw the same robot at the same
+  instant, so their disagreement is vision error with the pose estimator removed. Binned by target
+  distance, because the number that matters is whether it *grows* with range.
+
+**Split autonomous from teleop before drawing conclusions.** Teleop contains being shoved by other
+robots, which shows up in every one of these metrics and which no replay can reproduce. Real teleop
+module disagreement is 2.8x the same match's autonomous figure. Calibrate against autonomous.
+
+Simulated vision noise lives in `VisionConstants.SIM_CAMERA_*` and is injected in **pixels on the
+tag corners**, so accuracy degrades with distance on its own. Simulated odometry error lives in
+`ModuleIOTalonFXSim.ODOMETRY_SCALE_*` and is applied to the reported position and velocity only,
+never to the physics -- maple-sim sets wheel speed exactly equal to ground speed whenever a module
+is not actively skidding, so without it simulated odometry is perfect.
+
 ### Then compare against the real log
 
 ```bash

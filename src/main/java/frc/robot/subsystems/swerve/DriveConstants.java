@@ -291,6 +291,35 @@ public class DriveConstants {
    * These are the configs for the maple sim drivebase This should be updated to be similar to the
    * comp bot drivebase
    */
+  /**
+   * Tyre grip used by maple-sim, which is what decides when a wheel breaks traction.
+   *
+   * <p>maple-sim already models slip: it caps the force a module can put into the floor at {@code
+   * mu * normalForce} and lets the wheel spin when the controller asks for more. The question is
+   * only where that cap sits, and at 1.4 it sat high enough that the simulated robot effectively
+   * never slipped.
+   *
+   * <p>Measured on q54 with {@code scripts/drive_vision_fidelity.py}, which fits a rigid-body
+   * motion to the four module states and asks how much of the wheels' motion no rigid body can
+   * explain:
+   *
+   * <table>
+   * <tr><th>metric</th><th>simulated at 1.4</th><th>real</th></tr>
+   * <tr><td>module disagreement, fraction of speed</td><td>0.061</td><td>0.187</td></tr>
+   * <tr><td>gyro yaw rate minus module yaw rate</td><td>0.156 rad/s</td><td>1.012 rad/s</td></tr>
+   * <tr><td>wheel path / actual path</td><td>1.027</td><td>1.177</td></tr>
+   * </table>
+   *
+   * <p>The last row is the plainest statement of it: the real robot's wheels turn far enough to
+   * carry it 17.7% further than it actually went, and the simulated robot's only 2.7%.
+   *
+   * <p><b>The real figure is an upper bound, not a target.</b> A match also contains being shoved
+   * by other robots, which no tyre model reproduces and which shows up in exactly these three
+   * metrics. Set from published FRC tread-on-carpet values rather than fitted to the gap, so the
+   * simulation slips when the physics says it should rather than whenever it needs to.
+   */
+  public static final double WHEEL_COEFFICIENT_OF_FRICTION = 1.05;
+
   public static final DriveTrainSimulationConfig
       mapleSimConfig = // TODO: update this to be similar to comp bot drive base
       DriveTrainSimulationConfig.Default()
@@ -313,7 +342,7 @@ public class DriveConstants {
                       Volts.of(0.25),
                       Meters.of(DRIVE_CONFIG.wheelRadius()),
                       KilogramSquareMeters.of(0.04),
-                      1.4));
+                      WHEEL_COEFFICIENT_OF_FRICTION));
 
   public static final TrajectoryFollowerConstants TRAJECTORY_CONFIG =
       switch (getRobotType()) {

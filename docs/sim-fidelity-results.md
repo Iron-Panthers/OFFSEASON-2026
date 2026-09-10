@@ -263,6 +263,99 @@ Mean absolute axis error **0.0039** over 8254 samples against the logged values.
 
 ---
 
+## Drivetrain and vision
+
+Measured with `scripts/drive_vision_fidelity.py`, which was written for this and reports metrics
+defined identically on both sides:
+
+```bash
+python scripts/drive_vision_fidelity.py <sim>.wpilog <real>.wpilog
+```
+
+### Vision was not being simulated in any meaningful sense
+
+Four separate defects, all structural:
+
+| defect | effect |
+| --- | --- |
+| `RobotContainer` passed **one** camera to `Vision` in SIM, at index 3 of the old five-entry SIM transform array -- a **rear-facing** camera the real robot does not have | the simulated robot localised off one backwards camera |
+| a second camera was constructed on its own line and **thrown away** -- never passed to `Vision` | fed the simulated arena, never reached the pose estimator |
+| SIM declared five camera transforms in entirely different places from COMP's three | nothing about simulated camera geometry matched the robot |
+| `new SimCameraProperties()` is PhotonVision's `PERFECT_90DEG` -- zero calibration error, zero latency | vision was **exact at any range, instantly** |
+
+Cameras 1 and 2 logged no observation for an entire match while the real robot's saw a tag in
+98-100% of frames.
+
+SIM now shares COMP's three cameras and transforms, and the camera model is a real one. The noise
+is injected **in pixels, on the tag corners**, so accuracy falling off with range is a consequence
+of the optics rather than a curve someone tuned -- a tag at 8 m spans a fraction of the pixels it
+does at 2 m.
+
+Per-camera target distance, q54:
+
+| camera | sim before | sim now | real |
+| --- | --- | --- | --- |
+| 0 (in the rollers, pitched down) | 4.66 m | **2.45 m** | 2.46 m |
+| 1 (side) | never saw a tag | **4.69 m** | 3.45 m |
+| 2 (side) | never saw a tag | **4.84 m** | 4.33 m |
+
+### Vision accuracy now degrades with distance, because it is measured
+
+The honest measure of vision accuracy is what two cameras reporting on the **same loop** disagree
+about. They saw the same robot at the same instant, so the pose estimator, its lag and its tuning
+are all out of the picture, and what is left is vision error alone:
+
+| target distance | sim at 0.25 px | sim at 0.75 px | real |
+| --- | --- | --- | --- |
+| 2-3 m | 0.030 m | **0.064 m** | 0.073 m |
+| 3-4 m | 0.039 m | **0.048 m** | 0.084 m |
+| 5-6 m | — | **0.108 m** | — |
+
+The point is not only the magnitude but the shape: at 0.25 px simulated error was **flat** in
+distance, which is not vision. It now grows.
+
+**This was unmeasurable until this session.** The vision subsystem logs its per-camera pose
+estimates as `struct:Pose3d[]`, and `scripts/wpilog_to_csv.py` decoded `Pose2d` but not `Pose3d` --
+so every measurement of how accurate vision actually is had been silently unavailable on both real
+and simulated logs. Adding 20 lines of struct decoding is what made the table above possible.
+
+### Wheel slip: maple-sim only models the skid, not the slip
+
+maple-sim does model skidding -- it caps module force at `mu * normalForce` and lets the wheel spin
+past the ground when the controller asks for more. But while a module grips, it sets the wheel
+speed to **exactly** the ground velocity projected onto the wheel. Simulated odometry is therefore
+perfect except during a skid event, and a real robot's is never perfect.
+
+Measured during **autonomous**, the closest thing to a contact-free sample, across five matches:
+
+| metric | real (auto) | sim before | sim now |
+| --- | --- | --- | --- |
+| module disagreement, median | 0.028-0.038 | 0.012 | **0.021** |
+| wheel distance / true distance | 1.077-1.111 | 1.006 | **1.088** |
+
+Two effects needing two knobs, because the coefficient of friction only produces one of them.
+Dropping it from 1.4 to maple-sim's lowest supported 0.65 moved wheel-over-true from 1.006 to 1.037
+but left disagreement at 0.012 -- **four wheels skidding together still agree with each other**.
+Real wheels disagree because they are not identical.
+
+So the friction coefficient is set from published FRC tread-on-carpet figures (1.05) rather than
+fitted, and the rest is a per-module scale on **reported** odometry only, never on the physics --
+which is exactly what slip is. The simulated robot really does go where maple-sim says; it just no
+longer knows precisely where that is, so the pose estimator has to lean on vision the way the real
+one does.
+
+### What is still not reproduced, and cannot be from a log
+
+Real **teleop** module disagreement is 0.080-0.119 against the simulation's 0.036. The gap is not
+grip: it is other robots. Teleop disagreement is 2.8x the same match's autonomous figure, and
+nothing in a replay pushes the simulated robot. Reproducing it needs opponents on the field, not a
+lower friction coefficient -- and pushing the coefficient down to chase it would be fitting contact
+with a tyre model.
+
+The simulation also has no **occlusion**: its side cameras see tags at 4.7 m mean against a real
+3.5 m, and it gets multi-tag frames 66% of the time against a real 28%, because nothing ever blocks
+its view. That makes simulated vision better-informed than real vision even with the right noise.
+
 ## What does not match
 
 ### Mean current draw — closed

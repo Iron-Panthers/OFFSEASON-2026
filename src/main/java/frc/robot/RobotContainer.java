@@ -196,11 +196,19 @@ public class RobotContainer {
                       DriveConstants.MODULE_CONFIGS[2], driveSimulation.getModules()[2]),
                   new ModuleIOTalonFXSim(
                       DriveConstants.MODULE_CONFIGS[3], driveSimulation.getModules()[3]));
+          // Same three cameras as COMP, in the same order and at the same transforms. This used
+          // to pass ONE camera -- index 3 of the old five-entry SIM array, which pointed backwards
+          // -- and then construct a second on its own line and throw it away, so it fed the
+          // simulated arena but never reached the pose estimator. Cameras 1 and 2 logged no
+          // observation for an entire match while the real robot's saw a tag in 98-100% of frames.
           vision =
               new Vision(
                   new VisionIOPhotonvisionSim(
-                      "arducam-3", 3, driveSimulation::getSimulatedDriveTrainPose));
-          new VisionIOPhotonvisionSim("arducam-4", 4, driveSimulation::getSimulatedDriveTrainPose);
+                      "CamC", 0, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamA", 1, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamB", 2, driveSimulation::getSimulatedDriveTrainPose));
 
           // INTAKE
           intakeRack = new IntakeRack(new IntakeRackIOSim());

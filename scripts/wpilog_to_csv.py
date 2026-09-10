@@ -111,6 +111,8 @@ def _parse_value(record, dtype: str):
         if dtype == "string[]":       return list(record.getStringArray())
         if dtype == "struct:Pose2d":  return _unpack_pose2d(record.getRaw())
         if dtype == "struct:Pose2d[]": return _unpack_pose2d_array(record.getRaw())
+        if dtype == "struct:Pose3d":  return _unpack_pose3d(record.getRaw())
+        if dtype == "struct:Pose3d[]": return _unpack_pose3d_array(record.getRaw())
     except Exception:
         pass
     return None
@@ -129,6 +131,37 @@ def _unpack_pose2d_array(data: bytes):
     for i in range(0, len(data) - 23, 24):
         x, y, rot = struct.unpack_from("<ddd", data, i)
         poses.append((x, y, rot))
+    return poses
+
+
+# Translation3d (x, y, z) followed by Rotation3d, which is stored as a quaternion (w, x, y, z).
+POSE3D_BYTES = 56
+
+
+def _unpack_pose3d(data: bytes):
+    """
+    Unpack a WPILib Pose3d struct -> (x_m, y_m, z_m, yaw_rad).
+
+    Yaw is recovered from the quaternion rather than returning all three angles, because that is
+    what the 2D pose comparisons here need and it keeps the tuple the same shape as Pose2d's.
+
+    The vision subsystem logs its raw per-camera pose estimates as `struct:Pose3d[]`, which this
+    reader used to skip entirely -- so every measurement of how accurate vision actually is had
+    been unavailable, on both the real logs and the simulated ones.
+    """
+    if len(data) < POSE3D_BYTES:
+        return None
+    x, y, z, qw, qx, qy, qz = struct.unpack_from("<ddddddd", data)
+    yaw = math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+    return (x, y, z, yaw)
+
+
+def _unpack_pose3d_array(data: bytes):
+    poses = []
+    for i in range(0, len(data) - (POSE3D_BYTES - 1), POSE3D_BYTES):
+        x, y, z, qw, qx, qy, qz = struct.unpack_from("<ddddddd", data, i)
+        yaw = math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+        poses.append((x, y, z, yaw))
     return poses
 
 
