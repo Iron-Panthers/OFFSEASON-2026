@@ -2,13 +2,13 @@
   "version" : "2025.0",
   "waypoints" : [ {
     "anchor" : {
-      "x" : 3.038,
-      "y" : 5.214
+      "x" : 3.1303333333333336,
+      "y" : 5.837164887307237
     },
     "prevControl" : null,
     "nextControl" : {
-      "x" : 3.0178444444444446,
-      "y" : 4.3977
+      "x" : 3.1101777777777784,
+      "y" : 5.020864887307237
     },
     "isLocked" : false,
     "linkedName" : "Shooting Pose Left"
@@ -78,7 +78,7 @@
   "folder" : "Left Paths (auto generated)",
   "idealStartingState" : {
     "velocity" : 0,
-    "rotation" : -36.12669746627898
+    "rotation" : -50.5449523937682
   },
   "useDefaultConstraints" : true
 }

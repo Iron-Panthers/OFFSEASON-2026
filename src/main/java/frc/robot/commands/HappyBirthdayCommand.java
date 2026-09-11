@@ -11,7 +11,7 @@ public class HappyBirthdayCommand extends Command {
   Orchestra orchestra = new Orchestra();
 
   public HappyBirthdayCommand() {
-    for(int i = 1; i < 100; i++){
+    for (int i = 1; i < 100; i++) {
       TalonFX motor = new TalonFX(i);
       orchestra.addInstrument(motor);
     }

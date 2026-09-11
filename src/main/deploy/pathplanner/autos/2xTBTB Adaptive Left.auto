@@ -9,9 +9,24 @@
           "name" : "Smart zero"
         }
       }, {
-        "type" : "path",
+        "type" : "race",
         "data" : {
-          "pathName" : "2xTB 1 Left"
+          "commands" : [ {
+            "type" : "path",
+            "data" : {
+              "pathName" : "2xTB 1 Left"
+            }
+          }, {
+            "type" : "named",
+            "data" : {
+              "name" : "Check If Off"
+            }
+          } ]
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Translate To Shoot"
         }
       }, {
         "type" : "named",
@@ -24,9 +39,24 @@
           "name" : "Auto shoot full hopper"
         }
       }, {
-        "type" : "path",
+        "type" : "race",
         "data" : {
-          "pathName" : "2xTB 2 Left"
+          "commands" : [ {
+            "type" : "path",
+            "data" : {
+              "pathName" : "2xTB 2 Left"
+            }
+          }, {
+            "type" : "named",
+            "data" : {
+              "name" : "Check If Off"
+            }
+          } ]
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Translate To Shoot"
         }
       }, {
         "type" : "named",

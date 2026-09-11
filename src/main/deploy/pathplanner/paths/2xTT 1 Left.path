@@ -2,16 +2,16 @@
   "version" : "2025.0",
   "waypoints" : [ {
     "anchor" : {
-      "x" : 4.343,
-      "y" : 7.462000000000001
+      "x" : 4.37,
+      "y" : 7.442
     },
     "prevControl" : null,
     "nextControl" : {
-      "x" : 4.803244444444444,
-      "y" : 7.451366666666667
+      "x" : 4.83024435293806,
+      "y" : 7.431362706717429
     },
     "isLocked" : false,
-    "linkedName" : null
+    "linkedName" : "Starting pose"
   }, {
     "anchor" : {
       "x" : 5.806144721233689,
