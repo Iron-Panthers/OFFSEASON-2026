@@ -129,22 +129,22 @@ public class DriveConstants {
           new ModuleConfig(
               CAN.at(35, "FR Drive"),
               CAN.at(6, "FR Steer"),
-              12,
-              new Rotation2d(2.126097),
+              9,
+              new Rotation2d(-0.513884),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive),
           new ModuleConfig(
               CAN.at(3, "BL Drive"),
               CAN.at(4, "BL Steer"),
-              9,
-              new Rotation2d(2.820991),
+              6,
+              new Rotation2d(2.822525),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.Clockwise_Positive),
           new ModuleConfig(
               CAN.at(2, "BR Drive"),
               CAN.at(1, "BR Steer"),
-              6,
-              new Rotation2d(1.501767),
+              12,
+              new Rotation2d(-0.770058),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive)
         };
@@ -297,6 +297,9 @@ public class DriveConstants {
                       KilogramSquareMeters.of(0.04),
                       1.4));
 
+  public static final DriveTrainSimulationConfig obstacleConfig =
+      DriveTrainSimulationConfig.Default().withRobotMass(Kilograms.of(1000000000));
+
   public static final TrajectoryFollowerConstants TRAJECTORY_CONFIG =
       switch (getRobotType()) {
         case COMP -> new TrajectoryFollowerConstants(
@@ -332,7 +335,7 @@ public class DriveConstants {
       };
   public static final double ROTATION_FINISH_PERCENT = 0.9;
 
-  public static final double PATHPLANNER_PID_OFFSET = 1.5;
+  public static final double PATHPLANNER_PID_OFFSET = 0.4;
 
   public static final double AUTOALIGN_POSITION_DEADBAND = 0.01;
 
@@ -360,22 +363,25 @@ public class DriveConstants {
 
   // pathfinding constants
 
-  public static final double buffer = 0.387;
-
+  // BUFFER_X = .44 works decently, test more
+  public static final double BUFFER_X = 0.387;
+  public static final double BUFFER_Y = 0.28;
   public static final List<Pair<Translation2d, Translation2d>> OBSTACLES_FOR_TRENCH_WALL =
       List.of(
           Pair.of(
-              new Translation2d(3.977 - buffer, 1.287 - buffer),
-              new Translation2d(5.322 + buffer, 1.592 + buffer)),
+              new Translation2d(3.977 - BUFFER_X, 1.287 - BUFFER_Y),
+              new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y)),
           Pair.of(
-              new Translation2d(3.977 - buffer, 6.477 - buffer),
-              new Translation2d(5.322 + buffer, 6.783 + buffer)),
+              new Translation2d(3.977 - BUFFER_X, 6.477 - BUFFER_Y),
+              new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y)),
           Pair.of(
-              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 1.287 - buffer)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 1.592 + buffer))),
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 1.287 - BUFFER_Y)),
+              FlippingUtil.flipFieldPosition(
+                  new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y))),
           Pair.of(
-              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 6.477 - buffer)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 6.783 + buffer))));
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 6.477 - BUFFER_Y)),
+              FlippingUtil.flipFieldPosition(
+                  new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y))));
 
   /*
   List.of(
@@ -410,6 +416,20 @@ public class DriveConstants {
           Pair.of(
               FlippingUtil.flipFieldPosition(new Translation2d(4.039, 1.337)),
               FlippingUtil.flipFieldPosition(new Translation2d(5.216, 0))));
+
+  public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_RIGHT =
+      Pair.of(
+          new Translation2d(0, FlippingUtil.fieldSizeY / 2 - 0.05 - 2.5),
+          new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2 + .05 - 2.5));
+  public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_LEFT =
+      Pair.of(
+          new Translation2d(0, FlippingUtil.fieldSizeY / 2 - 0.05 + 2.5),
+          new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2 + .05 + 2.5));
+
+  public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_CENTER =
+      Pair.of(
+          new Translation2d(0, FlippingUtil.fieldSizeY / 2 + .1),
+          new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2));
 
   public static final Translation2d CENTER_OF_FIELD = new Translation2d(8.27, 4.035);
   public static final Translation3d BLUE_HUB_ORIGIN = new Translation3d(4.5974, 4.034536, 1.5748);

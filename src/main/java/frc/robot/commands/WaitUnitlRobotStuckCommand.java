@@ -1,0 +1,102 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
+package frc.robot.commands;
+
+import com.pathplanner.lib.util.FlippingUtil;
+import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+import frc.robot.RobotState;
+import frc.robot.subsystems.swerve.Drive;
+import frc.robot.subsystems.swerve.DriveConstants;
+import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
+
+// NOTE:  Consider using this command inline, rather than writing a subclass.  For more
+// information, see:
+// https://docs.wpilib.org/en/stable/docs/software/commandbased/convenience-features.html
+public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
+  /** Creates a new WaitUnitlRobotStuck. */
+  public WaitUnitlRobotStuckCommand(Drive swerve, Supplier<Pose2d> shootingPoseSupplier) {
+    // Add your commands in the addCommands() call, e.g.
+    // addCommands(new FooCommand(), new BarCommand());
+    addCommands(
+        new WaitUntilCommand(
+                () ->
+                    RobotState.getInstance()
+                                .getPathPlannerTargetPose()
+                                .getTranslation()
+                                .getDistance(
+                                    RobotState.getInstance().getEstimatedPose().getTranslation())
+                            > 1.6
+                        && !swerve.isPIDAutoAlign())
+            .andThen(
+                new InstantCommand(
+                    () -> {
+                      double speed =
+                          Math.sqrt(
+                              Math.pow((swerve.getTargetSpeed().vxMetersPerSecond), 2)
+                                  + Math.pow((swerve.getTargetSpeed().vyMetersPerSecond), 2));
+
+                      double width = DriveConstants.DRIVE_CONFIG.bumperWidthX();
+                      double length = DriveConstants.DRIVE_CONFIG.bumperWidthY();
+
+                      Translation2d halfWidth = new Translation2d(width, length);
+                      double distanceAway = halfWidth.getNorm();
+                      // double edgeDistance = Math.sqrt((Math.pow(width,2) + Math.pow(length,2)) /
+                      // 4) * 2;
+                      // PROBLEM
+                      int negation = 1;
+                      if (shootingPoseSupplier.get().getY() > FlippingUtil.fieldSizeY / 2) {
+                        negation *= -1;
+                      }
+                      if (RobotState.isAllianceRed()) {
+                        negation *= -1;
+                      }
+                      Translation2d dsitanceToMovingPose =
+                          RobotState.getInstance()
+                              .getEstimatedPose()
+                              .getTranslation()
+                              .minus(
+                                  RobotState.getInstance()
+                                      .getPathPlannerTargetPose()
+                                      .getTranslation())
+                              .times(0.45);
+                      Translation2d otherRobotTranslation2d =
+                          RobotState.getInstance()
+                              .getEstimatedPose()
+                              .getTranslation()
+                              .minus(dsitanceToMovingPose);
+                      Logger.recordOutput("otherRobotTranslation2d", swerve.getTargetSpeed());
+
+                      // RobotState.getInstance().setAutoUnderTrench(true);
+                      if (Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY())
+                              > FlippingUtil.fieldSizeY / 2 - 1.8
+                          && Math.abs(FlippingUtil.fieldSizeX / 2 - otherRobotTranslation2d.getX())
+                              > 2) {
+                        RobotState.getInstance().setAutoUnderTrench(false);
+                      }
+                      Logger.recordOutput(
+                          "Not_Wall_vertical",
+                          Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY()));
+                      Logger.recordOutput(
+                          "Not_Wall_horizontal",
+                          Math.abs(FlippingUtil.fieldSizeX / 2 - otherRobotTranslation2d.getX()));
+                      Logger.recordOutput(
+                          "PathPlanner/Other Robot Position",
+                          new Pose2d(otherRobotTranslation2d, Rotation2d.kZero));
+                      Translation2d lowerBound = otherRobotTranslation2d.minus(halfWidth);
+                      Translation2d upperBound = otherRobotTranslation2d.plus(halfWidth);
+
+                      RobotState.getInstance()
+                          .addDynamicObstacle(
+                              new Pair<Translation2d, Translation2d>(lowerBound, upperBound));
+                    })));
+  }
+}

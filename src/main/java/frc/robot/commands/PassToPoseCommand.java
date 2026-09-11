@@ -35,7 +35,6 @@ public class PassToPoseCommand extends Command {
       isTop = !isTop;
     }
     targetPose = isTop ? BLUE_CORNER_TOP : BLUE_CORNER_BOTTOM;
-
     targetPose = RobotState.isAllianceRed() ? FlippingUtil.flipFieldPose(targetPose) : targetPose;
 
     Transform2d differenceVector = targetPose.minus(estimatedPose);

@@ -20,8 +20,6 @@ public class ShooterOmniwheelConstants {
 
   public static final boolean OPPOSE_MOTOR = true;
 
-  // public static final double STATOR_CURRENT_LIMIT = 60;
-
   public static final int CURRENT_LIMIT_AMPS =
       switch (Constants.getRobotType()) {
         case COMP -> 60;

@@ -17,7 +17,6 @@ public class ShooterOmniwheelIOTalonFX extends GenericRollersIOTalonFX
                 SHOOTER_OMNIWHEEL_CONFIG.inverted()
                     ? InvertedValue.CounterClockwise_Positive
                     : InvertedValue.Clockwise_Positive)
-            // .withStatorCurrentLimit(STATOR_CURRENT_LIMIT)
             .withNeutralMode(SHOOTER_OMNIWHEEL_CONFIG.brake())
             .withReduction(SHOOTER_OMNIWHEEL_CONFIG.reduction()));
     super.setSlot0(GAINS.kP(), GAINS.kI(), GAINS.kD(), GAINS.kS(), GAINS.kV(), GAINS.kA());

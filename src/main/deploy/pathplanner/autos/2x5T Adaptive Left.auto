@@ -68,6 +68,11 @@
         "data" : {
           "name" : "Align and auto shoot full hopper (no intake)"
         }
+      }, {
+        "type" : "path",
+        "data" : {
+          "pathName" : "xT  Left"
+        }
       } ]
     }
   },
