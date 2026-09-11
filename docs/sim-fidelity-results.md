@@ -344,6 +344,54 @@ which is exactly what slip is. The simulated robot really does go where maple-si
 longer knows precisely where that is, so the pose estimator has to lean on vision the way the real
 one does.
 
+### Validated on all five matches
+
+The drivetrain and vision work was checked against every log, not just the one tuned against:
+
+| log | currents | mechanisms | other | aggregate |
+| --- | --- | --- | --- | --- |
+| q54 | 0.1966 → **0.1805** | 0.2333 → **0.2146** | 0.2111 → **0.1986** | 0.1315 → 0.1354 |
+| q93 | 0.1836 → **0.1740** | 0.2298 → 0.2415 | 0.2120 → **0.1981** | 0.1554 → 0.1587 |
+| q14 | 0.1561 → **0.1525** | 0.2160 → **0.2138** | 0.1810 → **0.1734** | 0.0872 → **0.0845** |
+| q103 | 0.1751 → **0.1743** | 0.2292 → 0.2315 | 0.1796 → 0.1858 | 0.1263 → **0.1199** |
+| q64 | 0.1853 → **0.1702** | 0.2570 → **0.2296** | 0.2818 → **0.2722** | 0.1141 → 0.1153 |
+
+The slip model, measured in autonomous on all five:
+
+| log | sim wheel/true | real | sim disagreement | real |
+| --- | --- | --- | --- | --- |
+| q93 | 1.052 | 1.077 | 0.018 | 0.037 |
+| q14 | 1.053 | 1.111 | 0.017 | 0.035 |
+| q103 | 1.055 | 1.096 | 0.017 | 0.038 |
+| q64 | 1.062 | 1.086 | 0.018 | 0.037 |
+
+Simulated disagreement came out low by a factor of two in **every** match, which is what makes it a
+model error rather than noise. Checked first that it was not an artifact of the two signals the
+metric is built from being logged at different rates -- they are not, 37.3/43.5 Hz real against
+37.3/39.0 Hz simulated -- and then widened the per-wheel scatter from ±3% to ±5.3%, which puts
+simulated disagreement at 0.029 against a real 0.028-0.038.
+
+### Realism and replay agreement pull in opposite directions
+
+Widening that scatter made the **nRMSE fit slightly worse**, by about 0.01 per category on both
+logs it was checked against:
+
+| | q54 | q103 |
+| --- | --- | --- |
+| currents, ±3% → ±5.3% | 0.1805 → 0.1822 | 0.1743 → 0.1847 |
+| mechanisms | 0.2146 → 0.2249 | 0.2315 → 0.2364 |
+| autonomous disagreement | 0.0210 → **0.0292** | 0.0171 → **0.0298** |
+
+This is not a defect in either number, it is the two goals disagreeing. nRMSE measures agreement
+with **one particular run**, and noise is by definition not predictable: giving the simulation
+realistic odometry error makes its trajectory diverge from the one real trajectory recorded, even
+though its statistics are now right. A simulation with perfect odometry will always replay a
+specific log more closely, and will always lie about how much the pose estimator has to work.
+
+**±5.3% is the deliberate choice**, because the purpose here is a simulation that behaves like a
+robot rather than one that reproduces a transcript. If replay agreement matters more for some piece
+of work, `ODOMETRY_SCALE_SCATTER` is one constant.
+
 ### What is still not reproduced, and cannot be from a log
 
 Real **teleop** module disagreement is 0.080-0.119 against the simulation's 0.036. The gap is not

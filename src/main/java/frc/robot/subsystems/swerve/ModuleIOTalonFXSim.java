@@ -32,9 +32,16 @@ public class ModuleIOTalonFXSim extends ModuleIOTalonFX {
    * <ul>
    *   <li><b>bias</b> -- wheels always turn further than the robot travels, never less. Lumps
    *       together the slip maple-sim does not produce even at its lowest supported grip.
-   *   <li><b>scatter</b> -- per-wheel tread wear and calibration. At a 1.97 in wheel, +/-3% is
-   *       +/-0.06 in of effective radius, which is an ordinary amount of wear across four wheels.
+   *   <li><b>scatter</b> -- per-wheel tread wear and calibration. At a 1.97 in wheel, +/-5.3% is
+   *       +/-2.6 mm of effective radius, which is an ordinary spread of wear across four wheels.
    * </ul>
+   *
+   * <p>The scatter was widened from +/-3% after validating on all five matches: simulated
+   * disagreement came out at 0.017-0.021 against a real 0.028-0.038, low by about a factor of two
+   * and low in every single match. That consistency is what makes it a model error rather than
+   * noise. Checked first that it was not an artifact of the two signals the metric is built from
+   * being logged at different rates -- they are not, 37.3/43.5 Hz real against 37.3/39.0 Hz
+   * simulated.
    *
    * <p>Applied to the REPORTED position and velocity only, never to the physics -- which is exactly
    * what slip is. The simulated robot really does go where maple-sim says; it just no longer knows
@@ -42,7 +49,7 @@ public class ModuleIOTalonFXSim extends ModuleIOTalonFX {
    */
   private static final double ODOMETRY_SCALE_BIAS = 1.05;
 
-  private static final double[] ODOMETRY_SCALE_SCATTER = {0.03, -0.03, 0.015, -0.015};
+  private static final double[] ODOMETRY_SCALE_SCATTER = {0.053, -0.053, 0.027, -0.027};
 
   private final double odometryScale;
 
