@@ -335,12 +335,20 @@ public class Robot extends LoggedRobot {
   /** This function is called once when test mode is enabled. */
   @Override
   public void testInit() {
-    CommandScheduler.getInstance().cancelAll();
+    robotContainer.testInit();
   }
 
   /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+    robotContainer.testPeriodic();
+  }
+
+  /** This function is called when test mode is disabled. */
+  @Override
+  public void testExit() {
+    robotContainer.testExit();
+  }
 
   /** This function is called once when the robot is first started up. */
   @Override

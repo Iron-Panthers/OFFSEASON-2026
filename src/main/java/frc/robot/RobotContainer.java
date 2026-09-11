@@ -617,6 +617,19 @@ public class RobotContainer {
     swerve.setNeutralMode(NeutralModeValue.Brake);
   }
 
+  public void testInit() {
+    CommandScheduler.getInstance().cancelAll();
+    shooterController.setTargetState(ShooterState.SHOOT);
+  }
+
+  public void testPeriodic() {
+    shooterController.setTargetState(ShooterState.SHOOT);
+  }
+
+  public void testExit() {
+    shooterController.setTargetState(ShooterState.IDLE);
+  }
+
   /** Ran when periodic disabled */
   public void updateDashboardStatus() {
     // TODO: Define all of the dashboard outputs here

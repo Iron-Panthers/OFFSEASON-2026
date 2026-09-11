@@ -66,13 +66,5 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
           < 40;
     }
   }
-  
-  public void testInit() {
-  if () {
-    
-  }
-  else {
-    
-  }
-}
+
 }
