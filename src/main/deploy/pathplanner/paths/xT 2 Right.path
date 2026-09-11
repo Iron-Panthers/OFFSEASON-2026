@@ -8,20 +8,36 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.7651257413997627,
-        "y": 1.286026097271649
+        "x": 2.9187,
+        "y": 0.5984777777777766
       },
       "isLocked": false,
       "linkedName": "Shooting Pose Right"
     },
     {
       "anchor": {
-        "x": 13.068600237247924,
-        "y": 2.630925266903914
+        "x": 5.020723606168446,
+        "y": 0.6297153024911029
       },
       "prevControl": {
-        "x": 12.068600237247924,
-        "y": 2.630925266903914
+        "x": 4.170747330960855,
+        "y": 0.5544009489916969
+      },
+      "nextControl": {
+        "x": 6.2318748738889065,
+        "y": 0.7370325034283574
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.173167259786476,
+        "y": 2.2328351126927632
+      },
+      "prevControl": {
+        "x": 7.538374851720048,
+        "y": 0.8448991696322663
       },
       "nextControl": null,
       "isLocked": false,
@@ -30,25 +46,15 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.391549295774647,
-      "rotationDegrees": 180.0
-    }
-  ],
-  "constraintZones": [
+      "waypointRelativePos": 0.40497335701598625,
+      "rotationDegrees": 144.1463760731025
+    },
     {
-      "name": "Constraints Zone",
-      "minWaypointRelativePos": 0.4632290786136949,
-      "maxWaypointRelativePos": 0.669484361792056,
-      "constraints": {
-        "maxVelocity": 0.1,
-        "maxAcceleration": 4.0,
-        "maxAngularVelocity": 540.0,
-        "maxAngularAcceleration": 720.0,
-        "nominalVoltage": 12.0,
-        "unlimited": false
-      }
+      "waypointRelativePos": 0.8987566607460002,
+      "rotationDegrees": 179.87427045123337
     }
   ],
+  "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
@@ -61,7 +67,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": -124.04593735660154
   },
   "reversed": false,
   "folder": "Right Paths (make these)",

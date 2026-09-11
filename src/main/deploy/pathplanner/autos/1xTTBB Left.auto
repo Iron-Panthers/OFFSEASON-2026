@@ -11,9 +11,15 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "Auto shoot full hopper (no intake)"
+          }
+        },
+        {
           "type": "path",
           "data": {
-            "pathName": "2xTB 1 I Right"
+            "pathName": "2xTB 2 I Left"
           }
         },
         {
@@ -25,37 +31,19 @@
         {
           "type": "named",
           "data": {
-            "name": "Auto shoot full hopper"
+            "name": "Auto shoot full hopper (no intake)"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "2xTB 2 I Right"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Smart zero"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Auto shoot full hopper"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "xT 2 Right"
+            "pathName": "xB Left"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Right Autos (make these)",
+  "folder": "Left Autos (auto generated)",
   "choreoAuto": false
 }

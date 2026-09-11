@@ -113,7 +113,25 @@ public class VisionConstants {
         default -> new Transform3d[0];
       };
 
-  public static final List<TagCountDeviation> TAG_COUNT_DEVIATIONS =
+  public static final List<TagCountDeviation> HIGH_RES_TAG_COUNT_DEVIATIONS =
+      switch (getRobotType()) {
+          // TODO: tune these?
+        default -> List.of(
+            // 1 tag
+            new TagCountDeviation(
+                new UnitDeviationParams(0.007329, 0, 0),
+                new UnitDeviationParams(0.007329, 0, 0),
+                new UnitDeviationParams(0.0166, 0, 0)),
+            // 2 tag
+            new TagCountDeviation(
+                new UnitDeviationParams(0.00162493, 0, 0),
+                new UnitDeviationParams(0.0010625, 0, 0)),
+            // 3+ tag
+            new TagCountDeviation(
+                new UnitDeviationParams(0, 0.0, 0.001), new UnitDeviationParams(0, 0, 0.0001)));
+      };
+
+  public static final List<TagCountDeviation> LOW_RES_TAG_COUNT_DEVIATIONS =
       switch (getRobotType()) {
           // TODO: tune these?
         default -> List.of(
