@@ -44,7 +44,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Auto shoot full hopper"
+            "name": "Align and auto shoot full hopper (no intake)"
           }
         },
         {
@@ -81,7 +81,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Auto shoot full hopper"
+            "name": "Align and auto shoot full hopper (no intake)"
           }
         },
         {

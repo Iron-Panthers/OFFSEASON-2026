@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -83,6 +84,7 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonvision;
 import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -384,12 +386,6 @@ public class RobotContainer {
 
     NamedCommands.registerCommand(
         "Check If Off", new WaitUnitlRobotStuckCommand(swerve, shootingPoseSupplier));
-    // (RobotState.getInstance().getPathPlannerTargetPose()).nearest(
-    //     List.<Pose2d>of(
-    //     new Pose2d(3.245, 0.881, new Rotation2d(66.19 * Math.PI / 180)),
-    //     new Pose2d(3.245, FlippingUtil.fieldSizeY - 0.881, new Rotation2d((-66.19) * Math.PI /
-    // 180)))
-    // );
     Supplier<Pose2d> flippedShootingPoseSupplier =
         () -> {
           return RobotState.isAllianceRed()
@@ -398,26 +394,28 @@ public class RobotContainer {
         };
     NamedCommands.registerCommand(
         "Translate To Shoot",
-        ((new AlignToPoseCommand(
-                        swerve,
-                        shootingPoseSupplier,
-                        true,
-                        ((autoChooser == null
-                            ? false
-                            : autoChooser.get().getName().contains("Right"))),
-                        67)
-                    .raceWith(new WaitUnitlRobotStuckCommand(swerve, shootingPoseSupplier)))
-                .repeatedly())
-            .until(
-                () -> {
-                  return flippedShootingPoseSupplier
-                          .get()
-                          .getTranslation()
-                          .getDistance(RobotState.getInstance().getEstimatedPose().getTranslation())
-                      < .04;
-                })
-            .andThen(new InstantCommand(() -> RobotState.getInstance().resetDynamicObstacles()))
-            .andThen(shooterController.setTargetStateCommand(ShooterState.TOTAL_SPIN_UP)));
+        Commands.defer(
+            () -> {
+              if (!RobotState.getInstance().isAutoAdaptive()) {
+                return new InstantCommand();
+              }
+              boolean isRight =
+                  autoChooser != null && autoChooser.get().getName().contains("Right");
+              return ((new AlignToPoseCommand(swerve, shootingPoseSupplier, true, isRight, 67)
+                          .raceWith(new WaitUnitlRobotStuckCommand(swerve, shootingPoseSupplier)))
+                      .repeatedly())
+                  .until(
+                      () ->
+                          flippedShootingPoseSupplier
+                                  .get()
+                                  .getTranslation()
+                                  .getDistance(
+                                      RobotState.getInstance().getEstimatedPose().getTranslation())
+                              < .04)
+                  .andThen(
+                      new InstantCommand(() -> RobotState.getInstance().resetDynamicObstacles()));
+            },
+            Set.of(swerve)));
   }
 
   private void configureBindings() {

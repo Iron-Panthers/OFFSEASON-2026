@@ -80,7 +80,7 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                               > FlippingUtil.fieldSizeY / 2 - 1.8
                           && Math.abs(FlippingUtil.fieldSizeX / 2 - otherRobotTranslation2d.getX())
                               > 2) {
-                        RobotState.getInstance().setAutoUnderTrench(false);
+                        RobotState.getInstance().setIsAutoUnderTrench(false);
                       }
                       Logger.recordOutput(
                           "Not_Wall_vertical",
@@ -93,7 +93,7 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                           new Pose2d(otherRobotTranslation2d, Rotation2d.kZero));
                       Translation2d lowerBound = otherRobotTranslation2d.minus(halfWidth);
                       Translation2d upperBound = otherRobotTranslation2d.plus(halfWidth);
-
+                      RobotState.getInstance().setIsAutoAdaptive(true);
                       RobotState.getInstance()
                           .addDynamicObstacle(
                               new Pair<Translation2d, Translation2d>(lowerBound, upperBound));

@@ -31,7 +31,7 @@ public class AlignToPoseCommand extends Command {
         RobotState.isAllianceRed()
             ? () -> FlippingUtil.flipFieldPose(approachPose.get())
             : approachPose;
-    RobotState.getInstance().setAutoUnderTrench(underTrench);
+    RobotState.getInstance().setIsAutoUnderTrench(underTrench);
 
     addRequirements(drive);
   }
@@ -74,7 +74,7 @@ public class AlignToPoseCommand extends Command {
     this(
         drive,
         approachPose,
-        RobotState.getInstance().getIsAutoUnderTrench(),
+        RobotState.getInstance().isAutoUnderTrench(),
         endOnAccurate); // I'm so sorry for ewhoeveri s reading this
     this.stayOnCurrentSide = true;
     this.stayOnRightSide = stayOnRightSide;
@@ -92,7 +92,7 @@ public class AlignToPoseCommand extends Command {
                   RobotState.getInstance()
                       .getPathPlannerApproachPoseCommand(
                           currentApproachPose,
-                          RobotState.getInstance().getIsAutoUnderTrench(),
+                          RobotState.getInstance().isAutoUnderTrench(),
                           stayOnCurrentSide,
                           stayOnRightSide));
       poseAlignCommand.initialize();
