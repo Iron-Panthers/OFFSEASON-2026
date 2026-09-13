@@ -68,15 +68,7 @@ public class DriveConstants {
             4.5,
             10,
             6);
-          // Matches COMP. maxLinearVelocity scales joystick magnitude directly
-          // (TeleopTranslationController) and caps desaturateWheelSpeeds, so the old 3.75 meant a
-          // replayed stick deflection commanded 25% less speed than the real robot: sim median
-          // speed 0.866 m/s against a real 1.557. That showed up as an exactly -23.229 rad/s
-          // peak_shift on all four DriveVelRadsScalar signals, matching
-          // 5.0/1.97in - 3.75/1.925in to four decimals.
-          //
-          // The track was also square (22.5 x 22.5) where the real robot is rectangular, which
-          // mis-maps omega to module speed, and the wheel radius was 1.925 vs 1.97 in.
+          // Matches COMP.
         case SIM -> new DrivebaseConfig(
             Units.inchesToMeters(1.97),
             Units.inchesToMeters(19.75),
@@ -271,10 +263,7 @@ public class DriveConstants {
             (45.0 / 15) * (17.0 / 27) * (50.0 / 16), // MK4i L2.5 16 tooth
             150.0 / 7,
             3.125);
-          // Gains match COMP. The SIM steer gains carried kA = 0.387 against COMP's 0, which with
-          // MotionMagicAcceleration 64 is a ~25 V acceleration feedforward on every profile ramp:
-          // steer stator current churned 19.67 A per sample in sim against 6.05 A real, on
-          // near-identical commanded motion.
+          // Gains match COMP.
         case SIM -> new ModuleConstants(
             new Gains(0.24, 2.4, 0.08, 70, 0, 0),
             new MotionProfileGains(4, 64, 640),
@@ -292,31 +281,8 @@ public class DriveConstants {
    * comp bot drivebase
    */
   /**
-   * Tyre grip used by maple-sim, which is what decides when a wheel breaks traction.
-   *
-   * <p>maple-sim already models slip: it caps the force a module can put into the floor at {@code
-   * mu * normalForce} and lets the wheel spin when the controller asks for more. The question is
-   * only where that cap sits, and at 1.4 it sat high enough that the simulated robot effectively
-   * never slipped.
-   *
-   * <p>Measured on q54 with {@code scripts/drive_vision_fidelity.py}, which fits a rigid-body
-   * motion to the four module states and asks how much of the wheels' motion no rigid body can
-   * explain:
-   *
-   * <table>
-   * <tr><th>metric</th><th>simulated at 1.4</th><th>real</th></tr>
-   * <tr><td>module disagreement, fraction of speed</td><td>0.061</td><td>0.187</td></tr>
-   * <tr><td>gyro yaw rate minus module yaw rate</td><td>0.156 rad/s</td><td>1.012 rad/s</td></tr>
-   * <tr><td>wheel path / actual path</td><td>1.027</td><td>1.177</td></tr>
-   * </table>
-   *
-   * <p>The last row is the plainest statement of it: the real robot's wheels turn far enough to
-   * carry it 17.7% further than it actually went, and the simulated robot's only 2.7%.
-   *
-   * <p><b>The real figure is an upper bound, not a target.</b> A match also contains being shoved
-   * by other robots, which no tyre model reproduces and which shows up in exactly these three
-   * metrics. Set from published FRC tread-on-carpet values rather than fitted to the gap, so the
-   * simulation slips when the physics says it should rather than whenever it needs to.
+   * Tyre friction coefficient; maple-sim skids a wheel when demanded force exceeds it. Published
+   * tread-on-carpet value, not fitted. Remaining slip is modelled in ModuleIOTalonFXSim.
    */
   public static final double WHEEL_COEFFICIENT_OF_FRICTION = 1.05;
 
@@ -324,10 +290,6 @@ public class DriveConstants {
       mapleSimConfig = // TODO: update this to be similar to comp bot drive base
       DriveTrainSimulationConfig.Default()
               .withRobotMass(Kilograms.of(54.4311))
-              // Was never set, so maple-sim used its 0.76 x 0.76 m default against the real
-              // 33 x 37 in bumpers. That understates rotational inertia (5.24 vs 7.19 kg m^2)
-              // and the collision footprint, and RobotSimState derives the intake width from
-              // these dimensions, so it silently sized the intake too.
               .withBumperSize(
                   Meters.of(DRIVE_CONFIG.bumperWidthX()), Meters.of(DRIVE_CONFIG.bumperWidthY()))
               .withCustomModuleTranslations(MODULE_TRANSLATIONS)

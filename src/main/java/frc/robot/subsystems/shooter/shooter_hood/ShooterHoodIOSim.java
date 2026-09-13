@@ -68,9 +68,7 @@ public class ShooterHoodIOSim extends GenericSuperstructureIOSim implements Shoo
     shooterHoodSim.setInputVoltage(appliedVoltage);
     shooterHoodSim.update(0.02);
 
-    // Mechanism units, then up to rotor units for the sensor. The old code DIVIDED by the
-    // reduction where the rack multiplied -- the two superstructure sims applied gearing in
-    // opposite directions, so at most one could have been right.
+    // Mechanism units, converted to rotor units for the sensor.
     double mechanismRotations = shooterHoodSim.getAngleRads() / (2 * Math.PI);
     double mechanismRPS = shooterHoodSim.getVelocityRadPerSec() / (2 * Math.PI);
 

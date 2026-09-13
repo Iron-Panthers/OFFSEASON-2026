@@ -2,183 +2,18 @@ package frc.robot.subsystems.shooter.shooter_omniwheel;
 
 import static frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheelConstants.*;
 
-import com.ctre.phoenix6.sim.ChassisReference;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.simulation.FlywheelSim;
-import frc.robot.lib.generic_subsystems.rollers.*;
-
-// TODO: likely have to update shooterflywheelsiosim -- adjust values + motors might be wrong
+import frc.robot.lib.generic_subsystems.rollers.GenericRollersIOSim;
 
 public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements ShooterOmniwheelIO {
-
-  private final FlywheelSim shooterOmniwheelsSim;
-  private final SimpleMotorFeedforward feedforward;
-  private double rotorPositionRotations = 0.0;
-  private double velocitySetpointRPS = 0.0;
-
-  /**
-   * Motors the plant models, and motors actually on the mechanism.
-   *
-   * <p>These differ where the plant lumps a multi-motor mechanism into one motor. The logged
-   * signals are PER MOTOR, because {@code GenericRollersIOTalonFX} reads the leader Talon only, but
-   * the battery and {@code MotorOutputManager} have to see every motor.
-   */
-  private static final int PLANT_MOTORS = 1;
-
-  private static final int PACK_MOTORS = 1;
-
-  private static final DCMotor MOTORS = DCMotor.getKrakenX60Foc(PLANT_MOTORS);
-
-  /**
-   * Steady-state drag, in stator amps per motor per mechanism rad/s.
-   *
-   * <p>Measured from real match logs: median stator current over samples where the mechanism was
-   * spinning, powered, and not accelerating, divided by the median speed. Measured 9.8-35.1 A at
-   * 382 rad/s. The widest spread of any mechanism, because the omniwheel runs in short bursts and
-   * rarely holds a steady speed long enough to sample.
-   *
-   * <p>Modelled as viscous (through the origin) rather than Coulomb because every match runs this
-   * mechanism at essentially one speed, so the two are indistinguishable from the data. Viscous is
-   * the safer of the two: it goes to zero at rest instead of chattering there.
-   *
-   * <p><b>Left at the steady-state value, unlike the other rollers, because no drag coefficient can
-   * fix this mechanism.</b> The other four were retargeted so that {@code transient + coeff *
-   * speed} lands on the real mean; here the transient ALONE is 110 A mean stator while spinning,
-   * against a real mean of 41 A, so the solve returns a negative coefficient. The simulated
-   * omniwheel is generating far too much current on its own spin-ups and spin-downs -- it is
-   * commanded in short bursts and the plant slews much harder than the real one. Its mean SUPPLY
-   * current is nonetheless close (4.52 A simulated against 5.24 A real) because the duty cycle is
-   * low, which is why this was not visible before the stator current became honest.
-   */
-  private static final double DRAG_AMPS_PER_RAD_PER_SEC = 0.0552;
-
+  // Drag left at its unloaded value: this plant's transients already exceed the real current.
   public ShooterOmniwheelIOSim() {
     super(
         SHOOTER_OMNIWHEEL_CONFIG.motorID(),
         CURRENT_LIMIT_AMPS,
         SHOOTER_OMNIWHEEL_CONFIG.inverted(),
         SHOOTER_OMNIWHEEL_CONFIG.brake(),
-        SHOOTER_OMNIWHEEL_CONFIG.reduction());
-    super.setSlot0(GAINS.kP(), GAINS.kI(), GAINS.kD(), GAINS.kS(), GAINS.kV(), GAINS.kA());
-    // Create feedforward controller using configured gains
-    feedforward = new SimpleMotorFeedforward(GAINS.kS(), GAINS.kV(), GAINS.kA());
-
-    shooterOmniwheelsSim =
-        new FlywheelSim(
-            LinearSystemId.createFlywheelSystem(
-                DCMotor.getKrakenX60Foc(1),
-                PHYSICAL_CONSTANTS.momentOfInertia(),
-                SHOOTER_OMNIWHEEL_CONFIG.reduction()),
-            MOTORS);
-
-    // Enable physics simulation for Phoenix
-    var simState = talon.getSimState();
-    simState.Orientation =
-        SHOOTER_OMNIWHEEL_CONFIG.inverted()
-            ? ChassisReference.Clockwise_Positive
-            : ChassisReference.CounterClockwise_Positive;
-
-    frc.robot.utility.SimBattery.getInstance()
-        .register(() -> lastSupplyCurrentAmps, CURRENT_LIMIT_AMPS * PACK_MOTORS);
-  }
-
-  /** Last computed supply current, published to SimBattery. */
-  private double lastSupplyCurrentAmps = 0.0;
-
-  @Override
-  public void runVelocity(double velocity) {
-    velocitySetpointRPS = velocity;
-    super.runVelocity(velocity);
-  }
-
-  @Override
-  public void updateInputs(GenericRollersIOInputs inputs) {
-    double currentVelocityRPS =
-        shooterOmniwheelsSim.getAngularVelocityRadPerSec() / (2.0 * Math.PI);
-
-    // Set TalonFX sim state
-    talon.getSimState().setSupplyVoltage(RobotController.getBatteryVoltage());
-    talon.getSimState().setRawRotorPosition(rotorPositionRotations);
-    talon.getSimState().setRotorVelocity(currentVelocityRPS * SHOOTER_OMNIWHEEL_CONFIG.reduction());
-
-    // Regulate ROTOR velocity, matching Phoenix VelocityVoltage on the real robot.
-    // GenericRollersIOTalonFX never sets SensorToMechanismRatio, so the setpoint the subsystem
-    // passes down is in rotor rot/s; comparing it against MECHANISM rot/s made the sim settle at
-    // a different speed for the same command, which is why the SIM reduction constants had been
-    // fudged to the reciprocal of the real ones to compensate.
-    double rotorVelocityRPS = currentVelocityRPS * SHOOTER_OMNIWHEEL_CONFIG.reduction();
-    double feedforwardVoltage = feedforward.calculate(velocitySetpointRPS);
-    double error = velocitySetpointRPS - rotorVelocityRPS;
-    double proportionalVoltage = GAINS.kP() * error;
-    double appliedVoltage = feedforwardVoltage + proportionalVoltage;
-    // Clamp to the battery's ACTUAL voltage so sag reduces available torque.
-    // The old hardcoded +/-12 made brownouts cosmetic: the pack could read 6 V
-    // while the motor still behaved as though it had a full 12 V to work with.
-    double availableVolts = RobotController.getBatteryVoltage();
-    appliedVoltage = Math.max(-availableVolts, Math.min(availableVolts, appliedVoltage));
-    if (coasting) {
-      // Commanded to stop: coast, matching the Talon's NeutralOut on the real robot.
-      appliedVoltage = 0.0;
-    } else {
-      // Enforce the supply limit on the VOLTAGE, not just on the reported current. Clamping
-      // only the number would leave the mechanism accelerating as though unlimited; a real
-      // current-limited motor also makes less torque. CURRENT_LIMIT_AMPS is per motor, and this
-      // mechanism has 1.
-      appliedVoltage =
-          frc.robot.utility.SimCurrentLimit.clampToSupplyLimit(
-              appliedVoltage,
-              shooterOmniwheelsSim.getAngularVelocityRadPerSec(),
-              SHOOTER_OMNIWHEEL_CONFIG.reduction(),
-              MOTORS,
-              availableVolts,
-              CURRENT_LIMIT_AMPS * 1.0);
-    }
-
-    // Simulate physics. FlywheelSim is frictionless, so the drag the real mechanism fights all
-    // match has to be injected by hand: spend the voltage it costs, and the mechanism settles
-    // where the real one does and coasts down at the real rate instead of freewheeling.
-    double dragVolts =
-        frc.robot.utility.SimCurrentLimit.dragVolts(
-            shooterOmniwheelsSim.getAngularVelocityRadPerSec(),
-            MOTORS,
-            DRAG_AMPS_PER_RAD_PER_SEC * PLANT_MOTORS);
-    shooterOmniwheelsSim.setInputVoltage(appliedVoltage - dragVolts);
-    shooterOmniwheelsSim.update(0.02);
-
-    // Update position tracking
-    currentVelocityRPS = shooterOmniwheelsSim.getAngularVelocityRadPerSec() / (2.0 * Math.PI);
-    rotorPositionRotations += currentVelocityRPS * 0.02;
-
-    inputs.connected = true;
-    // Was never published: the sim logged a single 0.0 record for the whole match
-    // while the real robot reached 6954.9 rad, scoring as a pure measurement hole.
-    inputs.positionRads = rotorPositionRotations * 2.0 * Math.PI;
-    inputs.velocityRadsPerSec = shooterOmniwheelsSim.getAngularVelocityRadPerSec();
-    inputs.appliedVolts = appliedVoltage;
-    // Stator current computed directly rather than read back from the plant. FlywheelSim
-    // reports zero at every steady state (it inverts its own plant to get back-EMF, so the two
-    // terms cancel), which is exactly the current the drag above is there to create.
-    //
-    // Reported PER MOTOR, because GenericRollersIOTalonFX logs the leader Talon only while the
-    // plant models the whole group. Supply current is lower than stator by roughly the duty
-    // cycle, since the motor controller is a buck converter.
-    double statorAmps =
-        coasting
-            ? 0.0
-            : frc.robot.utility.SimCurrentLimit.statorAmps(
-                    appliedVoltage,
-                    shooterOmniwheelsSim.getAngularVelocityRadPerSec(),
-                    SHOOTER_OMNIWHEEL_CONFIG.reduction(),
-                    MOTORS)
-                / PLANT_MOTORS;
-    double dutyCycle = availableVolts > 0.0 ? Math.abs(appliedVoltage) / availableVolts : 0.0;
-    inputs.statorCurrentAmps = statorAmps;
-    inputs.supplyCurrentAmps = statorAmps * dutyCycle;
-    // The pack sees every motor on the mechanism, not just the one the log reports.
-    lastSupplyCurrentAmps = inputs.supplyCurrentAmps * PACK_MOTORS;
-    reportedSupplyCurrentAmps = lastSupplyCurrentAmps;
+        SHOOTER_OMNIWHEEL_CONFIG.reduction(),
+        new RollerSim(1, 1, PHYSICAL_CONSTANTS.momentOfInertia(), 0.0552));
+    setSlot0(GAINS.kP(), GAINS.kI(), GAINS.kD(), GAINS.kS(), GAINS.kV(), GAINS.kA());
   }
 }

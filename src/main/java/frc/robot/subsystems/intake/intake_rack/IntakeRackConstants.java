@@ -81,41 +81,14 @@ public class IntakeRackConstants {
       double maxExtensionMeters,
       boolean simulateGravity) {}
 
-  /**
-   * Upper travel bound for the simulated rack, in mechanism rotations.
-   *
-   * <p>NOT a mechanical hard stop. An earlier value of 11.29 was inferred from q54, where the real
-   * rack never exceeded 11.290 and stalled against whatever stopped it for most of the match. The
-   * q93 validation log disproved that: the real rack reaches **11.68** there, past the 11.6
-   * commanded target, with 0.32 V mean applied and 1.87 A mean draw -- no stall at all. So q54's
-   * ceiling was that match's obstruction, not the mechanism's limit.
-   *
-   * <p>Capping the sim at 11.29 left the controller with permanent error against an unreachable
-   * target, pushing forever: 2540 amp-seconds against a real 213 on q93, a 12x over-draw, which
-   * alone accounted for that log's currents score being 44% worse than q54's.
-   *
-   * <p>Set above every observed value so it bounds the ElevatorSim without ever binding.
-   */
+  /** Sim travel bound in mechanism rotations, above all observed real travel (11.68 in q93). */
   public static final double RACK_HARD_STOP_ROTATIONS = 13.0;
 
-  // In MECHANISM rotations now that the sim applies SensorToMechanismRatio.
   private static final double RACK_HARD_STOP_METERS =
       RACK_HARD_STOP_ROTATIONS * 2.0 * Math.PI * 0.1;
 
   public static final IntakeRackPhysicalConstants PHYSICAL_CONSTANTS =
       switch (Constants.getRobotType()) {
-          // Travel limits bound the ElevatorSim without binding in normal operation. The old
-          // +/-15 m (= +/-60.8 rotations) was effectively no bound at all. Previously the real
-          // robot
-          // never exceeds
-          // 11.290 rotations all match: it parks at 11.18-11.20 against a mechanical stop and
-          // holds 85-102 A stator / 25-30 A supply for 86.7% of the match, because the commanded
-          // INTAKE target of 11.6 sits past that stop. The old +/-15 m (= +/-60.8 rotations) let
-          // the sim converge cleanly and draw nothing, which is most of the 930.7 vs 63.3
-          // amp-second gap. 11.29 rot at a 0.1 m drum = 11.29 * 2*pi * 0.1 / reduction metres.
-          //
-          // The real robot's INTAKE target is deliberately left alone -- the goal is for the sim
-          // to reproduce the Worlds logs, not to change the robot that produced them.
         case SIM -> new IntakeRackPhysicalConstants(0.1, 0.1, 0, RACK_HARD_STOP_METERS, false);
         case COMP -> new IntakeRackPhysicalConstants(0.1, 0, 0, 0, false);
         default -> new IntakeRackPhysicalConstants(0.1, 0, 0, 0, false);

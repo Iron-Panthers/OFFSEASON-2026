@@ -9,9 +9,7 @@ public class ShooterAcceleratorConstants {
         case SIM -> new ShooterAcceleratorConfig(
             CAN.at(38, "Shooter Accelerator 1"),
             CAN.at(39, "Shooter Accelerator 2"),
-            // SIM now uses the real robot's value. The old SIM number was fudged to compensate
-            // for the sim PID regulating MECHANISM velocity where the real TalonFX regulates
-            // ROTOR velocity; that is fixed in the IOSim, so the honest value belongs here.
+            // Matches COMP.
             1.5,
             true,
             false,

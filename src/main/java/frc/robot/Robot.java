@@ -139,19 +139,6 @@ public class Robot extends LoggedRobot {
         if (matchInputs.autoName() != null && !matchInputs.autoName().isBlank()) {
           System.setProperty("ai.replay.auto.name", matchInputs.autoName());
         }
-        if (Boolean.getBoolean("ai.replay.fast")) {
-          // Free-run the loop instead of pacing to wall clock.
-          //
-          // SMOKE TESTS ONLY -- not valid for fidelity comparison. AdvantageKit
-          // stamps records with wall-clock time, so a 165s match lands in the log
-          // as ~48s of timestamps and every signal is time-compressed against the
-          // real log. Any control code that reads FPGA time deltas also sees ~6ms
-          // instead of 20ms. Use realtime for anything being measured.
-          System.out.println(
-              "[Replay] WARNING: fast mode compresses log timestamps; "
-                  + "do NOT use for fidelity comparison.");
-          setUseTiming(false);
-        }
       } catch (Exception e) {
         throw new IllegalStateException("Failed to load replay log: " + replayInputsPath, e);
       }
@@ -163,11 +150,7 @@ public class Robot extends LoggedRobot {
       robotContainer.attachPoseAnchor(
           Double.parseDouble(System.getProperty("ai.replay.anchor", "10.0")));
 
-      // Seed the starting pose for every replay. Previously this happened only under
-      // -Preplay.teleopOnly, so an auto replay began wherever the drivetrain happened to be
-      // initialised: in q54 that was (13.64, 4.27, 180.0deg) against the real robot's
-      // (12.19, 7.45, 89.8deg) -- 3.5 m and 90 degrees apart before a wheel turned, which
-      // makes the whole auto segment a comparison between two robots in different places.
+      // Seed the starting pose for every replay, auto included.
       double[] startPose = replayPlayer.startPose();
       if (startPose != null) {
         PoseAnchor.seedPose(
@@ -245,9 +228,7 @@ public class Robot extends LoggedRobot {
       robotContainer.updatePoseAnchor(replayPlayer);
       if (replayPlayer.isFinished() && !aiShutdownInitiated) {
         aiShutdownInitiated = true;
-        // Shut down from a separate thread, matching the pattern used by the
-        // auto-shutdown path. Calling endCompetition() inline from within
-        // robotPeriodic does not stop the loop.
+        // endCompetition() called inline from robotPeriodic does not stop the loop.
         new Thread(
                 () -> {
                   try {

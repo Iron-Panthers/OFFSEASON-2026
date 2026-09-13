@@ -102,13 +102,8 @@ The player reads `DriverStation/Joystick{0,1}/{AxisValues,ButtonValues,POVs}` pl
 | --- | --- | --- |
 | `-Preplay.inputs=<path>` | — | Real `.wpilog` to replay. Required to enter this mode. |
 | `-Preplay.anchor=<sec>` | `10.0` | Teleop pose re-anchor interval. `0` disables. |
-| `-Preplay.battery=<V>:<ohms>` | `12.8:0.02` | Per-match battery nominal voltage and internal resistance. |
+| `-Preplay.battery=<V>:<ohms>[:<V/min>]` | `12.24:0.0112:0.6` | Per-match battery nominal voltage, internal resistance, and droop. |
 | `-Preplay.teleopOnly` | off | Skip auto, start at the logged teleop-entry pose. |
-| `-Preplay.fast` | off | **Smoke tests only — see warning below.** |
-
-### `-Preplay.fast` is not valid for fidelity work
-
-It calls `setUseTiming(false)` to free-run the loop. AdvantageKit then stamps records with **wall-clock** time, so a 165 s match lands in the log as roughly 48 s of timestamps and every signal is time-compressed against the real log. Control code that reads FPGA time deltas also sees ~6 ms instead of 20 ms. Use realtime (~3 min per match) for anything being measured. The sim prints a warning if you use it.
 
 ### What is and is not trustworthy after auto
 

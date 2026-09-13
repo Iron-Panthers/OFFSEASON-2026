@@ -12,9 +12,7 @@ public class ShooterFlywheelConstants {
             CAN.at(37, "Shooter Flywheel 2"),
             CAN.at(0, "Shooter Flywheel 3"),
             CAN.at(0, "Shooter Flywheel 4"),
-            // SIM now uses the real robot's value. The old SIM number was fudged to compensate
-            // for the sim PID regulating MECHANISM velocity where the real TalonFX regulates
-            // ROTOR velocity; that is fixed in the IOSim, so the honest value belongs here.
+            // Matches COMP.
             1.411,
             false,
             false,
@@ -44,8 +42,7 @@ public class ShooterFlywheelConstants {
   public static final double VELOCITY_ADJUSTMENT = 0.98;
   public static final int CURRENT_LIMIT_AMPS =
       switch (Constants.getRobotType()) {
-          // SIM used to be 40 while the real robot runs 20; the sim should model the
-          // limit the real motor controller actually enforces.
+          // Matches COMP.
         case SIM -> 20;
         default -> 20;
       };

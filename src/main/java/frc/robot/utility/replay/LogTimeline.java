@@ -5,15 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
-/**
- * An immutable, time-ordered series of values with zero-order-hold lookup.
- *
- * <p>Zero-order hold means {@link #valueAt(double)} returns the value of the most recent sample at
- * or before the requested time — the same semantics the driver station uses, where a joystick value
- * persists until the next packet arrives.
- *
- * <p>Pure data: no HAL, no WPILib runtime dependency, unit-testable without a robot.
- */
+/** Immutable time series with zero-order-hold lookup: a value holds until the next sample. */
 public final class LogTimeline<T> {
 
   private final double[] timestamps;

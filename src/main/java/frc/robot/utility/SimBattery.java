@@ -7,68 +7,27 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Simulated battery with load-dependent voltage sag.
- *
- * <p>Before this existed the simulation ran at a fixed 12 V, so brownouts were impossible and
- * motors never lost torque under load. Real match logs show the pack dropping to 5.95 V, and in the
- * one match where it stayed low the flywheel measurably failed to reach speed — so the sag has to
- * feed back into motor behaviour, not merely be reported.
- *
- * <p>That feedback comes for free: every {@code *IOSim} already calls {@code
- * setSupplyVoltage(RobotController.getBatteryVoltage())}, and {@link RoboRioSim#setVInVoltage} is
- * what that reads. Publishing the sagged voltage here reaches every motor on the robot.
- *
- * <p>Model: {@code V = nominal - I_total * R_internal}. Nominal voltage and internal resistance are
- * per-match tunable because battery condition varied between matches.
+ * Simulated battery: {@code V = OCV(t) - I_total * R}, published to {@link RoboRioSim} so every
+ * motor sim sees the sag. Parameters are fitted per match; see docs/sim-fidelity-results.md.
  */
 public final class SimBattery {
 
   /** Absolute floor; a real pack under a dead short still holds some potential. */
   public static final double MIN_VOLTAGE = 4.0;
 
-  /** roboRIO brownout threshold. */
-  /** Real q54 logs SystemStats/BrownoutVoltage = 6.75. */
+  /** roboRIO brownout threshold, as logged by the real robot. */
   public static final double BROWNOUT_VOLTAGE = 6.75;
 
-  /**
-   * Open-circuit voltage at match start.
-   *
-   * <p>Fitted across four real matches (V = a + b*t + c*I over the enabled window): q54 12.451, q93
-   * 12.074, q14 12.162, q64 12.270. Battery condition varies between matches, so this is per-run
-   * tunable; the default is the middle of that range.
-   */
+  /** Open-circuit voltage at match start; middle of the fitted per-match range. */
   public static final double DEFAULT_NOMINAL_VOLTS = 12.24;
 
-  /**
-   * Pack internal resistance.
-   *
-   * <p>Fitted from the same regression: 11.96, 11.59, 10.51 and 10.90 mOhm across the four matches.
-   * That consistency makes it a genuine constant, unlike the open-circuit voltage and its droop.
-   * The previous 20 mOhm was almost double the real value, so the model sagged roughly twice as
-   * hard as the pack does for a given load.
-   */
+  /** Pack internal resistance; consistent at 10.5-12.0 mOhm across fitted matches. */
   public static final double DEFAULT_RESISTANCE_OHMS = 0.0112;
 
-  /**
-   * Open-circuit voltage droop as the pack discharges, in volts per minute.
-   *
-   * <p>A real battery's no-load voltage falls steadily through a match; without this the simulated
-   * pack ends the match as fresh as it started. Fitted per match: q54 -0.439, q93 -0.345, q14
-   * -0.652, q64 -1.019 V/min. Over a 165 s match that is 0.95 V to 2.80 V of droop.
-   *
-   * <p>It varies far more than the resistance does -- it depends on the battery's state of charge
-   * and health going in -- so it is per-run tunable. q64, the match where the real robot browned
-   * out worst, has by far the steepest droop.
-   */
+  /** Open-circuit voltage lost per enabled minute; varies with the battery, 0.35-1.02 fitted. */
   public static final double DEFAULT_DROOP_VOLTS_PER_MINUTE = 0.6;
 
-  /**
-   * How far a source may transiently exceed its configured supply limit.
-   *
-   * <p>Phoenix supply limits are soft -- {@code SupplyCurrentLowerLimit}/{@code
-   * SupplyCurrentLowerTime} default to 40 A / 1.0 s -- so the real robot overshoots too. Measured
-   * on q54: real drive motors peak at 1.55x their 40 A limit.
-   */
+  /** Phoenix supply limits are soft; real drive motors peak at 1.55x their limit. */
   public static final double LIMIT_OVERSHOOT_FACTOR = 1.5;
 
   private static SimBattery instance;
@@ -95,13 +54,7 @@ public final class SimBattery {
   }
 
   /**
-   * Register a supply-current source, in amps, with the supply limit its motor controller enforces.
-   *
-   * <p>The limit is applied here rather than trusted from the physics sims: WPILib's {@code
-   * FlywheelSim}/{@code ElevatorSim} {@code getCurrentDrawAmps()} is unbounded, and the roller
-   * IOSims drive those sims from their own PID without ever consulting the Talon, so the configured
-   * {@code SupplyCurrentLimit} never reaches the physics. Unclamped, the shooter alone reported 952
-   * A on a single mechanism.
+   * Register a supply-current source with the supply limit its motor controller enforces.
    *
    * @param supplyCurrentAmps signed supply current; negative means regenerating
    * @param limitAmps the configured supply limit, or a non-positive value for no limit
@@ -131,10 +84,7 @@ public final class SimBattery {
     return enabledSeconds;
   }
 
-  /**
-   * Advance the discharge clock. Called once per simulation loop while enabled, so the pack ends a
-   * match measurably flatter than it started.
-   */
+  /** Advance the discharge clock. */
   public void addEnabledTime(double seconds) {
     enabledSeconds += seconds;
   }
@@ -160,9 +110,8 @@ public final class SimBattery {
   }
 
   /**
-   * Apply a {@code "<nominalVolts>:<resistanceOhms>"} configuration string, as supplied by {@code
-   * -Preplay.battery}. Malformed input is ignored so a typo degrades to defaults rather than
-   * crashing a long simulation run.
+   * Apply {@code -Preplay.battery}, {@code "<volts>:<ohms>[:<droopVoltsPerMinute>]"}. Malformed
+   * input is ignored rather than aborting a long run.
    */
   public void configureFromProperty(String property) {
     if (property == null || property.isBlank()) {
@@ -207,8 +156,6 @@ public final class SimBattery {
     for (int i = 0; i < currentSources.size(); i++) {
       double amps = currentSources.get(i).getAsDouble();
       if (!Double.isFinite(amps)) {
-        // A diverging physics sim can emit NaN; letting it through would poison the pack
-        // voltage for every motor and silently wreck the whole run.
         continue;
       }
       double limit = sourceLimitsAmps.get(i);
@@ -216,19 +163,14 @@ public final class SimBattery {
         double cap = limit * LIMIT_OVERSHOOT_FACTOR;
         amps = Math.max(-cap, Math.min(cap, amps));
       }
-      // Sum SIGNED current, matching the real robot's MotorOutputManager/TotalAmps, which
-      // reaches -101.7 A under regenerative braking. Discarding negatives per source made the
-      // two series different measurements and biased the sim mean by +7%.
+      // Signed, like the real TotalAmps, which goes negative under regen.
       total += amps;
     }
     lastCurrentAmps = total;
 
-    // Open-circuit voltage falls as the pack discharges, so the ceiling falls with it.
     double ocv = openCircuitVolts();
 
-    // Clamp the VOLTAGE rather than each current. Regen on the real robot never charges the
-    // pack -- at its most negative (-101.7 A) the real pack still read 9.78 V -- so the model
-    // must not rise above open-circuit voltage even though the signed sum goes negative.
+    // Regen never charges the real pack above open-circuit voltage.
     double raw = ocv - total * resistanceOhms;
     pinnedAtFloor = raw < MIN_VOLTAGE;
     lastVoltage = Math.max(MIN_VOLTAGE, Math.min(ocv, raw));
@@ -236,21 +178,15 @@ public final class SimBattery {
     return lastVoltage;
   }
 
-  /**
-   * Compute the pack voltage, publish it to the simulated roboRIO so every motor sees it, and log
-   * it. Call once per simulation loop.
-   */
+  /** Compute, publish and log the pack voltage. Call once per loop after the arena ticks. */
   public void update() {
-    // Only discharge while the robot is actually driving something.
     if (edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
       addEnabledTime(frc.robot.Constants.PERIODIC_LOOP_SEC);
     }
 
     double voltage = computeVoltage();
 
-    // Published once rather than every loop, and from here rather than getInstance() so that
-    // computeVoltage()/register() stay callable without an initialised HAL -- unit tests
-    // exercise this class directly.
+    // Set here rather than in getInstance() so tests can use this class without the HAL.
     if (!brownoutThresholdPublished) {
       RoboRioSim.setBrownoutVoltage(BROWNOUT_VOLTAGE);
       brownoutThresholdPublished = true;
@@ -258,8 +194,6 @@ public final class SimBattery {
 
     RoboRioSim.setVInVoltage(voltage);
     Logger.recordOutput("SimBattery/Voltage", voltage);
-    // Surfaced so a broken current model is visible instead of being reported as a plausible
-    // mean: the floor silently pinned 87 samples in the baseline run.
     Logger.recordOutput("SimBattery/VoltagePinnedAtFloor", pinnedAtFloor);
     Logger.recordOutput("SimBattery/TotalCurrentAmps", lastCurrentAmps);
     Logger.recordOutput("SimBattery/BrownedOut", brownedOut);

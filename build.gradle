@@ -247,9 +247,6 @@ tasks.withType(JavaExec).configureEach {
     if (project.hasProperty('replay.battery')) {
         jvmArgs "-Dai.replay.battery=${project.getProperty('replay.battery')}"
     }
-    if (project.hasProperty('replay.fast')) {
-        jvmArgs '-Dai.replay.fast=true'
-    }
     if (project.hasProperty('replay.teleopOnly')) {
         jvmArgs '-Dai.replay.teleopOnly=true'
     }

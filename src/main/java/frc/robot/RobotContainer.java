@@ -196,11 +196,6 @@ public class RobotContainer {
                       DriveConstants.MODULE_CONFIGS[2], driveSimulation.getModules()[2]),
                   new ModuleIOTalonFXSim(
                       DriveConstants.MODULE_CONFIGS[3], driveSimulation.getModules()[3]));
-          // Same three cameras as COMP, in the same order and at the same transforms. This used
-          // to pass ONE camera -- index 3 of the old five-entry SIM array, which pointed backwards
-          // -- and then construct a second on its own line and throw it away, so it fed the
-          // simulated arena but never reached the pose estimator. Cameras 1 and 2 logged no
-          // observation for an entire match while the real robot's saw a tag in 98-100% of frames.
           vision =
               new Vision(
                   new VisionIOPhotonvisionSim(
@@ -675,16 +670,7 @@ public class RobotContainer {
     RobotSimState.getInstance().updateTerrainState();
     RobotSimState.getInstance().getFuelSim().updateSim();
 
-    // Publish pack voltage AFTER the arena tick, never before.
-    //
-    // maple-sim runs 5 sub-ticks per simulationPeriodic(), and each one ends with
-    // SimulatedBattery.simulationSubTick() calling RoboRioSim.setVInVoltage(). Writing our
-    // value first meant it was overwritten 5 times before any motor could read it -- the
-    // custom battery model was dead code. maple-sim's own model also hard-clamps at the
-    // brownout voltage and only counts its drivetrain motors, so it can neither brown out
-    // nor see the 7 mechanism sims. Writing last makes our value the one that survives into
-    // the next loop, which is when the *IOSims actually read it (simulationPeriodic runs
-    // after robotPeriodic).
+    // After the arena tick: maple-sim overwrites RoboRioSim voltage during it.
     SimBattery.getInstance().update();
     Logger.recordOutput(
         "Field Simulation/Robot Position", RobotSimState.getInstance().getRobotPose3d());

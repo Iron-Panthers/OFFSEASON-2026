@@ -46,20 +46,12 @@ public class VisionIOPhotonvisionSim extends VisionIOPhotonvision {
       visionSim.addAprilTags(APRIL_TAG_FIELD_LAYOUT);
     }
 
-    // Add sim camera.
-    //
-    // This used to be a bare `new SimCameraProperties()`, which is PhotonVision's PERFECT_90DEG --
-    // no calibration error and no latency, so the simulated robot localised exactly, at any range,
-    // instantly. Real vision does none of those things, and a pose estimator tuned against perfect
-    // measurements is tuned against a robot that does not exist.
+    // Add sim camera
     var cameraProperties = new SimCameraProperties();
     cameraProperties.setCalibration(
         VisionConstants.SIM_CAMERA_WIDTH_PX,
         VisionConstants.SIM_CAMERA_HEIGHT_PX,
         Rotation2d.fromDegrees(VisionConstants.SIM_CAMERA_FOV_DIAGONAL_DEGREES));
-    // Injected on the tag CORNERS, in pixels, which is what makes accuracy fall off with range on
-    // its own: a tag at 8 m spans a fraction of the pixels it does at 2 m, so the same corner error
-    // is a much larger pose error.
     cameraProperties.setCalibError(
         VisionConstants.SIM_CAMERA_CALIB_ERROR_PX,
         VisionConstants.SIM_CAMERA_CALIB_ERROR_STD_DEV_PX);
@@ -76,14 +68,7 @@ public class VisionIOPhotonvisionSim extends VisionIOPhotonvision {
     visionSim.addCamera(cameraSim, VisionConstants.CAMERA_TRANSFORM[index]);
   }
 
-  /**
-   * Loop this shared {@link VisionSystemSim} was last stepped on.
-   *
-   * <p>{@code visionSim} is static and {@code update()} processes every registered camera, so it
-   * must run once per robot loop, not once per camera. With one camera wired up that distinction
-   * did not exist; with three it would step the vision sim three times a loop, tripling the
-   * effective frame rate and making the latency model meaningless.
-   */
+  /** visionSim is shared, so step it once per loop rather than once per camera. */
   private static long lastUpdateTimestamp = -1;
 
   @Override

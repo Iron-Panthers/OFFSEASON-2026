@@ -7,17 +7,9 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Periodically snaps the simulated robot back to the pose the real robot held, and logs how far it
- * had drifted first.
- *
- * <p>Real matches involve contact the simulation does not model, so after autonomous the simulated
- * robot diverges. Left uncorrected it eventually wedges against a wall and draws current that never
- * happened, corrupting the power measurements this whole exercise exists to compare.
- *
- * <p>The interval defaults to 10 seconds rather than something tight. A short interval would keep
- * auto-aim inputs accurate but would also continuously erase drift — hiding a drivetrain model that
- * is genuinely wrong. At 10 seconds the drift accumulated before each correction is published as
- * {@code Replay/Anchor Error}, making drivetrain fidelity directly measurable.
+ * During teleop, periodically snaps the simulated robot to the logged pose so contact the sim does
+ * not model cannot wedge it into a wall. Drift before each snap is logged as {@code Replay/Anchor
+ * Error}.
  */
 public final class PoseAnchor {
 
@@ -37,12 +29,7 @@ public final class PoseAnchor {
   }
 
   /**
-   * Teleport the simulated drivetrain to {@code target}, keeping the gyro in step.
-   *
-   * <p>{@code setSimulationWorldPose} moves only the dyn4j body -- it does not touch {@code
-   * GyroSimulation}. Without the matching {@code setRotation} the robot's believed heading stays
-   * put while its actual heading jumps, so every field-relative driver command afterwards lands in
-   * a rotated frame.
+   * Teleport the drivetrain to {@code target}, moving the gyro sim too since maple-sim does not.
    */
   public static void seedPose(SwerveDriveSimulation driveSimulation, Pose2d target) {
     driveSimulation.setSimulationWorldPose(target);
@@ -90,15 +77,7 @@ public final class PoseAnchor {
       Logger.recordOutput("Replay/Anchor Error/Window Seconds", now - lastAnchorSeconds);
     }
 
-    // maple-sim's setSimulationWorldPose zeroes linear velocity:
-    //     super.transform.set(...); super.linearVelocity.set(0, 0);
-    // Teleporting without restoring velocity would stop the robot dead 14 times a
-    // match and force the drive motors to re-accelerate from standstill each time,
-    // injecting current spikes that never happened. Capture the speeds first and
-    // put them back afterwards so only position is corrected.
-    //
-    // Field-relative is the correct frame here: setRobotSpeeds converts through
-    // toDyn4jLinearVelocity into dyn4j world coordinates.
+    // setSimulationWorldPose zeroes velocity; restore it so only position is corrected.
     ChassisSpeeds speeds = driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative();
     seedPose(driveSimulation, target);
     driveSimulation.setRobotSpeeds(speeds);

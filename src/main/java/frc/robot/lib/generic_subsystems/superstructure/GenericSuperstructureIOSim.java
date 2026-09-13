@@ -49,17 +49,10 @@ public abstract class GenericSuperstructureIOSim implements GenericSuperstructur
     config =
         new TalonFXConfiguration()
             .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake))
-            // GenericSuperstructureIOTalonFX sets this and the sim did not, and the sim also never
-            // applied its config at all -- only the gains and motion-magic configs were applied.
-            // The sim's position loop therefore ran in ROTOR units while the real robot ran in
-            // MECHANISM units, a factor of `reduction` (8/pi = 2.55 for the intake rack) in travel
-            // distance, kP stiffness and cruise velocity. That is why the simulated rack deployed
-            // ~1.7x faster than the real one: it was moving 2.55x less actual distance.
+            // Matches GenericSuperstructureIOTalonFX, so the loop runs in mechanism units.
             .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(reduction));
     talon.getConfigurator().apply(config);
 
-    // See GenericRollersIOSim: the TalonFX class registers with MotorOutputManager and the sim
-    // class did not, so simulated TotalAmps omitted every mechanism.
     MotorOutputManager.getInstance().registerMotorOutputs(() -> reportedSupplyCurrentAmps);
   }
 

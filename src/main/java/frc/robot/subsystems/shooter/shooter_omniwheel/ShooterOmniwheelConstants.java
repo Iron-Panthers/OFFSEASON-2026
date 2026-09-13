@@ -6,9 +6,7 @@ import frc.robot.subsystems.can_watchdog.CANWatchdogConstants.CAN;
 public class ShooterOmniwheelConstants {
   public static final ShooterOmniwheelConfig SHOOTER_OMNIWHEEL_CONFIG =
       switch (Constants.getRobotType()) {
-          // SIM now uses the real robot's value. The old SIM number was fudged to compensate
-          // for the sim PID regulating MECHANISM velocity where the real TalonFX regulates
-          // ROTOR velocity; that is fixed in the IOSim, so the honest value belongs here.
+          // Matches COMP.
         case SIM -> new ShooterOmniwheelConfig(
             CAN.at(39, "Shooter Omniwheel"), 20.0 / 16, false, true);
         default -> new ShooterOmniwheelConfig(
@@ -29,7 +27,7 @@ public class ShooterOmniwheelConstants {
   public static final int CURRENT_LIMIT_AMPS =
       switch (Constants.getRobotType()) {
         case COMP -> 60;
-          // Was 30; the real robot runs 60.
+          // Matches COMP.
         case SIM -> 60;
         default -> 30;
       };

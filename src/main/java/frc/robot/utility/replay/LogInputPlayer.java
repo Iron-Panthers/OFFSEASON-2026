@@ -6,13 +6,7 @@ import edu.wpi.first.wpilibj.simulation.GenericHIDSim;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * Injects a real match's logged driver inputs into simulation, frame-locked to the robot loop.
- *
- * <p>Advanced by exactly one loop period per call to {@link #step(double)} rather than by wall
- * clock, so injection stays aligned with the 20 ms robot loop even when the simulation runs faster
- * or slower than real time.
- *
- * <p>SIM only. Constructing this on a real robot would fight the real driver station.
+ * Injects a real match's logged driver inputs into simulation, one loop period per step. SIM only.
  */
 public final class LogInputPlayer {
 
@@ -72,12 +66,7 @@ public final class LogInputPlayer {
   }
 
   /**
-   * Skip autonomous and start the replay at the moment teleop began, for faster iteration on
-   * teleop-only power and mechanism tuning.
-   *
-   * <p>Returns the logged pose at teleop entry so the caller can place the robot there — without
-   * that, the replay would start teleop from wherever the drivetrain was initialised rather than
-   * where the real robot finished its auto.
+   * Skip autonomous and start the replay where teleop began.
    *
    * @return the {x, y, theta} pose at teleop entry, or null if the log has no pose data there
    */
@@ -153,10 +142,7 @@ public final class LogInputPlayer {
       controller.notifyNewData();
     }
 
-    // Match time drives the hub-active gate in ShootCommandFactory. Without it the DS
-    // reports -1 forever, and the gate `getTimeUntilOurHubShifts() <= 2` is trivially
-    // satisfied by -1, leaving the shooter enabled for 100% of the sim match against
-    // roughly half for the real one.
+    // ShootCommandFactory gates on match time; without it the DS reports -1 and the gate passes.
     Double matchTimeNow = inputs.matchTime().valueAt(now);
     if (matchTimeNow != null) {
       DriverStationSim.setMatchTime(matchTimeNow);

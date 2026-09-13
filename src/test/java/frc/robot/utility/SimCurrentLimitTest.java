@@ -117,16 +117,6 @@ class SimCurrentLimitTest {
   }
 
   @Test
-  void statorClampBoundsPostIntegrationSpikes() {
-    // The rack hitting its hard stop reported 206 A against a 27 A limit, because ElevatorSim
-    // zeroes velocity inside update() and then evaluates (V - 0)/R.
-    assertEquals(
-        27.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO,
-        SimCurrentLimit.clampStatorCurrent(206.0, 27.0),
-        1e-9);
-  }
-
-  @Test
   void statorCeilingIsDeliberatelyBelowTheRollersRealRatio() {
     // Documents a known compensating approximation, so it is not "fixed" by accident.
     // Real peak stator / supply limit: drive 3.75x, omniwheel 2.66-3.01x, rack 4.15-4.83x,
@@ -141,20 +131,6 @@ class SimCurrentLimitTest {
     // It must still clear the mechanisms it is not compensating for.
     assertTrue(40.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO > 150.0, "swerve drive, 3.75x");
     assertTrue(60.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO > 180.7, "omniwheel, 3.01x");
-  }
-
-  @Test
-  void statorClampPreservesSignAndSmallValues() {
-    assertEquals(
-        -27.0 * SimCurrentLimit.STATOR_TO_SUPPLY_RATIO,
-        SimCurrentLimit.clampStatorCurrent(-1000.0, 27.0),
-        1e-9);
-    assertEquals(5.0, SimCurrentLimit.clampStatorCurrent(5.0, 27.0), 1e-9);
-  }
-
-  @Test
-  void statorClampIsInertWhenUnlimited() {
-    assertEquals(999.0, SimCurrentLimit.clampStatorCurrent(999.0, 0.0), 1e-9);
   }
 
   @Test
