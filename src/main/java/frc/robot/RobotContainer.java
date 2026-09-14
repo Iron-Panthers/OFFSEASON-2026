@@ -618,12 +618,11 @@ public class RobotContainer {
   }
 
   public void testInit() {
-    CommandScheduler.getInstance().cancelAll();
-    shooterController.setTargetState(ShooterState.SHOOT);
+    shooterController.setTargetState(ShooterState.DEFAULT_SHOOT);
   }
 
   public void testPeriodic() {
-    shooterController.setTargetState(ShooterState.SHOOT);
+    shooterController.setTargetState(ShooterState.DEFAULT_SHOOT);
   }
 
   public void testExit() {

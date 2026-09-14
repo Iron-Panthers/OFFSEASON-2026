@@ -30,6 +30,7 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import frc.robot.commands.HappyBirthdayCommand;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -335,6 +336,7 @@ public class Robot extends LoggedRobot {
   /** This function is called once when test mode is enabled. */
   @Override
   public void testInit() {
+    CommandScheduler.getInstance().cancelAll();
     robotContainer.testInit();
   }
 
@@ -348,6 +350,7 @@ public class Robot extends LoggedRobot {
   @Override
   public void testExit() {
     robotContainer.testExit();
+    new HappyBirthdayCommand().schedule(); // Play Happy Birthday when exiting test mode
   }
 
   /** This function is called once when the robot is first started up. */
