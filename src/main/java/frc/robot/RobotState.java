@@ -83,11 +83,21 @@ public class RobotState {
 
   private Pose2d estimatedPose = initialPose; // vision adjusted
 
+  private boolean isAutoUnderTrench = true;
+
+  private boolean isAutoAdaptive = false;
+
   private Pose2d lastApproachPose = new Pose2d();
 
   private ChassisSpeeds robotSpeeds = new ChassisSpeeds();
 
   private static RobotState instance;
+
+  private Pose2d pathPlannerTargetPose;
+
+  @AutoLogOutput(key = "PathPlanner/Dynamic Obstacles")
+  private List<Pair<Translation2d, Translation2d>> dynamicObstacles =
+      new ArrayList<Pair<Translation2d, Translation2d>>();
 
   public static RobotState getInstance() {
     if (instance == null) instance = new RobotState();
@@ -121,14 +131,6 @@ public class RobotState {
     poseEstimator.resetPose(pose);
   }
 
-  /* In inches because we are imperial... */
-  @AutoLogOutput(key = "Robot State/Error")
-  public double alignError() {
-    return lastApproachPose.getTranslation().getDistance(estimatedPose.getTranslation())
-        * 100
-        / 2.54;
-  }
-
   @AutoLogOutput(key = "Robot State/Estimated Pose")
   public Pose2d getEstimatedPose() {
     return estimatedPose;
@@ -145,6 +147,14 @@ public class RobotState {
         .rotateBy(Rotation2d.kPi);
   }
 
+  /* In inches because we are imperial... */
+  @AutoLogOutput(key = "Robot State/Error")
+  public double alignError() {
+    return lastApproachPose.getTranslation().getDistance(estimatedPose.getTranslation())
+        * 100
+        / 2.54;
+  }
+
   private Pose2d translateByVector(Pose2d pose, double mag, Rotation2d theta) {
     double scalarX = theta.getCos() * mag;
     double scalarY = theta.getSin() * mag;
@@ -158,6 +168,14 @@ public class RobotState {
     return translateByVector(pose, mag, theta).transformBy(new Transform2d(0, 0, theta));
   }
 
+  public void addDynamicObstacle(Pair<Translation2d, Translation2d> obj) {
+    dynamicObstacles.add(obj);
+  }
+
+  public void resetDynamicObstacles() {
+    dynamicObstacles.clear();
+  }
+
   /**
    * Gets the scuffed path planner built command for following a path to a certain pose
    *
@@ -165,16 +183,24 @@ public class RobotState {
    * @param underTrench
    * @return
    */
-  public Command getPathPlannerApproachPoseCommand(Pose2d approachPose2d, boolean underTrench) {
+  public Command getPathPlannerApproachPoseCommand(
+      Pose2d approachPose2d,
+      boolean underTrench,
+      boolean stayOnCurrentSide,
+      boolean stayOnRightSide) {
     Logger.recordOutput("Robot State/Estimated Pose", estimatedPose);
     Logger.recordOutput("Robot State/Approach Pose", approachPose2d);
 
     Command finalPathfindingCommand = null;
 
     List<Pair<Translation2d, Translation2d>> finalObstaclesList =
-        new ArrayList<Pair<Translation2d, Translation2d>>();
+        new ArrayList<Pair<Translation2d, Translation2d>>(dynamicObstacles);
 
     finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
+
+    if (stayOnCurrentSide) {
+      finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_CENTER);
+    }
 
     if (underTrench) {
       finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_PATHFINDING);
@@ -329,10 +355,10 @@ public class RobotState {
       Translation2d robotVelocity = new Translation2d(filteredVx, filteredVy);
 
       // Log the raw and filtered velocities for tuning
-      Logger.recordOutput("Shooting Predictor/Filtered Vx", filteredVx);
-      Logger.recordOutput("Shooting Predictor/Filtered Vy", filteredVy);
       Logger.recordOutput("Shooting Predictor/Raw Vx", rawSpeeds.vxMetersPerSecond);
       Logger.recordOutput("Shooting Predictor/Raw Vy", rawSpeeds.vyMetersPerSecond);
+      Logger.recordOutput("Shooting Predictor/Filtered Vx", filteredVx);
+      Logger.recordOutput("Shooting Predictor/Filtered Vy", filteredVy);
 
       // Get the initial important things
       Pose3d robotPose3d = new Pose3d(getEstimatedPose());
@@ -395,15 +421,15 @@ public class RobotState {
                   + baselineVerticalVelocity * baselineVerticalVelocity);
       double adjustedShooterSpeed = baseline.shooterSpeed * (newExitSpeed / staticExitSpeed);
 
-      Logger.recordOutput("Shooting Predictor/Adjusted Hood Angle", adjustedHoodAngle);
-      Logger.recordOutput("Shooting Predictor/Adjusted Shooter Speed", adjustedShooterSpeed);
+      Logger.recordOutput("Shooting Predictor/Distance", distance);
       Logger.recordOutput("Shooting Predictor/Baseline Vh", baselineVelocity);
       Logger.recordOutput("Shooting Predictor/Baseline Vv", baselineVerticalVelocity);
-      Logger.recordOutput("Shooting Predictor/Distance", distance);
       Logger.recordOutput("Shooting Predictor/Shot Horizontal Speed", shotHorizontalSpeed);
+      Logger.recordOutput("Shooting Predictor/Turret Angle", turretAngle);
+      Logger.recordOutput("Shooting Predictor/Adjusted Hood Angle", adjustedHoodAngle);
+      Logger.recordOutput("Shooting Predictor/Adjusted Shooter Speed", adjustedShooterSpeed);
       Logger.recordOutput("Shooting Predictor/Shooter Offset Y", shooterOffsetY);
       Logger.recordOutput("Shooting Predictor/Shooter Angle Offset", shooterAngleOffset);
-      Logger.recordOutput("Shooting Predictor/Turret Angle", turretAngle);
 
       return new TargetShootingState(
           turretAngle, Degrees.of(adjustedHoodAngle), MetersPerSecond.of(adjustedShooterSpeed));
@@ -502,10 +528,9 @@ public class RobotState {
     if (RobotBase.isReal()) {
       return alliance.get() == DriverStation.Alliance.Red;
     }
-    return true;
+    return false;
   }
 
-  @AutoLogOutput(key = "Robot State/isUnderTrench")
   public boolean isUnderTrench() {
     Pose2d robotPose = getEstimatedPose();
     Pose2d flippedTrenchPose = FlippingUtil.flipFieldPose(DriveConstants.TRENCH_POSE);
@@ -525,6 +550,33 @@ public class RobotState {
             || (Math.abs(robotPose.getX() - flippedTrenchPose.getX()) <= DriveConstants.TRENCH_WIDTH
                 && Math.abs(robotPose.getY() - DriveConstants.TRENCH_POSE.getY())
                     <= DriveConstants.TRENCH_LENGTH));
+    Logger.recordOutput("Swerve/isUnderTrench", underTrench);
     return underTrench;
+  }
+
+  public void setPathPlannerTargetPose(Pose2d pose) {
+    pathPlannerTargetPose = pose;
+  }
+
+  public Pose2d getPathPlannerTargetPose() {
+    return pathPlannerTargetPose;
+  }
+
+  @AutoLogOutput(key = "Robot State/adaptive auto going under")
+  public boolean isAutoUnderTrench() {
+    return isAutoUnderTrench;
+  }
+
+  public void setIsAutoUnderTrench(boolean isAutoUnderTrench) {
+    this.isAutoUnderTrench = isAutoUnderTrench;
+  }
+
+  @AutoLogOutput(key = "Robot State/is auto adaptive")
+  public boolean isAutoAdaptive() {
+    return isAutoAdaptive;
+  }
+
+  public void setIsAutoAdaptive(boolean isAutoAdaptive) {
+    this.isAutoAdaptive = isAutoAdaptive;
   }
 }

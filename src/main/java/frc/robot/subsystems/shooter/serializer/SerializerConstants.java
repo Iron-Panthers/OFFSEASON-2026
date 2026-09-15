@@ -15,9 +15,9 @@ public class SerializerConstants {
             false,
             true);
         case COMP -> new SerializerConfig(
-            CAN.at(41, "Serializer Left"),
-            CAN.at(33, "Serializer Right"),
-            2.833333,
+            CAN.at(33, "Serializer Left"),
+            CAN.at(41, "Serializer Right"),
+            1.647,
             false,
             false,
             true);
@@ -27,9 +27,8 @@ public class SerializerConstants {
 
   public static final PIDGains GAINS =
       switch (Constants.getRobotType()) {
-          // Matches COMP; SerializerSim runs the Talon's own closed loop.
-        case SIM -> new PIDGains(0.5, 0, 0, 0.2, 0.344827586, 0, 0);
-        case COMP -> new PIDGains(0.5, 0, 0, 0.2, 0.344827586, 0, 0);
+        case SIM -> new PIDGains(1, 0, 0, 0, 1, 0, 0);
+        case COMP -> new PIDGains(0.5, 0, 0, 0.32, 0.192, 0.051, 0);
         default -> new PIDGains(0, 0, 0, 0, 0, 0, 0);
       };
 
