@@ -7,7 +7,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.subsystems.elastic_updater.ElasticUpdater;
 import frc.robot.subsystems.intake.IntakeController;
 import frc.robot.subsystems.intake.IntakeController.IntakeState;
@@ -27,6 +26,8 @@ public class ShootCommandFactory {
   private final IntakeController intakeController;
   private final ElasticUpdater matchTimerUpdater;
   private final Supplier<Rotation2d> getHeadingError;
+
+  private boolean justShoot = false;
   double time = Timer.getFPGATimestamp();
 
   public ShootCommandFactory(
@@ -50,14 +51,17 @@ public class ShootCommandFactory {
         Commands.parallel(
             Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
             Commands.sequence(
-                    // Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY)),
+                    // Commands.runOnce(() ->
+                    // intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY)),
                     // new WaitCommand(2),
-                    Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_ONE)),
+                    Commands.runOnce(
+                        () -> intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_ONE)),
                     new WaitCommand(1),
-                    Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_TWO)),
+                    Commands.runOnce(
+                        () -> intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_TWO)),
                     new WaitCommand(1),
-                    Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOTING_STOW))
-            )
+                    Commands.runOnce(
+                        () -> intakeController.setTargetState(IntakeState.SHOOTING_STOW)))
                 .until(() -> intakeController.getTargetState() == IntakeState.SHOOTING_STOW),
             Commands.runOnce(
                     () -> {

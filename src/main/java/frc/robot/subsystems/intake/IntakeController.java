@@ -16,6 +16,9 @@ import org.littletonrobotics.junction.Logger;
 public class IntakeController extends SubsystemBase {
   public enum IntakeState {
     STOW(IntakeRackTarget.STOW, IntakeRollersTarget.IDLE),
+    SHOOTING_STOW(IntakeRackTarget.SHOOTING_STOW, IntakeRollersTarget.IDLE),
+    SHOOT(IntakeRackTarget.INTAKE, IntakeRollersTarget.INTAKE_SLOW),
+    MID(IntakeRackTarget.MIDDLE, IntakeRollersTarget.INTAKE_SLOW),
     IDLE(IntakeRackTarget.INTAKE, IntakeRollersTarget.IDLE),
     INTAKE(IntakeRackTarget.INTAKE, IntakeRollersTarget.INTAKE),
     REVERSE(IntakeRackTarget.INTAKE, IntakeRollersTarget.EJECT),
@@ -23,8 +26,6 @@ public class IntakeController extends SubsystemBase {
     SHOOTING_CHUNKY(IntakeRackTarget.ACTUAL_MIDDLE, IntakeRollersTarget.IDLE),
     SHOOTING_CHUNKIER_ONE(IntakeRackTarget.ONE_THIRD, IntakeRollersTarget.IDLE),
     SHOOTING_CHUNKIER_TWO(IntakeRackTarget.TWO_THIRDS, IntakeRollersTarget.IDLE);
-
-
 
     private IntakeRackTarget intakeRackTarget;
     private IntakeRollersTarget intakeRollersTarget;
