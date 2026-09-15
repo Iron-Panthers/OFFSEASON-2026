@@ -10,6 +10,8 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.events.EventTrigger;
+
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -20,6 +22,7 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -28,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Robot;
 import frc.robot.Constants.Mode;
 import frc.robot.commands.AlignToPoseCommand;
 import frc.robot.commands.AlignToShootCommand;
@@ -618,11 +622,36 @@ public class RobotContainer {
   }
 
   public void testInit() {
-    shooterController.setTargetState(ShooterState.DEFAULT_SHOOT);
+        Command hello = Commands.sequence(
+        Commands.parallel(
+    Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)))
+        .until(
+            () -> shooterController.flywheelsUpToSpeed()),
+        new WaitCommand(5.0),
+    Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+        new WaitCommand(5.0),
+    Commands.runOnce(() -> shooterController.setTargetState(ShooterState.PASS)),
+        new WaitCommand(5.0),
+    Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
+        new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.INTAKE)),
+        new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.STOW)),
+        new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.MID)),
+        new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.REVERSE)),
+        new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+        new WaitCommand(5.0),
+            Commands.runOnce(() -> swerve.setTargetPosition(new Pose2d(RobotState.getInstance().getEstimatedPose().getX() + 5, RobotState.getInstance().getEstimatedPose().getY(), new Rotation2d()))),
+        new WaitCommand(5.0)
+            );
+    hello.schedule();
   }
 
   public void testPeriodic() {
-    shooterController.setTargetState(ShooterState.DEFAULT_SHOOT);
+
   }
 
   public void testExit() {
