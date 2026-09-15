@@ -77,15 +77,8 @@ public class RobotSimState {
     fuelSim.spawnStartingFuel();
     fuelSim.setLoggingFrequency(20);
     fuelSim.start();
-
-    // opponent simulation
-
-    // Blue: To go left, (6.17, 5.881)
-    // Blue: To go right, (6.17, 2.6). Probably
-    // Red: Right, (10.385, 5.759)
-    // Red: Left, (10.385, 2.082)
-    // When on red, obstacle should nbe spawning on -y
-    //addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
+    
+    addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
   }
 
   // Get sim state from RobotContainer

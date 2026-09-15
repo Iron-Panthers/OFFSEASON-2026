@@ -343,6 +343,8 @@ public class DriveConstants {
 
   public static final Pose2d INITIAL_POSE = new Pose2d(2.9, 3.8, new Rotation2d(1, 0));
 
+  public static final double ADAPTIVE_AUTO_ERROR = 1.8;
+
   public static final PPHolonomicDriveController HOLONOMIC_DRIVE_CONTROLLER =
       new PPHolonomicDriveController(
           TRAJECTORY_CONFIG.linearPID(),

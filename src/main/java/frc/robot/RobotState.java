@@ -199,13 +199,6 @@ public class RobotState {
     finalObstaclesList.addAll(DriveConstants.OBSTACLES_FOR_TRENCH_WALL);
 
     if (stayOnCurrentSide) {
-      // add a dynamic obstacle that covers half of the field
-      // Blue left: both field splitting lines must be right
-      // Blue right: both field splitting lines must be left
-
-      // Red right: right
-      // Red left: Left
-
       finalObstaclesList.add(DriveConstants.FIELD_SPLITTING_LINE_CENTER);
     }
 
