@@ -622,15 +622,10 @@ public class RobotContainer {
   }
 
   public void testInit() {
-        Command hello = Commands.sequence(
-        Commands.parallel(
-    Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)))
-        .until(
-            () -> shooterController.flywheelsUpToSpeed()),
+        Commands.sequence(
+    Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
         new WaitCommand(5.0),
     Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
-        new WaitCommand(5.0),
-    Commands.runOnce(() -> shooterController.setTargetState(ShooterState.PASS)),
         new WaitCommand(5.0),
     Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
         new WaitCommand(5.0),
@@ -643,11 +638,8 @@ public class RobotContainer {
             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.REVERSE)),
         new WaitCommand(5.0),
             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
-        new WaitCommand(5.0),
-            Commands.runOnce(() -> swerve.setTargetPosition(new Pose2d(RobotState.getInstance().getEstimatedPose().getX() + 5, RobotState.getInstance().getEstimatedPose().getY(), new Rotation2d()))),
         new WaitCommand(5.0)
-            );
-    hello.schedule();
+            ).schedule();
   }
 
   public void testPeriodic() {
@@ -656,6 +648,7 @@ public class RobotContainer {
 
   public void testExit() {
     shooterController.setTargetState(ShooterState.IDLE);
+    intakeController.setTargetState(IntakeState.IDLE);
   }
 
   /** Ran when periodic disabled */
