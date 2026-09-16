@@ -11,28 +11,9 @@
           }
         },
         {
-          "type": "race",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "2xTT 1 Right"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Check If Off"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Translate To Shoot"
+            "pathName": "xD"
           }
         },
         {
@@ -48,28 +29,9 @@
           }
         },
         {
-          "type": "race",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "2xTT 2 Right"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Check If Off"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Translate To Shoot"
+            "pathName": "2xTT 2 Left"
           }
         },
         {
