@@ -125,7 +125,7 @@ public class VisionConstants {
             // 2 tag
             new TagCountDeviation(
                 new UnitDeviationParams(0.00162493, 0, 0),
-                new UnitDeviationParams(0.00540876, 0, 0)),
+                new UnitDeviationParams(0.0010625, 0, 0)),
             // 3+ tag
             new TagCountDeviation(
                 new UnitDeviationParams(0, 0.0, 0.001), new UnitDeviationParams(0, 0, 0.0001)));
