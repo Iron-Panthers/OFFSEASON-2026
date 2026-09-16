@@ -159,7 +159,9 @@ public class Drive extends SubsystemBase {
       case AUTO_ALIGN -> {
         if (pidAutoAlignController != null) {
           targetSpeeds = pidAutoAlignController.update();
-          targetSpeeds.omegaRadiansPerSecond = autoAlignHeadingController.update();
+          if(autoAlignHeadingController != null){ //BUG #4: potential null pointer exception
+            targetSpeeds.omegaRadiansPerSecond = autoAlignHeadingController.update();
+          }
 
           if (speedMagnitude < 0.01
               && Math.abs(targetSpeeds.omegaRadiansPerSecond) < 0.1
@@ -487,7 +489,7 @@ public class Drive extends SubsystemBase {
     if (driveMode != DriveModes.AUTO_ALIGN) {
       return false;
     }
-    return autoAlignHeadingController != null && pidAutoAlignController != null &&
+    return autoAlignHeadingController != null && pidAutoAlignController != null && //BUG #3: Possible NullPointedException
     autoAlignHeadingController.atTarget() && pidAutoAlignController.atTarget();
   }
 
