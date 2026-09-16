@@ -50,9 +50,11 @@ import frc.robot.subsystems.intake.IntakeController.IntakeState;
 import frc.robot.subsystems.intake.intake_rack.IntakeRack;
 import frc.robot.subsystems.intake.intake_rack.IntakeRackIO;
 import frc.robot.subsystems.intake.intake_rack.IntakeRackIOSim;
+import frc.robot.subsystems.intake.intake_rack.IntakeRackIOTalonFX;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollers;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIO;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOSim;
+import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOTalonFX;
 import frc.robot.subsystems.rgb.RGB;
 import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
@@ -143,8 +145,8 @@ public class RobotContainer {
                   new ModuleIOTalonFXReal(DriveConstants.MODULE_CONFIGS[1]),
                   new ModuleIOTalonFXReal(DriveConstants.MODULE_CONFIGS[2]),
                   new ModuleIOTalonFXReal(DriveConstants.MODULE_CONFIGS[3]));
-          //   intakeRack = new IntakeRack(new IntakeRackIOTalonFX());
-          //   intakeRollers = new IntakeRollers(new IntakeRollersIOTalonFX());
+          intakeRack = new IntakeRack(new IntakeRackIOTalonFX());
+          intakeRollers = new IntakeRollers(new IntakeRollersIOTalonFX());
           vision =
               new Vision(
                   new VisionIOPhotonvision("CamC", 0),
