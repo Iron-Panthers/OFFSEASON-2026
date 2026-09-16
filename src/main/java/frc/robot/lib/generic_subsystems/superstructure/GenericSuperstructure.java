@@ -128,6 +128,10 @@ public abstract class GenericSuperstructure<G extends GenericSuperstructure.Posi
     return inputs.supplyCurrentAmps;
   }
 
+  public double getStatorCurrentAmps() {
+    return inputs.statorCurrent;
+  }
+
   public double getPosition() {
     return inputs.positionRotations;
   }

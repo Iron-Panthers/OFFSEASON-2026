@@ -50,15 +50,31 @@ public class ShootCommandFactory {
             setJustShootCommand(false)),
         Commands.parallel(
             Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
+            // Double check later
             Commands.sequence(
-                    // Commands.runOnce(() ->
-                    // intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY)),
-                    // new WaitCommand(2),
                     Commands.runOnce(
-                        () -> intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_ONE)),
+                            () ->
+                                intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_ONE))
+                        .andThen(
+                            Commands.waitUntil(
+                                    () -> intakeController.getRackStatorCurrentAmps() > 5)
+                                .withTimeout(1.0))
+                        .andThen(
+                            Commands.either(
+                                Commands.runOnce(
+                                    () -> intakeController.setTargetState(IntakeState.INTAKE)),
+                                Commands.none(),
+                                () -> intakeController.getRackStatorCurrentAmps() > 5)),
                     new WaitCommand(1),
                     Commands.runOnce(
-                        () -> intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_TWO)),
+                            () ->
+                                intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_TWO))
+                        .andThen(
+                            Commands.either(
+                                Commands.runOnce(
+                                    () -> intakeController.setTargetState(IntakeState.INTAKE)),
+                                Commands.none(),
+                                () -> intakeController.getRackStatorCurrentAmps() > 5)),
                     new WaitCommand(1),
                     Commands.runOnce(
                         () -> intakeController.setTargetState(IntakeState.SHOOTING_STOW)))

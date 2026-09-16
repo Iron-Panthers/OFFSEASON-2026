@@ -127,4 +127,8 @@ public class IntakeController extends SubsystemBase {
   public boolean getIntakeRackActive() {
     return intakeRackActive;
   }
+
+  public double getRackStatorCurrentAmps() {
+    return intakeRack.getStatorCurrentAmps();
+  }
 }
