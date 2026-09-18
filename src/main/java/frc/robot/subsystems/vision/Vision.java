@@ -98,7 +98,7 @@ public class Vision extends SubsystemBase {
                             observation.tagCount() - 1, 0, LOW_RES_TAG_COUNT_DEVIATIONS.size() - 1))
                     .computeDeviation(observation.averageDistance());
         Logger.recordOutput("Vision/Camera" + cameraIndex + "/Std Devs", visionStdDevs);
-        RobotState.getInstance().addVisionMeasurement(measurement, visionStdDevs);
+        RobotState.getInstance().addVisionMeasurement(measurement, visionStdDevs, CAMERA_TRANSFORM[cameraIndex].getRotation());
         Logger.recordOutput(
             "Vision/Camera" + cameraIndex + "/Average Distance", observation.averageDistance());
       }

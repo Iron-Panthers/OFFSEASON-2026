@@ -15,6 +15,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -120,8 +121,31 @@ public class RobotState {
     estimatedPose = poseEstimator.getEstimatedPosition();
   }
 
-  public void addVisionMeasurement(VisionMeasurement measurement, Matrix<N3, N1> visionStdDevs) {
-    poseEstimator.setVisionMeasurementStdDevs(visionStdDevs);
+  public void addVisionMeasurement(VisionMeasurement measurement, Matrix<N3, N1> visionStdDevs, Rotation3d cameraAngleRelativeToTheRobot) {
+
+    // So apparently we have to convert the robot relative standard deviations to field relative standard deviations.
+    // Converting std dev to variances, which is what the math uses.
+    double robotXVariance = Math.pow(visionStdDevs.get(0, 0), 2);
+    double robotYVariance = Math.pow(visionStdDevs.get(1, 0), 2);
+
+    // Get field variances. We can treat camera-relative variances as vectors.
+    Rotation2d cameraAngleRelativeToTheRobotButItIsARotation2dNow = new Rotation2d(cameraAngleRelativeToTheRobot.getX(), cameraAngleRelativeToTheRobot.getY());
+    Rotation2d cameraAngle = RobotState.getInstance().getEstimatedPose().getRotation().plus(cameraAngleRelativeToTheRobotButItIsARotation2dNow);
+    double fieldXVariance = (cameraAngle.getCos() * robotXVariance + cameraAngle.getSin() * robotYVariance);
+    double fieldYVariance = (-cameraAngle.getSin() * robotXVariance + cameraAngle.getCos() * robotYVariance);
+
+    // Convert variances back to std devs
+    double fieldXStdDev = Math.sqrt(fieldXVariance);
+    double fieldYStdDev = Math.sqrt(fieldYVariance);
+
+    // Put those into a matrix
+    Matrix<N3, N1> fieldRelativeVisionStdDevs = VecBuilder.fill(
+          fieldXStdDev,
+          fieldYStdDev,
+          visionStdDevs.get(2, 0)
+    );
+
+    poseEstimator.setVisionMeasurementStdDevs(fieldRelativeVisionStdDevs);
     poseEstimator.addVisionMeasurement(measurement.visionPose(), measurement.timestamp());
     estimatedPose = poseEstimator.getEstimatedPosition();
   }
