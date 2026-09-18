@@ -133,6 +133,8 @@ public class RobotContainer {
   private ShooterOmniwheel shooterOmniwheel;
   private ShooterAccelerator shooterAccelerator;
 
+  private ShootCommandFactory shootCommand;
+
   public RobotContainer() {
 
     if (Constants.getRobotMode() != Mode.REPLAY) {
@@ -265,6 +267,12 @@ public class RobotContainer {
             () -> shooterController.getCurrentVelocity(),
             () -> ShooterHoodConstants.BASE_TO_SHOOTER_HOOD_TRANSFORM,
             Units.Degrees.of(-180));
+    shootCommand =
+        new ShootCommandFactory(
+            shooterController,
+            intakeController,
+            matchTimerUpdater,
+            swerve::getShootingError); // TODO: Change degrees in fromDegrees
     nameCommands();
     configureAutos();
     configureBindings();
@@ -358,6 +366,9 @@ public class RobotContainer {
                             intakeController,
                             matchTimerUpdater,
                             false))));
+    NamedCommands.registerCommand(
+        "ShootCommandFactory",
+        shootCommand.whileHeld().raceWith(new WaitCommand(5)).andThen(shootCommand.onRelease()));
     NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",
         new AutoShootCommand(
@@ -488,12 +499,6 @@ public class RobotContainer {
                 swerve, new Pose2d(3.8, 0.8, new Rotation2d()), true, true, true));
 
     // SHOOTING COMMAND
-    ShootCommandFactory shootCommand =
-        new ShootCommandFactory(
-            shooterController,
-            intakeController,
-            matchTimerUpdater,
-            swerve::getShootingError); // TODO: Change degrees in fromDegrees
     driverA.leftBumper().whileTrue(shootCommand.whileHeld());
     driverA.leftBumper().onFalse(shootCommand.onRelease());
 
