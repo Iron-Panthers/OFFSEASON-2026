@@ -5,13 +5,10 @@ import static frc.robot.subsystems.swerve.DriveConstants.CENTER_OF_FIELD;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Distance;
 import frc.robot.RobotState;
 import frc.robot.subsystems.swerve.Drive;
 import frc.robot.subsystems.swerve.DriveConstants;
-
-
 
 public class FieldAxisAssistCommand extends AxisAssistCommand {
   public FieldAxisAssistCommand(Drive swerve) {
@@ -75,13 +72,14 @@ public class FieldAxisAssistCommand extends AxisAssistCommand {
 
     double fieldTarget;
     if (isHorizontal()) {
-      // For horizontal wall alignment, snap to PI/2 on right blue or 3PI/2 on left blue so the intake faces toward the wall
+      // For horizontal wall alignment, snap to PI/2 on right blue or 3PI/2 on left blue so the
+      // intake faces toward the wall
       // fieldTarget = (poseRadians > Math.PI) ? 0 : Math.PI;
-      
+
       if (RobotState.isAllianceRed()) {
-        fieldTarget = (Math.abs(poseRadians) > Math.PI/2 - 0.01) ? -Math.PI : 0;
+        fieldTarget = (Math.abs(poseRadians) > Math.PI / 2 - 0.01) ? -Math.PI : 0;
       } else {
-        fieldTarget = (Math.abs(poseRadians) > Math.PI/2 - 0.01) ? Math.PI : 0;
+        fieldTarget = (Math.abs(poseRadians) > Math.PI / 2 - 0.01) ? Math.PI : 0;
       }
 
       double offset = ROTATION_OFFSET;
@@ -96,11 +94,14 @@ public class FieldAxisAssistCommand extends AxisAssistCommand {
     } else {
       // For vertical hub alignment, snap to 0 or PI
       if (RobotState.isAllianceRed()) {
-        fieldTarget = (poseRadians > Math.PI/2 && poseRadians < 3*Math.PI/2) ? 3*Math.PI / 2 : Math.PI / 2;
+        fieldTarget =
+            (poseRadians > Math.PI / 2 && poseRadians < 3 * Math.PI / 2)
+                ? 3 * Math.PI / 2
+                : Math.PI / 2;
       } else {
         fieldTarget = (poseRadians > 0 && poseRadians < Math.PI) ? Math.PI / 2 : -Math.PI / 2;
       }
-      
+
       double offset = ROTATION_OFFSET;
 
       if (fieldTarget == Math.PI / 2) {
@@ -131,11 +132,11 @@ public class FieldAxisAssistCommand extends AxisAssistCommand {
       double robotY = RobotState.getInstance().getEstimatedPose().getY();
       if (robotY < FIELD_WIDTH / 2) {
         // Closer to bottom wall (Y = 0)
-        return Meters.of(DriveConstants.DRIVE_CONFIG.bumperWidthY() / 2 + Units.inchesToMeters(6)); 
+        return Meters.of(DriveConstants.DRIVE_CONFIG.bumperWidthY() / 2 + Units.inchesToMeters(6));
       } else {
         // Closer to top wall (Y = FIELD_WIDTH)
         return Meters.of(
-            FIELD_WIDTH - DriveConstants.DRIVE_CONFIG.bumperWidthY() / 2 - Units.inchesToMeters(6)); 
+            FIELD_WIDTH - DriveConstants.DRIVE_CONFIG.bumperWidthY() / 2 - Units.inchesToMeters(6));
       }
     } else {
       // Align to the nearest hub X position

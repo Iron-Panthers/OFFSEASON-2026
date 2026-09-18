@@ -72,7 +72,7 @@
   } ],
   "rotationTargets" : [ {
     "waypointRelativePos" : 1.1,
-    "rotationDegrees" : 90.0
+    "rotationDegrees" : 67.0
   } ],
   "constraintZones" : [ {
     "name" : "Intake",

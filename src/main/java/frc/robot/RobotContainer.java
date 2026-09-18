@@ -37,6 +37,7 @@ import frc.robot.commands.AlignToShootPoseCommand;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.FieldAxisAssistCommand;
 import frc.robot.commands.IntakeCommand;
+import frc.robot.commands.IntakeCommandFactory;
 import frc.robot.commands.PassToPoseCommand;
 import frc.robot.commands.ShootCommandFactory;
 import frc.robot.commands.VibrateHIDCommand;
@@ -489,7 +490,11 @@ public class RobotContainer {
     // SMART ZERO GYRO
     // driverA.x().onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
     // INTAKE
-    driverA.b().onTrue(new IntakeCommand(intakeController, shooterController, serializer));
+    IntakeCommandFactory intakeCommandFactory =
+        new IntakeCommandFactory(intakeController, shooterController, serializer);
+
+    driverA.b().onTrue(intakeCommandFactory.whileHeld());
+    driverA.b().onFalse(intakeCommandFactory.onRelease().until(() -> (driverA.b().getAsBoolean())));
     // STOW ROBOT
     // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
     driverA

@@ -43,11 +43,13 @@ public class ShootCommandFactory {
 
   /** Command to bind to whileTrue – repeats while the button is held. */
   public Command whileHeld() {
-    return ((new WaitCommand(0.1)
-                .andThen(
-                    new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW)))
-                .andThen(new WaitCommand(0.1))
-                .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
+    return (new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE))
+            .andThen(
+                new WaitCommand(2)
+                    .andThen(
+                        new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW)))
+                    .andThen(new WaitCommand(0.1))
+                    .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
             .andThen(
                 new WaitCommand(0.2)
                     .andThen(
