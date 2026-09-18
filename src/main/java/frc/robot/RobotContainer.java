@@ -369,7 +369,7 @@ public class RobotContainer {
                             false))));
     NamedCommands.registerCommand(
         "ShootCommandFactory",
-        shootCommand.whileHeld().raceWith(new WaitCommand(5)).andThen(shootCommand.onRelease()));
+        shootCommand.whileHeld().raceWith(new WaitCommand(4)).andThen(shootCommand.onRelease()));
     NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",
         new AutoShootCommand(
