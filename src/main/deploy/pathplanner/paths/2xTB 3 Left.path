@@ -134,6 +134,12 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
+      "name": "Intake down",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
       "name": "Spin up shooter",
       "waypointRelativePos": 3.0,
       "endWaypointRelativePos": null,
