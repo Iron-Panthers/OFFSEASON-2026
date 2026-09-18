@@ -643,6 +643,7 @@ public class RobotContainer {
 
   public Command getAutoCommand() {
     // When running headlessly for AI testing, bypass the dashboard chooser entirely.
+    // i love autos
     // Invoke: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
     String aiAutoName = System.getProperty("ai.auto.name");
     if (aiAutoName != null && !aiAutoName.isBlank()) {

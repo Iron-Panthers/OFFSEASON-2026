@@ -9,10 +9,10 @@
       "prevControl": null,
       "nextControl": {
         "x": 4.83024435293806,
-        "y": 0.6386372932825718
+        "y": 0.6386372932825717
       },
       "isLocked": false,
-      "linkedName": "Starting pose"
+      "linkedName": "Starting pose Right"
     },
     {
       "anchor": {
