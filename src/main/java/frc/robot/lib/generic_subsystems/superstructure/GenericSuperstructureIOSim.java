@@ -1,5 +1,6 @@
 package frc.robot.lib.generic_subsystems.superstructure;
 
+import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -10,6 +11,7 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import frc.robot.MotorOutputManager;
 
 public abstract class GenericSuperstructureIOSim implements GenericSuperstructureIO {
 
@@ -25,13 +27,33 @@ public abstract class GenericSuperstructureIOSim implements GenericSuperstructur
   protected final DynamicMotionMagicVoltage positionControl =
       new DynamicMotionMagicVoltage(0, 0, 0).withUpdateFreqHz(0);
 
+  /** Sensor-to-mechanism reduction, so subclasses can convert consistently. */
+  protected final double mechanismReduction;
+
+  /** Last supply current reported by the subclass, in amps, for aggregate power bookkeeping. */
+  protected double reportedSupplyCurrentAmps = 0.0;
+
   public GenericSuperstructureIOSim(int id) {
+    this(id, 1.0);
+  }
+
+  /**
+   * @param id CAN id
+   * @param reduction sensor-to-mechanism reduction; rotor rotations = mechanism rotations x this
+   */
+  public GenericSuperstructureIOSim(int id, double reduction) {
 
     talon = new TalonFX(id);
     talon.setNeutralMode(NeutralModeValue.Brake);
+    mechanismReduction = reduction;
     config =
         new TalonFXConfiguration()
-            .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake));
+            .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake))
+            // Matches GenericSuperstructureIOTalonFX, so the loop runs in mechanism units.
+            .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(reduction));
+    talon.getConfigurator().apply(config);
+
+    MotorOutputManager.getInstance().registerMotorOutputs(() -> reportedSupplyCurrentAmps);
   }
 
   @Override

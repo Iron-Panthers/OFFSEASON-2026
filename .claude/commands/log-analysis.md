@@ -64,6 +64,29 @@ Outputs per key:
 
 Use this after a preset report flags a suspicious time window — zoom in with `--from`/`--to` and pull exactly the keys you need.
 
+### Comparison Mode — sim vs real
+
+```bash
+python scripts/wpilog_to_csv.py --compare SIM.wpilog REAL.wpilog [--top N] [--json fit.json]
+```
+
+Aligns both logs on the first `DriverStation/Enabled -> True` and bounds the comparison by the **enabled window** (the last disable), so pre- and post-match idle never dilute the scores. Every numeric key present in both is resampled onto a 20 ms grid and scored.
+
+Per signal:
+
+- `nrmse` — RMSE normalized by the real signal's range. The ranking key.
+- `mean_shift`, `p95_shift`, `peak_shift` — sim minus real.
+- `corr` — Pearson correlation of shape. High `corr` with a large `mean_shift` means the sim has the right dynamics but the wrong magnitude — usually a constant (mass, MOI, gear ratio) rather than a modelling error.
+- Three worst non-overlapping time windows per signal.
+
+**Event-aligned state timing** pairs `*/Target` and `*/Target State` transitions positionally and reports per-event deltas, e.g. `INTAKE  real=9.34s  sim=9.53s  delta=+0.19s`. Pairing stops at the first state mismatch — past that point the runs took different branches and later timings are noise.
+
+**Fit scores by category** (`--json`): `mechanisms`, `currents`, `voltage`, `aggregate`, `other`. Lower is better. Use these to prove a tuning change helped rather than eyeballing traces.
+
+Keys that are metadata (NT client ports, epoch time, match number, CAN error counters, logger timings) are excluded, and keys constant on both sides are skipped — they have no dynamics to compare.
+
+**Not covered by `--compare`:** `Replay/Anchor Error` exists only in the sim log, so read it directly with `--keys`. It is the drivetrain fidelity measure.
+
 ### Tier 4 — Raw CSV (last resort, high token cost)
 
 ```bash

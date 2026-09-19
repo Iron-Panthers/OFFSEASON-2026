@@ -36,7 +36,7 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "Align and auto shoot full hopper (no intake)"
+          "name" : "ShootCommandFactory"
         }
       }, {
         "type" : "race",
@@ -66,7 +66,7 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "Align and auto shoot full hopper (no intake)"
+          "name" : "ShootCommandFactory"
         }
       }, {
         "type" : "path",

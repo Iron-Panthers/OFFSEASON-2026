@@ -77,7 +77,7 @@ public class RobotSimState {
     fuelSim.spawnStartingFuel();
     fuelSim.setLoggingFrequency(20);
     fuelSim.start();
-    
+
     addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
   }
 

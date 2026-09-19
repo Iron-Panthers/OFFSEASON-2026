@@ -21,7 +21,7 @@
       },
       "prevControl": {
         "x": 7.296241522707815,
-        "y": 0.5501874919880558
+        "y": 0.5501874919880557
       },
       "nextControl": {
         "x": 8.32038888888889,
@@ -117,7 +117,7 @@
   "eventMarkers": [
     {
       "name": "Intake down",
-      "waypointRelativePos": 0.1349831271091114,
+      "waypointRelativePos": 0.2,
       "endWaypointRelativePos": null,
       "command": null
     },
