@@ -5,6 +5,7 @@ package frc.robot;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.config.RobotConfig;
@@ -87,6 +88,9 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonvision;
 import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
+import frc.robot.utility.SimBattery;
+import frc.robot.utility.replay.LogInputPlayer;
+import frc.robot.utility.replay.PoseAnchor;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
@@ -116,6 +120,7 @@ public class RobotContainer {
 
   // private SendableChooser<Command> autoChooser;
   private LoggedDashboardChooser<Command> autoChooser;
+  private PoseAnchor poseAnchor;
 
   private final CommandXboxController driverA = new CommandXboxController(0);
   private final CommandXboxController driverB = new CommandXboxController(1);
@@ -202,8 +207,11 @@ public class RobotContainer {
           vision =
               new Vision(
                   new VisionIOPhotonvisionSim(
-                      "arducam-3", 3, driveSimulation::getSimulatedDriveTrainPose));
-          new VisionIOPhotonvisionSim("arducam-4", 4, driveSimulation::getSimulatedDriveTrainPose);
+                      "CamC", 0, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamA", 1, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamB", 2, driveSimulation::getSimulatedDriveTrainPose));
 
           // INTAKE
           intakeRack = new IntakeRack(new IntakeRackIOSim());
@@ -369,7 +377,14 @@ public class RobotContainer {
                             false))));
     NamedCommands.registerCommand(
         "ShootCommandFactory",
-        shootCommand.whileHeld().raceWith(new WaitCommand(4)).andThen(shootCommand.onRelease()));
+        new AlignToShootCommand(swerve, shooterController)
+            .withDeadline(
+                new WaitCommand(0.2)
+                    .andThen(
+                        shootCommand
+                            .whileHeld()
+                            .raceWith(new WaitCommand(4))
+                            .andThen(shootCommand.onRelease()))));
     NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",
         new AutoShootCommand(
@@ -443,8 +458,9 @@ public class RobotContainer {
                       -driverA.getLeftX(),
                       driverA.getLeftTriggerAxis() - driverA.getRightTriggerAxis(),
                       DriveConstants.DRIVE_CONFIG.maxLinearAcceleration());
-                  if (Math.abs(driverA.getLeftTriggerAxis()) > 0.1
-                      || Math.abs(driverA.getRightTriggerAxis()) > 0.1) {
+                  if ((Math.abs(driverA.getLeftTriggerAxis()) > 0.1
+                          || Math.abs(driverA.getRightTriggerAxis()) > 0.1)
+                      && !swerve.getIsScoped()) {
                     swerve.clearHeadingControl();
                   }
                 })
@@ -460,15 +476,15 @@ public class RobotContainer {
         .onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
 
     // Stop running serializer button
-    new Trigger(
-            () ->
-                serializer.serializerStalling()
-                    && intakeController.getTargetState() == IntakeState.INTAKE
-                    && shooterController.getTargetState()
-                        == ShooterState.INTAKE) // TODO: make these constants
-        .onTrue(
-            new InstantCommand(
-                () -> shooterController.setTargetState(ShooterState.FLYWHEEL_SPIN_UP)));
+    // new Trigger(
+    //         () ->
+    //             serializer.serializerStalling()
+    //                 && intakeController.getTargetState() == IntakeState.INTAKE
+    //                 && shooterController.getTargetState()
+    //                     == ShooterState.INTAKE) // TODO: make these constants
+    //     .onTrue(
+    //         new InstantCommand(
+    //             () -> shooterController.setTargetState(ShooterState.FLYWHEEL_SPIN_UP)));
 
     // Use pov down and left for testing buttons please!! (Drivers get annoyed when we use other
     // buttons)
@@ -493,8 +509,7 @@ public class RobotContainer {
     IntakeCommandFactory intakeCommandFactory =
         new IntakeCommandFactory(intakeController, shooterController, serializer);
 
-    driverA.b().onTrue(intakeCommandFactory.whileHeld());
-    driverA.b().onFalse(intakeCommandFactory.onRelease().until(() -> (driverA.b().getAsBoolean())));
+    driverA.b().onTrue(intakeCommandFactory.whileHeld()).onFalse(intakeCommandFactory.onRelease());
     // STOW ROBOT
     // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
     driverA
@@ -591,6 +606,11 @@ public class RobotContainer {
                 .alongWith(shooterController.setTargetStateCommand(ShooterState.INTAKE)));
 
     driverB
+        .b()
+        .onTrue(shootCommand.setJustShootCommand(true))
+        .onFalse(shootCommand.setJustShootCommand(false));
+
+    driverB
         .x()
         .onTrue(
             shooterController
@@ -608,8 +628,6 @@ public class RobotContainer {
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));
-
-    driverB.b().onTrue(new InstantCommand(() -> swerve.setDriveSupplyCurrentLimits(35)));
   }
 
   private void configureAutos() {
@@ -641,11 +659,30 @@ public class RobotContainer {
     SmartDashboard.putData("Auto Chooser", autoChooser.getSendableChooser());
   }
 
+  /** Attach the replay pose anchor. SIM only; no-op elsewhere. */
+  public void attachPoseAnchor(double intervalSeconds) {
+    if (Constants.getRobotMode() != Constants.Mode.SIM) {
+      return;
+    }
+    poseAnchor = new PoseAnchor(RobotSimState.getInstance().getDriveSimulation(), intervalSeconds);
+  }
+
+  /** Run the replay pose anchor for this loop. */
+  public void updatePoseAnchor(LogInputPlayer player) {
+    if (poseAnchor != null && player != null) {
+      poseAnchor.update(player);
+    }
+  }
+
   public Command getAutoCommand() {
     // When running headlessly for AI testing, bypass the dashboard chooser entirely.
     // i love autos
     // Invoke: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
     String aiAutoName = System.getProperty("ai.auto.name");
+    if (aiAutoName == null || aiAutoName.isBlank()) {
+      // In log-driven replay, run whatever auto the real match ran.
+      aiAutoName = System.getProperty("ai.replay.auto.name");
+    }
     if (aiAutoName != null && !aiAutoName.isBlank()) {
       return AutoBuilder.buildAuto(aiAutoName);
     }
@@ -655,11 +692,15 @@ public class RobotContainer {
   // runs when auto starts
   public void autoInit() {
     // Smart zero the robot
+    RobotState.getInstance().setIsAutoAdaptive(false);
+    RobotState.getInstance().setIsAutoUnderTrench(true);
     CommandScheduler.getInstance().schedule(new InstantCommand(() -> swerve.smartZeroGyro()));
+    intakeController.stopZeroing();
   }
 
   // runs when teleop starts
   public void teleopInit() {
+    swerve.setNeutralMode(NeutralModeValue.Brake);
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
   }
 
@@ -712,6 +753,9 @@ public class RobotContainer {
     SimulatedArena.getInstance().simulationPeriodic();
     RobotSimState.getInstance().updateTerrainState();
     RobotSimState.getInstance().getFuelSim().updateSim();
+
+    // After the arena tick: maple-sim overwrites RoboRioSim voltage during it.
+    SimBattery.getInstance().update();
     Logger.recordOutput(
         "Field Simulation/Robot Position", RobotSimState.getInstance().getRobotPose3d());
     Logger.recordOutput(

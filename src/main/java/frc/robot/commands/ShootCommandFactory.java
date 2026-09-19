@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.subsystems.elastic_updater.ElasticUpdater;
 import frc.robot.subsystems.intake.IntakeController;
 import frc.robot.subsystems.intake.IntakeController.IntakeState;
@@ -29,6 +30,7 @@ public class ShootCommandFactory {
 
   private boolean justShoot = false;
   double time = Timer.getFPGATimestamp();
+  private boolean justShoot = false;
 
   public ShootCommandFactory(
       ShooterController shooterController,
@@ -86,10 +88,12 @@ public class ShootCommandFactory {
                                       || shooterController.getTargetState() == ShooterState.SHOOT)
                                   && shooterController.flywheelsUpToSpeed()
                                   && (matchTimerUpdater.isOurHubActive()
-                                      || matchTimerUpdater.getTimeUntilOurHubShifts() < 2
+                                      || matchTimerUpdater.getTimeUntilOurHubShifts() <= 2
                                       || matchTimerUpdater.getTimeUntilOurHubShifts()
-                                          > 24) // time correct
-                                  && getHeadingError.get().getDegrees() < 4 // angle correct
+                                          >= 24) // time correct
+                                  && (getHeadingError.get().getDegrees() < 4
+                                      || getHeadingError.get().getDegrees() > 356
+                                      || justShoot) // angle correct
                               ? ShooterState.SHOOT
                               : ShooterState.TOTAL_SPIN_UP);
                     })
@@ -101,8 +105,7 @@ public class ShootCommandFactory {
                             .andThen(
                                 new WaitUntilCommand(
                                     () ->
-                                        ((SmartDashboard.getNumber("Intake Rack In Time", 2)
-                                                + time)
+                                        ((SmartDashboard.getNumber("Intake Rack In Time", 2) + time)
                                             < Timer.getFPGATimestamp())))
                             .andThen(intakeController.setTargetStateCommand(IntakeState.STOW))
                             .withDeadline(
@@ -110,7 +113,7 @@ public class ShootCommandFactory {
                                     () ->
                                         (shooterController.getTargetState()
                                             == ShooterState.TOTAL_SPIN_UP))))
-                        .repeatedly()));
+                        .repeatedly())));
   }
 
   /** Command to bind to onFalse – runs when the button is released. */
@@ -139,10 +142,18 @@ public class ShootCommandFactory {
             new WaitCommand(1.5).andThen(intakeController.setTargetStateCommand(IntakeState.STOW)));
   }
 
+  public Command setJustShootCommand(boolean justShoot) {
+    return Commands.runOnce(() -> this.justShoot = justShoot);
+  }
+
   public Command chunkShootGoBrrr(boolean justShoot) {
     return Commands.runOnce(
         () -> {
           intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
         });
+  }
+
+  public Command setJustShootCommand(boolean justShoot) {
+    return new InstantCommand(() -> this.justShoot = justShoot);
   }
 }

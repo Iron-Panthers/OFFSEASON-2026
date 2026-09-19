@@ -229,6 +229,15 @@ public class ShooterController extends SubsystemBase {
         serializer.setVelocityTarget(targetState.serializerTarget);
       }
     } else {
+      if (targetState.flywheelTarget == ShooterFlywheelTarget.INTAKE) {
+        TargetShootingState shotState = RobotState.getInstance().calculateTargetShootingState();
+        shooterFlywheel.setVelocityManual(
+            Units.MetersPerSecond.of(
+                Math.min(shotState.shooterSpeed().in(Units.MetersPerSecond), 9.5)),
+            targetState.flywheelTarget.getSupplyCurrentLimit());
+      } else {
+        shooterFlywheel.setVelocityTarget(targetState.flywheelTarget);
+      }
       shooterHood.setPositionTarget(targetState.hoodTarget);
       shooterFlywheel.setVelocityTarget(targetState.flywheelTarget);
       shooterOmniwheel.setVelocityTarget(targetState.omniwheelTarget);

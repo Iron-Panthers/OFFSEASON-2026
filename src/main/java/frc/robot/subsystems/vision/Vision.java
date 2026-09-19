@@ -85,14 +85,15 @@ public class Vision extends SubsystemBase {
             new VisionMeasurement(observation.estimatedPose().toPose2d(), observation.timestamp());
 
         Matrix<N3, N1> visionStdDevs =
-            (cameraIndex == 0) ?
-                HIGH_RES_TAG_COUNT_DEVIATIONS
+            (cameraIndex == 0)
+                ? HIGH_RES_TAG_COUNT_DEVIATIONS
                     .get(
                         MathUtil.clamp(
-                            observation.tagCount() - 1, 0, HIGH_RES_TAG_COUNT_DEVIATIONS.size() - 1))
+                            observation.tagCount() - 1,
+                            0,
+                            HIGH_RES_TAG_COUNT_DEVIATIONS.size() - 1))
                     .computeDeviation(observation.averageDistance())
-                :
-                LOW_RES_TAG_COUNT_DEVIATIONS
+                : LOW_RES_TAG_COUNT_DEVIATIONS
                     .get(
                         MathUtil.clamp(
                             observation.tagCount() - 1, 0, LOW_RES_TAG_COUNT_DEVIATIONS.size() - 1))

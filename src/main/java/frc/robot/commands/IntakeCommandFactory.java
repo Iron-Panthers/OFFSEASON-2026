@@ -2,7 +2,6 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.intake.IntakeController;
 import frc.robot.subsystems.intake.IntakeController.IntakeState;
 import frc.robot.subsystems.shooter.ShooterController;
@@ -37,8 +36,8 @@ public class IntakeCommandFactory {
   }
 
   public Command onRelease() {
-    return new WaitCommand(0.5)
-        .andThen(intakeController.setTargetStateCommand(IntakeState.IDLE))
+    return intakeController
+        .setTargetStateCommand(IntakeState.IDLE)
         .andThen(shooterController.setTargetStateCommand(ShooterState.FLYWHEEL_SPIN_UP))
         .andThen(new InstantCommand(() -> serializer.setVelocityTarget(SerializerTarget.IDLE)));
   }

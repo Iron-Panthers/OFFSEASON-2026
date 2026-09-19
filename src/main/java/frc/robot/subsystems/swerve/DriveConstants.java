@@ -68,16 +68,16 @@ public class DriveConstants {
             4.5,
             10,
             6);
+          // Matches COMP.
         case SIM -> new DrivebaseConfig(
-            Units.inchesToMeters(1.925),
-            Units.inchesToMeters(22.5),
-            Units.inchesToMeters(22.5),
-            Units.inchesToMeters(34),
-            Units.inchesToMeters(34),
-            3.75, // 3.75,
+            Units.inchesToMeters(1.97),
+            Units.inchesToMeters(19.75),
+            Units.inchesToMeters(24.25),
+            Units.inchesToMeters(33),
+            Units.inchesToMeters(37),
+            5,
             10,
-            // TODO: make it actually max acceleration in m/s^2
-            6); // (multiply by max velocity to get m/s^2)
+            8);
       };
 
   // max velocity of the robot for shooting while moving
@@ -87,7 +87,7 @@ public class DriveConstants {
         default -> 1.5;
       };
 
-  public static final Matrix<N3, N1> STATE_STD_DEVS = VecBuilder.fill(0.001, 0.001, 0.001);
+  public static final Matrix<N3, N1> STATE_STD_DEVS = VecBuilder.fill(0.005, 0.005, 0.005);
 
   public static final Translation2d[] MODULE_TRANSLATIONS =
       new Translation2d[] {
@@ -263,10 +263,11 @@ public class DriveConstants {
             (45.0 / 15) * (17.0 / 27) * (50.0 / 16), // MK4i L2.5 16 tooth
             150.0 / 7,
             3.125);
+          // Gains match COMP.
         case SIM -> new ModuleConstants(
-            new Gains(0.25, 2.26, 0, 70, 0, 0),
+            new Gains(0.24, 2.4, 0.08, 70, 0, 0),
             new MotionProfileGains(4, 64, 640),
-            new Gains(0.13, 0.79, 0.387, 2, 0, 0),
+            new Gains(0.16, 0.67, 0, 1.5, 0, 0),
             (30.0 / 15) * (25.0 / 32) * (54.0 / 14), // MK5n R2 ratio
             287.0 / 11,
             3.125);
@@ -279,10 +280,18 @@ public class DriveConstants {
    * These are the configs for the maple sim drivebase This should be updated to be similar to the
    * comp bot drivebase
    */
+  /**
+   * Tyre friction coefficient; maple-sim skids a wheel when demanded force exceeds it. Published
+   * tread-on-carpet value, not fitted. Remaining slip is modelled in ModuleIOTalonFXSim.
+   */
+  public static final double WHEEL_COEFFICIENT_OF_FRICTION = 1.05;
+
   public static final DriveTrainSimulationConfig
       mapleSimConfig = // TODO: update this to be similar to comp bot drive base
       DriveTrainSimulationConfig.Default()
               .withRobotMass(Kilograms.of(54.4311))
+              .withBumperSize(
+                  Meters.of(DRIVE_CONFIG.bumperWidthX()), Meters.of(DRIVE_CONFIG.bumperWidthY()))
               .withCustomModuleTranslations(MODULE_TRANSLATIONS)
               .withGyro(COTS.ofPigeon2())
               .withSwerveModule(
@@ -295,7 +304,7 @@ public class DriveConstants {
                       Volts.of(0.25),
                       Meters.of(DRIVE_CONFIG.wheelRadius()),
                       KilogramSquareMeters.of(0.04),
-                      1.4));
+                      WHEEL_COEFFICIENT_OF_FRICTION));
 
   public static final DriveTrainSimulationConfig obstacleConfig =
       DriveTrainSimulationConfig.Default().withRobotMass(Kilograms.of(1000000000));
