@@ -42,6 +42,37 @@ public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
   }
 
   /**
+   * Overrides the supply current limit the serializer runs at, ignoring the limit carried by {@link
+   * SerializerTarget}. Stays in effect through target changes until {@link #setDefaultMaxAmps()} is
+   * called.
+   *
+   * @param amps supply current limit in amps
+   */
+  public void setMaxAmps(double amps) {
+    setSupplyCurrentLimitOverride(amps);
+  }
+
+  /** Returns the serializer to the supply current limit carried by its current target. */
+  public void setDefaultMaxAmps() {
+    clearSupplyCurrentLimitOverride();
+  }
+
+  /**
+   * The supply current limit the serializer is actually running at this loop.
+   *
+   * @return supply current limit in amps
+   */
+  @AutoLogOutput(key = "Serializer/Max Amps")
+  public double getMaxAmps() {
+    return getSupplyCurrentLimitAmps();
+  }
+
+  @AutoLogOutput(key = "Serializer/Max Amps Overridden")
+  public boolean isMaxAmpsOverridden() {
+    return isSupplyCurrentLimitOverridden();
+  }
+
+  /**
    * Returns true when the serializer is applying amps but not going anywhere
    *
    * @return
