@@ -91,8 +91,7 @@ public class Drive extends SubsystemBase {
     gyroIO.updateInputs(gyroInputs);
     Logger.processInputs("Swerve/Gyro", gyroInputs);
 
-    speedMagnitude =    //BUG #2: Speed magnitude never actually gets updated except in DEFENSE
-            Math.hypot(targetSpeeds.vxMetersPerSecond, targetSpeeds.vyMetersPerSecond);
+    speedMagnitude = Math.hypot(targetSpeeds.vxMetersPerSecond, targetSpeeds.vyMetersPerSecond);
 
     fieldRelativeYaw =
         Rotation2d.fromDegrees(
@@ -159,7 +158,7 @@ public class Drive extends SubsystemBase {
       case AUTO_ALIGN -> {
         if (pidAutoAlignController != null) {
           targetSpeeds = pidAutoAlignController.update();
-          if(autoAlignHeadingController != null){ //BUG #4: potential null pointer exception
+          if(autoAlignHeadingController != null){
             targetSpeeds.omegaRadiansPerSecond = autoAlignHeadingController.update();
           }
 
@@ -489,12 +488,12 @@ public class Drive extends SubsystemBase {
     if (driveMode != DriveModes.AUTO_ALIGN) {
       return false;
     }
-    return autoAlignHeadingController != null && pidAutoAlignController != null && //BUG #3: Possible NullPointedException
+    return autoAlignHeadingController != null && pidAutoAlignController != null && 
     autoAlignHeadingController.atTarget() && pidAutoAlignController.atTarget();
   }
 
   public boolean almostReachedAutoAlignTarget() {
-    if (driveMode != DriveModes.AUTO_ALIGN && driveMode != DriveModes.DEFENSE) { //BUG #1: The "||" would never have worked
+    if (driveMode != DriveModes.AUTO_ALIGN && driveMode != DriveModes.DEFENSE) { 
       return false;
     }
     return pidAutoAlignController.almostAtTarget();
