@@ -746,6 +746,7 @@ public class RobotContainer {
     Logger.recordOutput(
         "FieldSimulation/RobotFuel", RobotSimState.getInstance().getIntakeGamePieces());
     Logger.recordOutput("FieldSimulation/FuelCount", RobotSimState.getInstance().getFuelCount());
+    RobotSimState.getInstance().logScoring();
     Logger.recordOutput(
         "FieldSimulation/ObstaclePositions",
         RobotSimState.getInstance().getObstaclePositions().toArray(new Pose2d[0]));

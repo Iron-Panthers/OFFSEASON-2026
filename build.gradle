@@ -250,6 +250,27 @@ tasks.withType(JavaExec).configureEach {
     if (project.hasProperty('replay.teleopOnly')) {
         jvmArgs '-Dai.replay.teleopOnly=true'
     }
+    // A/B testing. See /ab-test and scripts/ab_test.py.
+    // -Psim.seed makes simulation randomness reproducible so two runs of different code
+    // can be compared against the same noise. -Pbench selects a scoring benchmark.
+    if (project.hasProperty('sim.seed')) {
+        jvmArgs "-Dab.sim.seed=${project.getProperty('sim.seed')}"
+    }
+    if (project.hasProperty('bench')) {
+        jvmArgs "-Dab.bench=${project.getProperty('bench')}"
+    }
+    if (project.hasProperty('bench.count')) {
+        jvmArgs "-Dab.bench.count=${project.getProperty('bench.count')}"
+    }
+    if (project.hasProperty('bench.dwell')) {
+        jvmArgs "-Dab.bench.dwell=${project.getProperty('bench.dwell')}"
+    }
+    if (project.hasProperty('bench.distances')) {
+        jvmArgs "-Dab.bench.distances=${project.getProperty('bench.distances')}"
+    }
+    if (project.hasProperty('bench.timeout')) {
+        jvmArgs "-Dab.bench.timeout=${project.getProperty('bench.timeout')}"
+    }
 }
 
 

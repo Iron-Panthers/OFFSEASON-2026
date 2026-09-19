@@ -17,6 +17,7 @@ import static frc.robot.subsystems.vision.VisionConstants.APRIL_TAG_FIELD_LAYOUT
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import frc.robot.utility.SimRandom;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 import org.photonvision.simulation.PhotonCameraSim;
@@ -58,6 +59,14 @@ public class VisionIOPhotonvisionSim extends VisionIOPhotonvision {
     cameraProperties.setFPS(VisionConstants.SIM_CAMERA_FPS);
     cameraProperties.setAvgLatencyMs(VisionConstants.SIM_CAMERA_LATENCY_MS);
     cameraProperties.setLatencyStdDevMs(VisionConstants.SIM_CAMERA_LATENCY_STD_DEV_MS);
+
+    // Under an A/B test, pin this camera's noise so two runs of different code see the same
+    // vision error. Unseeded, vision is the largest remaining source of run-to-run variance:
+    // a noisy pose estimate moves where auto-aim points, which changes whether a shot scores.
+    // Offset by camera index so the cameras do not all draw the identical error sequence.
+    if (SimRandom.isSeeded()) {
+      cameraProperties.setRandomSeed(SimRandom.seed() + index);
+    }
 
     cameraSim =
         new PhotonCameraSim(

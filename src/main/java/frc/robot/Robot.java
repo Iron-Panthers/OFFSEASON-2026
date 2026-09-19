@@ -25,6 +25,8 @@ import edu.wpi.first.wpilibj.simulation.GenericHIDSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.commands.HappyBirthdayCommand;
+import frc.robot.utility.SimRandom;
+import frc.robot.utility.ab.AbBench;
 import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.MatchInputs;
 import frc.robot.utility.replay.MatchLogReader;
@@ -186,6 +188,11 @@ public class Robot extends LoggedRobot {
       }
     }
 
+    // Record the A/B configuration so a log always states which seed and overrides produced it.
+    if (SimRandom.isSeeded()) {
+      Logger.recordOutput("AB/Seed", SimRandom.seed());
+    }
+
     CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
     CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
 
@@ -252,6 +259,33 @@ public class Robot extends LoggedRobot {
     CommandScheduler.getInstance().run();
 
     Threads.setCurrentThreadPriority(false, 10);
+
+    // Step the A/B benchmark after the scheduler, so it observes the state this loop produced.
+    if (AbBench.drivesRobot()) {
+      AbBench.periodic();
+      if (AbBench.isFinished() && !aiShutdownInitiated) {
+        aiShutdownInitiated = true;
+        shutdownAfterFlush();
+      }
+    }
+  }
+
+  /**
+   * Ends the run on a separate thread after a buffer for the final records to reach the log.
+   *
+   * <p>endCompetition() called inline from robotPeriodic does not stop the loop.
+   */
+  private void shutdownAfterFlush() {
+    new Thread(
+            () -> {
+              try {
+                Thread.sleep(1000);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+              endCompetition();
+            })
+        .start();
   }
 
   /** This function is called once when the robot is disabled. */
@@ -317,7 +351,11 @@ public class Robot extends LoggedRobot {
 
     robotContainer.teleopInit();
 
-    if (Boolean.getBoolean("ai.logging") && replayPlayer == null) {
+    // A benchmark drives the joysticks itself, so the scripted-teleop thread must not also run --
+    // two writers on the same GenericHIDSim would fight over the button state.
+    if (AbBench.drivesRobot()) {
+      AbBench.onTeleopInit();
+    } else if (Boolean.getBoolean("ai.logging") && replayPlayer == null) {
       startAiTeleopThread();
     }
   }
