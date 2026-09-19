@@ -9,6 +9,23 @@ Refusing loudly is the whole point. A chart that silently renders empty still
 *looks* like evidence, which is worse than a crash: it invites someone to trust
 a conclusion nothing is backing. So a misspelled key, an unknown chart form or a
 backwards time window all stop the run.
+
+The document also has a fixed shape, enforced here rather than left to habit.
+Every finding is conclusion, then evidence, then the reading of that evidence:
+
+    finding.detail    the conclusion -- what is wrong, stated in full
+    finding.charts    the graphs that show it
+    chart.reads_as    why that particular graph supports the conclusion
+
+All three are required on a finding, because a chart with no stated reading is
+the failure mode this format exists to prevent: a picture dropped next to a
+sentence, leaving the reader to guess which line in it was the point.
+
+Prose fields (``verdict``, ``detail``, ``reads_as``, stat and chart ``note``)
+accept either a string -- one paragraph -- or an array. In an array the first
+entry is the lead paragraph and every entry after it is a bullet, so an
+explanation that needs to enumerate can do so without being crammed into one
+run-on sentence.
 """
 
 from __future__ import annotations
@@ -22,6 +39,24 @@ DEFAULT_SEVERITY = "info"
 
 class SpecError(ValueError):
     """Malformed findings JSON. The message names the JSON path that is wrong."""
+
+
+@dataclass(frozen=True)
+class Prose:
+    """
+    A block of explanation: one lead paragraph, then optional bullets.
+
+    Findings prose is meant to be read by someone who was not in the pit when
+    the log was taken, so it is allowed -- encouraged -- to be long. The bullet
+    form exists so that "long" does not have to mean "one sentence with four
+    semicolons in it".
+    """
+
+    lead: str = ""
+    bullets: tuple[str, ...] = field(default_factory=tuple)
+
+    def __bool__(self) -> bool:
+        return bool(self.lead or self.bullets)
 
 
 @dataclass(frozen=True)
@@ -40,6 +75,10 @@ class ChartSpec:
     mistake worth stopping for. A chart from a preset bundle is not: bundles are
     generic across every log, and a vision log legitimately has no flywheel, so
     missing series are dropped instead.
+
+    The same split governs ``reads_as``, the sentence-or-more saying what in this
+    chart backs the finding. A chart the analyst chose has to carry one; a
+    bundle chart is context nobody claimed anything about, so it does not.
     """
 
     form: str
@@ -52,6 +91,7 @@ class ChartSpec:
     include_zero: bool = False
     required: bool = True
     note: str = ""
+    reads_as: Prose = field(default_factory=Prose)
 
 
 @dataclass(frozen=True)
@@ -68,7 +108,7 @@ class StatSpec:
 @dataclass(frozen=True)
 class Finding:
     title: str
-    detail: str = ""
+    detail: Prose = field(default_factory=Prose)
     severity: str = DEFAULT_SEVERITY
     window: tuple[float, float] | None = None
     charts: tuple[ChartSpec, ...] = field(default_factory=tuple)
@@ -78,7 +118,7 @@ class Finding:
 class Report:
     log: str
     question: str = ""
-    verdict: str = ""
+    verdict: Prose = field(default_factory=Prose)
     confidence: str = ""
     label: str | None = None
     bundles: tuple[str, ...] = field(default_factory=tuple)
@@ -122,6 +162,38 @@ def _string(source: dict, key: str, path: str, default: str | None = None) -> st
     if not isinstance(value, str):
         raise SpecError(f"{path}.{key}: expected a string, got {type(value).__name__}")
     return value
+
+
+def _prose(value, path: str, *, required: bool = False, because: str = "") -> Prose:
+    """
+    Parse a prose field: a string paragraph, or an array of lead + bullets.
+
+    ``because`` is appended to the "required" error so the message says what the
+    missing text is for rather than only that something is missing -- the whole
+    reason these fields are mandatory is that they are easy to skip.
+    """
+    if value is None or value == "" or value == []:
+        if required:
+            raise SpecError(f"{path}: required{because}")
+        return Prose()
+
+    if isinstance(value, str):
+        return Prose(lead=value.strip())
+
+    items = _as_list(value, path)
+    for index, item in enumerate(items):
+        if not isinstance(item, str):
+            raise SpecError(
+                f"{path}[{index}]: expected a string, got {type(item).__name__}"
+            )
+    cleaned = [item.strip() for item in items if item.strip()]
+    if not cleaned:
+        if required:
+            raise SpecError(f"{path}: required{because}")
+        return Prose()
+    # First entry leads, the rest are bullets. A one-entry array is just a
+    # paragraph, so a findings file never has to choose the form up front.
+    return Prose(lead=cleaned[0], bullets=tuple(cleaned[1:]))
 
 
 def _severity(source: dict, path: str) -> str:
@@ -211,6 +283,15 @@ def _chart(value, path: str) -> ChartSpec:
         include_zero=bool(entry.get("include_zero", False)),
         required=True,
         note=_string(entry, "note", path, ""),
+        reads_as=_prose(
+            entry.get("reads_as"),
+            f"{path}.reads_as",
+            required=True,
+            because=(
+                " -- say what in this chart supports the finding: the signal, "
+                "the moment, and the number a reader should come away with"
+            ),
+        ),
     )
 
 
@@ -247,7 +328,12 @@ def _finding(value, path: str) -> Finding:
         )
     return Finding(
         title=_string(entry, "title", path),
-        detail=_string(entry, "detail", path, ""),
+        detail=_prose(
+            entry.get("detail"),
+            f"{path}.detail",
+            required=True,
+            because=" -- the conclusion the charts below are evidence for",
+        ),
         severity=_severity(entry, path),
         window=window,
         charts=charts,
@@ -278,7 +364,7 @@ def parse_report(raw, known_bundles=frozenset()) -> Report:
     report = Report(
         log=_string(document, "log", "<root>"),
         question=_string(document, "question", "<root>", ""),
-        verdict=_string(document, "verdict", "<root>", ""),
+        verdict=_prose(document.get("verdict"), "<root>.verdict"),
         confidence=_string(document, "confidence", "<root>", ""),
         label=document.get("label") or None,
         bundles=tuple(bundles),

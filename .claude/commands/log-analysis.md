@@ -214,13 +214,23 @@ python scripts/wpilog_to_csv.py <FILE> \
 3. **Identify anomaly window** — specific timestamp where behavior diverges
 4. **Key query** — `--keys ... --from T1 --to T2` to zoom in on exactly that window
 5. **Diagnose** — state transitions + continuous values together tell the story
-6. **Report:**
-   - Answer to the question (plain English)
-   - Supporting evidence (timestamps + key values)
-   - Root cause (specific file, line, or state)
-   - Confidence: "clearly visible in logs" vs "inferred from Y"
+6. **Report** — in this order, in the response and on the page alike:
+   - **Conclusion** — the answer to the question in plain English, stated before
+     any evidence. Say the mechanism, not just the symptom.
+   - **Evidence** — the keys, timestamps and values that show it. Charts on the
+     page; the same numbers inline in the response.
+   - **Why that evidence supports the conclusion** — what specifically in each
+     chart or value backs the claim, and what a healthy version would look like.
+   - **Root cause** — specific file, line, or state.
+   - **Confidence** — "clearly visible in logs" vs "inferred from Y".
 7. **Chart it** — write the findings JSON and render the page (below)
 8. **Propose the fix, last** — the smallest edit that moves the logged number (below)
+
+**Be verbose in the explanations, terse in the claims.** Every conclusion should
+carry enough explanation that a teammate who did not run the investigation can
+follow it end to end — but every sentence in it should be one the log supports.
+Use bullets whenever the explanation is a list of separate points; use a
+paragraph when it is one continuous argument.
 
 **Only report what the logs confirm.** Do not speculate about causes without log evidence.
 
@@ -243,24 +253,95 @@ directory. The findings JSON is copied in beside the page.
 
 Write the findings file to `build/` — it is scratch, like the page it produces.
 
+### The shape of a finding — conclusion, evidence, reading
+
+Every finding renders as three labelled parts, always in this order:
+
+| Part           | Field      | What goes in it                                 |
+| -------------- | ---------- | ----------------------------------------------- |
+| **Conclusion** | `detail`   | What is wrong, stated in full, before any chart |
+| **Evidence**   | `charts[]` | The graphs that show it                         |
+| **Why**        | `reads_as` | What in _that_ chart backs the conclusion       |
+
+This is not a suggestion — `detail` and `reads_as` are required, and the render
+fails naming the finding if either is missing. A chart with no stated reading is
+the exact failure this format exists to prevent: a picture dropped next to a
+sentence, leaving the reader to guess which line in it was the point.
+
+**Write for someone who was not there.** The reader is a teammate in the pit
+between matches, or you in March. They did not run the investigation, they
+cannot see your terminal, and they will not open the table view. Assume none of
+the context is in their head.
+
+- **Conclusion (`detail`)** — the mechanism, not a restatement of the title.
+  What the robot did, what it should have done, and what that means. Name the
+  keys, the timestamps and the numbers. Three or four sentences is normal; one
+  clause is not.
+- **Reading (`reads_as`)** — walk the reader's eye across the chart. Which line
+  or lane, at which moment, reaching which value, and what a _healthy_ version
+  of that chart would look like instead. "Flywheel is low" is not a reading.
+  "The actual line flattens at 46.2 rot/s from 12.1s while the target holds at
+  50.0, and never closes the gap before the state leaves SHOOT" is.
+- **Number every claim.** A sentence in either field with no value, no timestamp
+  and no key name is almost always filler — cut it or give it a number.
+- **One reading per chart**, written about that chart. If two charts only mean
+  something together, say so inside the second one's reading.
+
+### Bullets
+
+Any prose field takes **a string** (one paragraph) or **an array**: the first
+entry is the lead paragraph and every entry after it becomes a bullet.
+
+```json
+"detail": [
+  "The flywheel never recovered after the first feed, so every shot after 12.1s left at the wrong speed.",
+  "Velocity fell to 46.2 rot/s against a 50.0 setpoint at 12.1s and stayed within 0.3 rot/s of that floor for 1.4s.",
+  "Flywheels Up To Speed latched true at 11.9s, before the dip, so the shoot command never waited.",
+  "The accelerator kept feeding through the whole window — the dip is load the controller did not reject, not a commanded change."
+]
+```
+
+Reach for the array whenever the explanation has more than one independent
+point: separate causes, several moments in time, or a claim plus the
+alternatives you ruled out. Keep a single continuous argument as one paragraph —
+bullets are for things that are genuinely a list, not a way to chop up a
+sentence.
+
+The top-level `verdict` takes the same form, and usually should be an array: a
+lead sentence answering the question, then a bullet per supporting finding.
+
 ### Schema
 
 ```json
 {
   "log": "build/ai-logs/akit_26-09-18_23-46-38.wpilog",
   "question": "Why did we miss the shot at 12s?",
-  "verdict": "Flywheel plateaued 8% below setpoint for 1.4s. The shot fired anyway because Flywheels Up To Speed latched true at 11.9s, before the dip.",
+  "verdict": [
+    "The shot at 12s left at 46 rot/s against a 50 rot/s setpoint, because the up-to-speed latch fired before the flywheel dipped and nothing re-checked it.",
+    "Flywheel velocity plateaued 7.6% below setpoint for 1.4s starting at 12.1s.",
+    "Flywheels Up To Speed went true at 11.9s and never went false again, so nothing gated the feed.",
+    "Hood and accelerator both held their targets through the window, which rules them out."
+  ],
   "confidence": "clearly visible in logs",
   "bundles": ["shooter"],
   "stats": [
-    { "label": "Worst velocity deficit", "value": "7.6", "unit": "%", "severity": "critical" }
+    {
+      "label": "Worst velocity deficit",
+      "value": "7.6",
+      "unit": "%",
+      "severity": "critical"
+    }
   ],
   "findings": [
     {
       "title": "Flywheel never recovered after the first feed",
-      "detail": "Velocity fell to 46.2 rot/s against a 50.0 setpoint at 12.1s and stayed there until the state left SHOOT.",
       "severity": "critical",
       "window": [11.0, 14.5],
+      "detail": [
+        "The flywheel dropped under feed load and the controller never pulled it back, so every shot after 12.1s left slow.",
+        "Velocity fell from 50.1 to 46.2 rot/s between 11.9s and 12.1s and held that floor until the state left SHOOT at 13.5s.",
+        "The setpoint is flat at 50.0 for the whole window, so this is a tracking failure, not a commanded change."
+      ],
       "charts": [
         {
           "form": "timeseries",
@@ -269,8 +350,19 @@ Write the findings file to `build/` — it is scratch, like the page it produces
           "tolerance_pct": 0.05,
           "include_zero": true,
           "series": [
-            { "key": "RealOutputs/Shooter/Shooter Flywheels/Current Velocity", "label": "Actual" },
-            { "key": "RealOutputs/Shooter/Shooter Flywheels/Target Velocity", "label": "Target" }
+            {
+              "key": "RealOutputs/Shooter/Shooter Flywheels/Current Velocity",
+              "label": "Actual"
+            },
+            {
+              "key": "RealOutputs/Shooter/Shooter Flywheels/Target Velocity",
+              "label": "Target"
+            }
+          ],
+          "reads_as": [
+            "The actual line leaves the 5% band at 12.1s and stays outside it for the rest of the window — a healthy spin-up re-enters the band within about 0.2s.",
+            "The target line is flat at 50.0 throughout, so the gap is the controller losing ground rather than the setpoint moving.",
+            "The floor at 46.2 rot/s is flat rather than sagging, which is what a saturated output looks like, not a slow recovery."
           ]
         }
       ]
@@ -285,20 +377,21 @@ At least one of `findings` or `bundles` must be present.
 
 **`bundles`** renders a baseline set of preset charts, collapsed under
 "Baseline". One per investigate preset: `auto`, `shooter`, `intake`, `drive`,
-`vision`. Bundle charts tolerate missing keys.
+`vision`. Bundle charts tolerate missing keys and carry no `reads_as` — they are
+context nobody claimed anything about.
 
-**`findings[]`:** `title` (required) · `detail` · `severity` · `window` ·
-`charts`. A finding's `window` becomes the default window for its own charts.
-`severity` is one of `info`, `good`, `warning`, `serious`, `critical`.
+**`findings[]`:** `title` (required) · `detail` (**required**) · `severity` ·
+`window` · `charts`. A finding's `window` becomes the default window for its own
+charts. `severity` is one of `info`, `good`, `warning`, `serious`, `critical`.
 
-**`charts[]`:** `form` (required) · `title` · `series` (required) · `unit` ·
-`window` · `include_zero` · `note`.
+**`charts[]`:** `form` (required) · `series` (required) · `reads_as`
+(**required**) · `title` · `unit` · `window` · `include_zero` · `note`.
 
-| `form`       | What it draws                                     | Extra fields                              |
-| ------------ | ------------------------------------------------- | ----------------------------------------- |
-| `timeseries` | Numeric signals over time, one shared y-axis      | `tolerance_pct` (band around last series) |
-| `timeline`   | One state-machine lane per series                 | —                                         |
-| `path`       | XY field path, equal aspect. 1–2 series           | `error_key` (adds an error chart below)   |
+| `form`       | What it draws                                | Extra fields                              |
+| ------------ | -------------------------------------------- | ----------------------------------------- |
+| `timeseries` | Numeric signals over time, one shared y-axis | `tolerance_pct` (band around last series) |
+| `timeline`   | One state-machine lane per series            | —                                         |
+| `path`       | XY field path, equal aspect. 1–2 series      | `error_key` (adds an error chart below)   |
 
 ### Rules that keep the charts honest
 
@@ -309,6 +402,9 @@ At least one of `findings` or `bundles` must be present.
 - **Every chart has a table view**, so no value is reachable only by hover.
 - Charts plot raw logged keys. If a chart contradicts your prose, the chart is
   right.
+- **Never write a reading the chart does not show.** A reading is a claim about
+  pixels the reader can check. If the number you want to cite is not visible on
+  that chart, either add the chart that shows it or drop the claim.
 
 ### Worked flow
 
@@ -318,12 +414,14 @@ python scripts/wpilog_to_csv.py <FILE> --investigate shooter
 python scripts/wpilog_to_csv.py <FILE> --keys "..." --from 11 --to 15
 
 # 2. write build/findings.json from what you concluded
+#    conclusion per finding, reading per chart, bullets where there is a list
 
 # 3. render
 python scripts/log_charts.py build/findings.json
 ```
 
 ---
+
 
 ## Proposing the Fix — always last, always minimal
 
