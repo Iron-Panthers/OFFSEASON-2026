@@ -11,6 +11,7 @@ public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
     REVERSE(40, SerializerConstants.CURRENT_LIMIT_AMPS),
     SPIN_UP(-10, SerializerConstants.CURRENT_LIMIT_AMPS),
     SHOOT(-40, SerializerConstants.CURRENT_LIMIT_AMPS),
+    MAX_SPEED(-80, SerializerConstants.CURRENT_LIMIT_AMPS),
     HOLD(-1, SerializerConstants.CURRENT_LIMIT_AMPS);
 
     private double velocity;

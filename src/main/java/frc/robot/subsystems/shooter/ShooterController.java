@@ -103,7 +103,13 @@ public class ShooterController extends SubsystemBase {
         ShooterFlywheelTarget.PASS,
         ShooterAcceleratorTarget.PASS,
         ShooterOmniwheelTarget.IDLE,
-        SerializerTarget.IDLE);
+        SerializerTarget.IDLE),
+    UNJAM(
+        ShooterHoodTarget.SHOOT_TEMP,
+        ShooterFlywheelTarget.SHOOT,
+        ShooterAcceleratorTarget.SHOOT,
+        ShooterOmniwheelTarget.SHOOT,
+        SerializerTarget.MAX_SPEED);
 
     public final ShooterHoodTarget hoodTarget;
     public final ShooterFlywheelTarget flywheelTarget;

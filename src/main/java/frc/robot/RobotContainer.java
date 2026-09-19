@@ -443,7 +443,8 @@ public class RobotContainer {
                               < .04)
                   .andThen(
                       new InstantCommand(() -> RobotState.getInstance().resetDynamicObstacles()))
-                  .andThen(new InstantCommand(()-> RobotState.getInstance().setIsAutoAdaptive(false)));
+                  .andThen(
+                      new InstantCommand(() -> RobotState.getInstance().setIsAutoAdaptive(false)));
             },
             Set.of(swerve)));
   }
@@ -626,6 +627,14 @@ public class RobotContainer {
 
     driverB.povDown().onTrue(shooterController.zeroCommand());
     driverB.povDown().onFalse(shooterController.stopZeroingCommand());
+
+    // to unstick the serializer
+    // driverB.povUp().whileTrue(new VibrateSerializerCommand(serializer).repeatedly());
+    driverB
+        .povUp()
+        .whileTrue(
+            new InstantCommand(() -> shooterController.setTargetState(ShooterState.UNJAM))
+                .repeatedly());
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));

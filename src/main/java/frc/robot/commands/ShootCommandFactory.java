@@ -67,7 +67,12 @@ public class ShootCommandFactory {
                             new InstantCommand(
                                 () -> intakeController.setTargetState(IntakeState.STOW)))
                         .andThen(new WaitCommand(0.1))
-                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW)))) //we want to really make sure the balls are out
+                        .andThen(
+                            () ->
+                                intakeController.setTargetState(
+                                    IntakeState
+                                        .INTAKE_SLOW)))) // we want to really make sure the balls
+        // are out
         .alongWith(
             new InstantCommand(
                     () -> {
