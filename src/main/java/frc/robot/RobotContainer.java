@@ -5,6 +5,7 @@ package frc.robot;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.config.RobotConfig;
@@ -457,8 +458,9 @@ public class RobotContainer {
                       -driverA.getLeftX(),
                       driverA.getLeftTriggerAxis() - driverA.getRightTriggerAxis(),
                       DriveConstants.DRIVE_CONFIG.maxLinearAcceleration());
-                  if (Math.abs(driverA.getLeftTriggerAxis()) > 0.1
-                      || Math.abs(driverA.getRightTriggerAxis()) > 0.1) {
+                  if ((Math.abs(driverA.getLeftTriggerAxis()) > 0.1
+                          || Math.abs(driverA.getRightTriggerAxis()) > 0.1)
+                      && !swerve.getIsScoped()) {
                     swerve.clearHeadingControl();
                   }
                 })
@@ -604,6 +606,11 @@ public class RobotContainer {
                 .alongWith(shooterController.setTargetStateCommand(ShooterState.INTAKE)));
 
     driverB
+        .b()
+        .onTrue(shootCommand.setJustShootCommand(true))
+        .onFalse(shootCommand.setJustShootCommand(false));
+
+    driverB
         .x()
         .onTrue(
             shooterController
@@ -621,8 +628,6 @@ public class RobotContainer {
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));
-
-    driverB.b().onTrue(new InstantCommand(() -> swerve.setDriveSupplyCurrentLimits(35)));
   }
 
   private void configureAutos() {
@@ -688,11 +693,14 @@ public class RobotContainer {
   public void autoInit() {
     // Smart zero the robot
     RobotState.getInstance().setIsAutoAdaptive(false);
+    RobotState.getInstance().setIsAutoUnderTrench(true);
     CommandScheduler.getInstance().schedule(new InstantCommand(() -> swerve.smartZeroGyro()));
+    intakeController.stopZeroing();
   }
 
   // runs when teleop starts
   public void teleopInit() {
+    swerve.setNeutralMode(NeutralModeValue.Brake);
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
   }
 

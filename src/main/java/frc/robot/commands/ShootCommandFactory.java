@@ -28,6 +28,7 @@ public class ShootCommandFactory {
   private final ElasticUpdater matchTimerUpdater;
   private final Supplier<Rotation2d> getHeadingError;
   double time = Timer.getFPGATimestamp();
+  private boolean justShoot = false;
 
   public ShootCommandFactory(
       ShooterController shooterController,
@@ -43,25 +44,30 @@ public class ShootCommandFactory {
 
   /** Command to bind to whileTrue – repeats while the button is held. */
   public Command whileHeld() {
-    return (new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE))
-            .andThen(
-                new WaitCommand(1)
-                    .andThen(
-                        new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW)))
-                    .andThen(new WaitCommand(0.1))
-                    .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
-            .andThen(
-                new WaitCommand(0.2)
-                    .andThen(
-                        new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW)))
-                    .andThen(new WaitCommand(0.1))
-                    .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
-            .andThen(
-                new WaitCommand(0.1)
-                    .andThen(
-                        new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW)))
-                    .andThen(new WaitCommand(0.1))
-                    .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE))))
+    return setJustShootCommand(false)
+        .alongWith(
+            new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE))
+                .andThen(
+                    new WaitCommand(1)
+                        .andThen(
+                            new InstantCommand(
+                                () -> intakeController.setTargetState(IntakeState.STOW)))
+                        .andThen(new WaitCommand(0.1))
+                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
+                .andThen(
+                    new WaitCommand(0.2)
+                        .andThen(
+                            new InstantCommand(
+                                () -> intakeController.setTargetState(IntakeState.STOW)))
+                        .andThen(new WaitCommand(0.1))
+                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
+                .andThen(
+                    new WaitCommand(0.1)
+                        .andThen(
+                            new InstantCommand(
+                                () -> intakeController.setTargetState(IntakeState.STOW)))
+                        .andThen(new WaitCommand(0.1))
+                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE))))
         .alongWith(
             new InstantCommand(
                     () -> {
@@ -70,10 +76,12 @@ public class ShootCommandFactory {
                                       || shooterController.getTargetState() == ShooterState.SHOOT)
                                   && shooterController.flywheelsUpToSpeed()
                                   && (matchTimerUpdater.isOurHubActive()
-                                      || matchTimerUpdater.getTimeUntilOurHubShifts() < 2
+                                      || matchTimerUpdater.getTimeUntilOurHubShifts() <= 2
                                       || matchTimerUpdater.getTimeUntilOurHubShifts()
-                                          > 24) // time correct
-                                  && getHeadingError.get().getDegrees() < 4 // angle correct
+                                          >= 24) // time correct
+                                  && (getHeadingError.get().getDegrees() < 4
+                                      || getHeadingError.get().getDegrees() > 356
+                                      || justShoot) // angle correct
                               ? ShooterState.SHOOT
                               : ShooterState.TOTAL_SPIN_UP);
                     })
@@ -127,5 +135,9 @@ public class ShootCommandFactory {
         () -> {
           intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
         });
+  }
+
+  public Command setJustShootCommand(boolean justShoot) {
+    return new InstantCommand(() -> this.justShoot = justShoot);
   }
 }
