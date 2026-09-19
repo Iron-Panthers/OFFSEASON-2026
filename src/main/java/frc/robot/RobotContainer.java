@@ -383,7 +383,7 @@ public class RobotContainer {
                     .andThen(
                         shootCommand
                             .whileHeld()
-                            .raceWith(new WaitCommand(4))
+                            .raceWith(new WaitCommand(3.75))
                             .andThen(shootCommand.onRelease()))));
     NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",

@@ -17,7 +17,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2xTB 1 Left"
+                  "pathName": "2xTB Slow 1 Right"
                 }
               },
               {
@@ -54,7 +54,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2xTB 2 Left"
+                  "pathName": "2xTB 2 Right"
                 }
               },
               {
@@ -87,13 +87,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "xT 2 Left"
+            "pathName": "xT 2 Right"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Left Autos (auto generated)",
+  "folder": "Right Autos (make these)",
   "choreoAuto": false
 }
