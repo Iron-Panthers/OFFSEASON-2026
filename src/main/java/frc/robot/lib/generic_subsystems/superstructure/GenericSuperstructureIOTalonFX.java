@@ -134,12 +134,6 @@ public abstract class GenericSuperstructureIOTalonFX implements GenericSuperstru
     if (followerMotors.size() == 0) {
       talon.optimizeBusUtilization();
     }
-
-    MotorOutputManager.getInstance().registerMotorOutputs(() -> supplyCurrent.getValueAsDouble());
-
-    for (StatusSignal<Current> motorCurrent : followerMotorSupplyCurrents) {
-      MotorOutputManager.getInstance().registerMotorOutputs(() -> motorCurrent.getValueAsDouble());
-    }
   }
 
   @Override

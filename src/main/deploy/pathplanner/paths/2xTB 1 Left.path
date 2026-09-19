@@ -44,16 +44,31 @@
     "linkedName" : null
   }, {
     "anchor" : {
-      "x" : 5.448222222222222,
-      "y" : 5.53658888888889
+      "x" : 6.7673219762731485,
+      "y" : 5.014958912037036
     },
     "prevControl" : {
-      "x" : 7.949471559416455,
-      "y" : 4.488200047005673
+      "x" : 7.046964457247671,
+      "y" : 4.806931348623092
     },
     "nextControl" : {
-      "x" : 4.562294648256816,
-      "y" : 5.907921954109757
+      "x" : 6.500877604166668,
+      "y" : 5.213168330439814
+    },
+    "isLocked" : false,
+    "linkedName" : null
+  }, {
+    "anchor" : {
+      "x" : 5.452290075231482,
+      "y" : 5.591347439236111
+    },
+    "prevControl" : {
+      "x" : 6.30726203816943,
+      "y" : 5.563218646658311
+    },
+    "nextControl" : {
+      "x" : 4.513009693287037,
+      "y" : 5.622250000000001
     },
     "isLocked" : false,
     "linkedName" : null
@@ -63,8 +78,8 @@
       "y" : 5.837164887307237
     },
     "prevControl" : {
-      "x" : 4.122402989686583,
-      "y" : 5.583944208141546
+      "x" : 4.021061921296297,
+      "y" : 5.484992766203703
     },
     "nextControl" : null,
     "isLocked" : false,
@@ -72,12 +87,12 @@
   } ],
   "rotationTargets" : [ {
     "waypointRelativePos" : 1.1,
-    "rotationDegrees" : 90.0
+    "rotationDegrees" : 67.0
   } ],
   "constraintZones" : [ {
     "name" : "Intake",
     "minWaypointRelativePos" : 1.6265466816647827,
-    "maxWaypointRelativePos" : 2.7,
+    "maxWaypointRelativePos" : 3.4,
     "constraints" : {
       "maxVelocity" : 2.0,
       "maxAcceleration" : 4.0,
@@ -107,12 +122,12 @@
     "command" : null
   }, {
     "name" : "Spin up shooter",
-    "waypointRelativePos" : 3.1,
+    "waypointRelativePos" : 4.1,
     "endWaypointRelativePos" : null,
     "command" : null
   }, {
     "name" : "Intake mid",
-    "waypointRelativePos" : 3.3,
+    "waypointRelativePos" : 4.3,
     "endWaypointRelativePos" : null,
     "command" : null
   } ],

@@ -37,6 +37,7 @@ import frc.robot.commands.AlignToShootPoseCommand;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.FieldAxisAssistCommand;
 import frc.robot.commands.IntakeCommand;
+import frc.robot.commands.IntakeCommandFactory;
 import frc.robot.commands.PassToPoseCommand;
 import frc.robot.commands.ShootCommandFactory;
 import frc.robot.commands.VibrateHIDCommand;
@@ -86,6 +87,9 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonvision;
 import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
+import frc.robot.utility.SimBattery;
+import frc.robot.utility.replay.LogInputPlayer;
+import frc.robot.utility.replay.PoseAnchor;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
@@ -115,6 +119,7 @@ public class RobotContainer {
 
   // private SendableChooser<Command> autoChooser;
   private LoggedDashboardChooser<Command> autoChooser;
+  private PoseAnchor poseAnchor;
 
   private final CommandXboxController driverA = new CommandXboxController(0);
   private final CommandXboxController driverB = new CommandXboxController(1);
@@ -132,6 +137,8 @@ public class RobotContainer {
   private ShooterController shooterController;
   private ShooterOmniwheel shooterOmniwheel;
   private ShooterAccelerator shooterAccelerator;
+
+  private ShootCommandFactory shootCommand;
 
   public RobotContainer() {
 
@@ -199,8 +206,11 @@ public class RobotContainer {
           vision =
               new Vision(
                   new VisionIOPhotonvisionSim(
-                      "arducam-3", 3, driveSimulation::getSimulatedDriveTrainPose));
-          new VisionIOPhotonvisionSim("arducam-4", 4, driveSimulation::getSimulatedDriveTrainPose);
+                      "CamC", 0, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamA", 1, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamB", 2, driveSimulation::getSimulatedDriveTrainPose));
 
           // INTAKE
           intakeRack = new IntakeRack(new IntakeRackIOSim());
@@ -265,6 +275,12 @@ public class RobotContainer {
             () -> shooterController.getCurrentVelocity(),
             () -> ShooterHoodConstants.BASE_TO_SHOOTER_HOOD_TRANSFORM,
             Units.Degrees.of(-180));
+    shootCommand =
+        new ShootCommandFactory(
+            shooterController,
+            intakeController,
+            matchTimerUpdater,
+            swerve::getShootingError); // TODO: Change degrees in fromDegrees
     nameCommands();
     configureAutos();
     configureBindings();
@@ -358,6 +374,9 @@ public class RobotContainer {
                             intakeController,
                             matchTimerUpdater,
                             false))));
+    NamedCommands.registerCommand(
+        "ShootCommandFactory",
+        shootCommand.whileHeld().raceWith(new WaitCommand(4)).andThen(shootCommand.onRelease()));
     NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",
         new AutoShootCommand(
@@ -478,7 +497,11 @@ public class RobotContainer {
     // SMART ZERO GYRO
     // driverA.x().onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
     // INTAKE
-    driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
+    IntakeCommandFactory intakeCommandFactory =
+        new IntakeCommandFactory(intakeController, shooterController, serializer);
+
+    driverA.b().onTrue(intakeCommandFactory.whileHeld());
+    driverA.b().onFalse(intakeCommandFactory.onRelease().until(() -> (driverA.b().getAsBoolean())));
     // STOW ROBOT
     // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
     driverA
@@ -488,14 +511,8 @@ public class RobotContainer {
                 swerve, new Pose2d(3.8, 0.8, new Rotation2d()), true, true, true));
 
     // SHOOTING COMMAND
-    ShootCommandFactory shootCommand =
-        new ShootCommandFactory(
-            shooterController,
-            intakeController,
-            matchTimerUpdater,
-            swerve::getShootingError); // TODO: Change degrees in fromDegrees
-    driverA.a().whileTrue(shootCommand.whileHeld());
-    driverA.a().onFalse(shootCommand.onRelease());
+    driverA.leftBumper().whileTrue(shootCommand.whileHeld());
+    driverA.leftBumper().onFalse(shootCommand.onRelease());
 
     // DEFENSE MODE
     driverA.povUp().whileTrue(new RunCommand(() -> swerve.setDefenseMode(), swerve));
@@ -566,7 +583,7 @@ public class RobotContainer {
 
     // ALIGN TO SHOOT
     driverA
-        .leftBumper()
+        .a()
         .whileTrue(
             new AlignToShootCommand(swerve, shooterController).alongWith(shootCommand.whileHeld()))
         .onFalse(shootCommand.onRelease());
@@ -631,11 +648,30 @@ public class RobotContainer {
     SmartDashboard.putData("Auto Chooser", autoChooser.getSendableChooser());
   }
 
+  /** Attach the replay pose anchor. SIM only; no-op elsewhere. */
+  public void attachPoseAnchor(double intervalSeconds) {
+    if (Constants.getRobotMode() != Constants.Mode.SIM) {
+      return;
+    }
+    poseAnchor = new PoseAnchor(RobotSimState.getInstance().getDriveSimulation(), intervalSeconds);
+  }
+
+  /** Run the replay pose anchor for this loop. */
+  public void updatePoseAnchor(LogInputPlayer player) {
+    if (poseAnchor != null && player != null) {
+      poseAnchor.update(player);
+    }
+  }
+
   public Command getAutoCommand() {
     // When running headlessly for AI testing, bypass the dashboard chooser entirely.
     //i love autos
     // Invoke: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
     String aiAutoName = System.getProperty("ai.auto.name");
+    if (aiAutoName == null || aiAutoName.isBlank()) {
+      // In log-driven replay, run whatever auto the real match ran.
+      aiAutoName = System.getProperty("ai.replay.auto.name");
+    }
     if (aiAutoName != null && !aiAutoName.isBlank()) {
       return AutoBuilder.buildAuto(aiAutoName);
     }
@@ -651,6 +687,29 @@ public class RobotContainer {
   // runs when teleop starts
   public void teleopInit() {
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
+  }
+
+  public void testInit() {
+    Commands.sequence(
+            Commands.runOnce(
+                () -> new IntakeCommand(intakeController, shooterController, serializer)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            new WaitCommand(5.0))
+        .schedule();
+  }
+
+  public void testPeriodic() {}
+
+  public void testExit() {
+    shooterController.setTargetState(ShooterState.IDLE);
+    intakeController.setTargetState(IntakeState.IDLE);
   }
 
   /** Ran when periodic disabled */
@@ -679,6 +738,9 @@ public class RobotContainer {
     SimulatedArena.getInstance().simulationPeriodic();
     RobotSimState.getInstance().updateTerrainState();
     RobotSimState.getInstance().getFuelSim().updateSim();
+
+    // After the arena tick: maple-sim overwrites RoboRioSim voltage during it.
+    SimBattery.getInstance().update();
     Logger.recordOutput(
         "Field Simulation/Robot Position", RobotSimState.getInstance().getRobotPose3d());
     Logger.recordOutput(

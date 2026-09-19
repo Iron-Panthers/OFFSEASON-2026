@@ -12,7 +12,8 @@ public class ShooterFlywheelConstants {
             CAN.at(37, "Shooter Flywheel 2"),
             CAN.at(0, "Shooter Flywheel 3"),
             CAN.at(0, "Shooter Flywheel 4"),
-            0.71,
+            // Matches COMP.
+            1.411,
             false,
             false,
             true,
@@ -34,7 +35,7 @@ public class ShooterFlywheelConstants {
   // CONTROL LOOP GAINS AND MOTION MAGIC CONFIG
   public static final PIDGains GAINS =
       switch (Constants.getRobotType()) {
-        case SIM -> new PIDGains(3, 0, 0, 0, .1, 0, 0);
+        case SIM -> new PIDGains(0.5, 0, 0, 0.2, 0.35, 0, 0);
         default -> new PIDGains(0.5, 0, 0, 0.2, 0.35, 0, 0);
       };
 

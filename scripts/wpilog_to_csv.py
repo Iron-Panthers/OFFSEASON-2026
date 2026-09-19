@@ -111,6 +111,8 @@ def _parse_value(record, dtype: str):
         if dtype == "string[]":       return list(record.getStringArray())
         if dtype == "struct:Pose2d":  return _unpack_pose2d(record.getRaw())
         if dtype == "struct:Pose2d[]": return _unpack_pose2d_array(record.getRaw())
+        if dtype == "struct:Pose3d":  return _unpack_pose3d(record.getRaw())
+        if dtype == "struct:Pose3d[]": return _unpack_pose3d_array(record.getRaw())
     except Exception:
         pass
     return None
@@ -129,6 +131,37 @@ def _unpack_pose2d_array(data: bytes):
     for i in range(0, len(data) - 23, 24):
         x, y, rot = struct.unpack_from("<ddd", data, i)
         poses.append((x, y, rot))
+    return poses
+
+
+# Translation3d (x, y, z) followed by Rotation3d, which is stored as a quaternion (w, x, y, z).
+POSE3D_BYTES = 56
+
+
+def _unpack_pose3d(data: bytes):
+    """
+    Unpack a WPILib Pose3d struct -> (x_m, y_m, z_m, yaw_rad).
+
+    Yaw is recovered from the quaternion rather than returning all three angles, because that is
+    what the 2D pose comparisons here need and it keeps the tuple the same shape as Pose2d's.
+
+    The vision subsystem logs its raw per-camera pose estimates as `struct:Pose3d[]`, which this
+    reader used to skip entirely -- so every measurement of how accurate vision actually is had
+    been unavailable, on both the real logs and the simulated ones.
+    """
+    if len(data) < POSE3D_BYTES:
+        return None
+    x, y, z, qw, qx, qy, qz = struct.unpack_from("<ddddddd", data)
+    yaw = math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+    return (x, y, z, yaw)
+
+
+def _unpack_pose3d_array(data: bytes):
+    poses = []
+    for i in range(0, len(data) - (POSE3D_BYTES - 1), POSE3D_BYTES):
+        x, y, z, qw, qx, qy, qz = struct.unpack_from("<ddddddd", data, i)
+        yaw = math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+        poses.append((x, y, z, yaw))
     return poses
 
 
@@ -914,7 +947,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="Analyze WPILib .wpilog files. Use --investigate for AI-friendly reports."
     )
-    parser.add_argument("wpilog", help="Path to .wpilog file")
+    parser.add_argument("wpilog", nargs="?", help="Path to .wpilog file")
+    parser.add_argument(
+        "--compare",
+        nargs=2,
+        metavar=("SIM_LOG", "REAL_LOG"),
+        help="Compare a sim log against a real match log (aligned on first-enable)",
+    )
+    parser.add_argument("--json", help="With --compare: write fit scores to this JSON path")
+    parser.add_argument(
+        "--top", type=int, default=25,
+        help="With --compare: how many diverging signals to print (default 25)",
+    )
     parser.add_argument(
         "--investigate",
         choices=REPORT_FNS.keys(),
@@ -946,6 +990,19 @@ def main():
     )
     parser.add_argument("--out", help="Write output to FILE instead of stdout")
     args = parser.parse_args()
+
+    if args.compare:
+        from log_compare import compare_logs
+
+        for path in args.compare:
+            if not Path(path).exists():
+                print(f"ERROR: file not found: {path}", file=sys.stderr)
+                sys.exit(1)
+        print(compare_logs(args.compare[0], args.compare[1], args.top, args.json))
+        return
+
+    if not args.wpilog:
+        parser.error("a .wpilog path is required unless --compare is used")
 
     log_path = Path(args.wpilog)
     if not log_path.exists():
