@@ -114,8 +114,11 @@ public abstract class BaseHeadingController {
   public Rotation2d getError() {
     Rotation2d error =
         Rotation2d.fromDegrees(
-            (Math.abs(targetHeading.getDegrees() - headingSupplier.get().getDegrees()) + 360)
-                % 360);
+            ((((Math.abs(targetHeading.getDegrees() - headingSupplier.get().getDegrees()) + 360)
+                            % 360)
+                        + 180)
+                    % 360)
+                - 180);
     Logger.recordOutput("Swerve/Heading Controller/Heading Error", error);
     return error;
   }

@@ -376,7 +376,14 @@ public class RobotContainer {
                             false))));
     NamedCommands.registerCommand(
         "ShootCommandFactory",
-        shootCommand.whileHeld().raceWith(new WaitCommand(4)).andThen(shootCommand.onRelease()));
+        new AlignToShootCommand(swerve, shooterController)
+            .withDeadline(
+                new WaitCommand(0.2)
+                    .andThen(
+                        shootCommand
+                            .whileHeld()
+                            .raceWith(new WaitCommand(4))
+                            .andThen(shootCommand.onRelease()))));
     NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",
         new AutoShootCommand(
@@ -467,15 +474,15 @@ public class RobotContainer {
         .onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
 
     // Stop running serializer button
-    new Trigger(
-            () ->
-                serializer.serializerStalling()
-                    && intakeController.getTargetState() == IntakeState.INTAKE
-                    && shooterController.getTargetState()
-                        == ShooterState.INTAKE) // TODO: make these constants
-        .onTrue(
-            new InstantCommand(
-                () -> shooterController.setTargetState(ShooterState.FLYWHEEL_SPIN_UP)));
+    // new Trigger(
+    //         () ->
+    //             serializer.serializerStalling()
+    //                 && intakeController.getTargetState() == IntakeState.INTAKE
+    //                 && shooterController.getTargetState()
+    //                     == ShooterState.INTAKE) // TODO: make these constants
+    //     .onTrue(
+    //         new InstantCommand(
+    //             () -> shooterController.setTargetState(ShooterState.FLYWHEEL_SPIN_UP)));
 
     // Use pov down and left for testing buttons please!! (Drivers get annoyed when we use other
     // buttons)
@@ -500,8 +507,7 @@ public class RobotContainer {
     IntakeCommandFactory intakeCommandFactory =
         new IntakeCommandFactory(intakeController, shooterController, serializer);
 
-    driverA.b().onTrue(intakeCommandFactory.whileHeld());
-    driverA.b().onFalse(intakeCommandFactory.onRelease().until(() -> (driverA.b().getAsBoolean())));
+    driverA.b().onTrue(intakeCommandFactory.whileHeld()).onFalse(intakeCommandFactory.onRelease());
     // STOW ROBOT
     // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
     driverA
@@ -681,6 +687,7 @@ public class RobotContainer {
   // runs when auto starts
   public void autoInit() {
     // Smart zero the robot
+    RobotState.getInstance().setIsAutoAdaptive(false);
     CommandScheduler.getInstance().schedule(new InstantCommand(() -> swerve.smartZeroGyro()));
   }
 
