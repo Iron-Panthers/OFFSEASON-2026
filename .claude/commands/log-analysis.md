@@ -218,9 +218,9 @@ python scripts/wpilog_to_csv.py <FILE> \
    - Answer to the question (plain English)
    - Supporting evidence (timestamps + key values)
    - Root cause (specific file, line, or state)
-   - Recommended fix — or trigger `/spec-driven-dev`
    - Confidence: "clearly visible in logs" vs "inferred from Y"
 7. **Chart it** — write the findings JSON and render the page (below)
+8. **Propose the fix, last** — the smallest edit that moves the logged number (below)
 
 **Only report what the logs confirm.** Do not speculate about causes without log evidence.
 
@@ -322,3 +322,70 @@ python scripts/wpilog_to_csv.py <FILE> --keys "..." --from 11 --to 15
 # 3. render
 python scripts/log_charts.py build/findings.json
 ```
+
+---
+
+## Proposing the Fix — always last, always minimal
+
+After the verdict and the charts, close with a concrete code change. This is the
+final section of the response, never the first: a fix proposed before the
+evidence is a guess with a diff attached.
+
+**Find the real lines before writing anything.** Grep the repo for the logged
+key, the state enum, or the constant named in the verdict, and read the
+surrounding code. Never propose an edit to a line you have not read.
+
+### Be greedy about not writing code
+
+Walk this ladder top-down and stop at the first rung that fixes what the log
+shows. Each rung down is roughly ten times the review cost for the team.
+
+1. **Change a number** — a gain, tolerance, setpoint, timeout, gear ratio, LUT
+   entry. Most log-visible failures end here.
+2. **Rebind an existing enum** — point a state at a different child target in
+   the state machine table.
+3. **Flip or add one condition** — a single `&&`, an inverted boolean, a guard.
+4. **A few lines inside an existing method.**
+5. **A new method, field, or class** — last resort. If you land here, say
+   explicitly in one sentence why rungs 1–4 cannot do it.
+
+**Hard rules:**
+
+- Propose the fewest changed lines that the log evidence justifies — and no
+  speculative extras.
+- If the proposal exceeds ~10 changed lines, state why nothing smaller works
+  before showing it.
+- **No drive-by work.** No refactors, renames, extra logging, new abstractions,
+  reformatting, or fixing unrelated things you noticed while grepping. If you
+  spot something else, mention it in one line under "Noticed, not fixing".
+- One fix per root cause. Do not bundle.
+- If the log narrows the cause to a subsystem but not to a line, say that
+  plainly and name the single additional key or run that would pin it — do not
+  invent a plausible-looking edit to fill the gap.
+- Do not apply the change unless the user asks. If the real fix genuinely needs
+  a new subsystem or a redesign, stop and offer `/spec-driven-dev` instead of
+  sketching it.
+
+### Format
+
+```markdown
+## Proposed fix
+
+**`src/main/java/frc/robot/subsystems/shooter/ShooterConstants.java:47`** — 1 line
+
+Flywheel settles 7.6% low against setpoint (chart 1); kP is too small to hold
+load after the feed.
+
+- `public static final double FLYWHEEL_KP = 0.08;`
++ `public static final double FLYWHEEL_KP = 0.14;`
+
+Verify: re-run the sim and confirm `Shooter/Flywheels Up To Speed` stays true
+through 11.0–14.5s.
+
+Noticed, not fixing: hood tolerance is also loose, but no shot in this log missed
+because of it.
+```
+
+Give the before/after lines exactly as they appear in the file, with the
+`file:line` anchor, so the user can find them without a search. Always close the
+proposal with the one log key or command that would confirm the fix worked.
