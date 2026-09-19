@@ -62,6 +62,7 @@ import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
 import frc.robot.subsystems.shooter.ShooterController.ShooterState;
 import frc.robot.subsystems.shooter.serializer.Serializer;
+import frc.robot.subsystems.shooter.serializer.SerializerConstants;
 import frc.robot.subsystems.shooter.serializer.SerializerIO;
 import frc.robot.subsystems.shooter.serializer.SerializerIOTalonFX;
 import frc.robot.subsystems.shooter.serializer.SerializerSim;
@@ -628,13 +629,16 @@ public class RobotContainer {
     driverB.povDown().onTrue(shooterController.zeroCommand());
     driverB.povDown().onFalse(shooterController.stopZeroingCommand());
 
-    // to unstick the serializer
+    // to unstick the serializer: push harder rather than faster, then hand the limit back
     // driverB.povUp().whileTrue(new VibrateSerializerCommand(serializer).repeatedly());
     driverB
         .povUp()
         .whileTrue(
             new InstantCommand(() -> shooterController.setTargetState(ShooterState.UNJAM))
-                .repeatedly());
+                .repeatedly()
+                .beforeStarting(
+                    () -> serializer.setMaxAmps(SerializerConstants.BOOSTED_CURRENT_LIMIT_AMPS))
+                .finallyDo(() -> serializer.setDefaultMaxAmps()));
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));
