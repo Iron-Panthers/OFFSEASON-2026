@@ -222,7 +222,8 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
   public void setNeutralMode(NeutralModeValue value) {
     if (driveConfig.MotorOutput.NeutralMode != value) {
       driveConfig.MotorOutput.NeutralMode = value;
-      driveConfig.CurrentLimits.SupplyCurrentLimit = (value == NeutralModeValue.Brake) ? 35 : 40; //teleop : auto
+      driveConfig.CurrentLimits.SupplyCurrentLimit =
+          (value == NeutralModeValue.Brake) ? 35 : 40; // teleop : auto
       tryUntilOk(5, () -> driveTalon.getConfigurator().apply(driveConfig, 0.25));
     }
   }

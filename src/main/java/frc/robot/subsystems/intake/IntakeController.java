@@ -18,6 +18,7 @@ public class IntakeController extends SubsystemBase {
     STOW(IntakeRackTarget.STOW, IntakeRollersTarget.IDLE),
     IDLE(IntakeRackTarget.INTAKE, IntakeRollersTarget.IDLE),
     INTAKE(IntakeRackTarget.INTAKE, IntakeRollersTarget.INTAKE),
+    INTAKE_SLOW(IntakeRackTarget.INTAKE, IntakeRollersTarget.INTAKE_SLOW),
     REVERSE(IntakeRackTarget.INTAKE, IntakeRollersTarget.EJECT),
     ZEROING(IntakeRackTarget.STOW, IntakeRollersTarget.IDLE),
     SHOOTING_CHUNKY(IntakeRackTarget.ACTUAL_MIDDLE, IntakeRollersTarget.IDLE);
@@ -65,7 +66,7 @@ public class IntakeController extends SubsystemBase {
       intakeRollers.setVelocityTarget(IntakeRollersTarget.IDLE);
       intakeRack.setPositionTarget(targetState.getIntakeRackTarget());
     } else if (targetState == IntakeState.STOW && !intakeRack.reachedTarget()) {
-      intakeRollers.setVelocityTarget(IntakeRollersTarget.INTAKE);
+      intakeRollers.setVelocityTarget(IntakeRollersTarget.INTAKE_SLOW);
       intakeRack.setPositionTarget(targetState.getIntakeRackTarget());
     } else {
       // set target states to those in the current controller state

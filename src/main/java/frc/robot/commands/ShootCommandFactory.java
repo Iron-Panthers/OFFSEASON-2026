@@ -46,28 +46,28 @@ public class ShootCommandFactory {
   public Command whileHeld() {
     return setJustShootCommand(false)
         .alongWith(
-            new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE))
+            new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW))
                 .andThen(
                     new WaitCommand(1)
                         .andThen(
                             new InstantCommand(
                                 () -> intakeController.setTargetState(IntakeState.STOW)))
                         .andThen(new WaitCommand(0.1))
-                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
+                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW)))
                 .andThen(
                     new WaitCommand(0.2)
                         .andThen(
                             new InstantCommand(
                                 () -> intakeController.setTargetState(IntakeState.STOW)))
                         .andThen(new WaitCommand(0.1))
-                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
+                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW)))
                 .andThen(
                     new WaitCommand(0.1)
                         .andThen(
                             new InstantCommand(
                                 () -> intakeController.setTargetState(IntakeState.STOW)))
                         .andThen(new WaitCommand(0.1))
-                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE))))
+                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW)))) //we want to really make sure the balls are out
         .alongWith(
             new InstantCommand(
                     () -> {
