@@ -220,5 +220,105 @@ python scripts/wpilog_to_csv.py <FILE> \
    - Root cause (specific file, line, or state)
    - Recommended fix — or trigger `/spec-driven-dev`
    - Confidence: "clearly visible in logs" vs "inferred from Y"
+7. **Chart it** — write the findings JSON and render the page (below)
 
 **Only report what the logs confirm.** Do not speculate about causes without log evidence.
+
+---
+
+## Charting the Findings
+
+The analysis commands above are text-only and stay that way. Charting is a
+separate step: write down what you concluded as a findings JSON, then render it.
+
+```bash
+python scripts/log_charts.py findings.json
+```
+
+Output is a single self-contained `build/artifacts/<run-id>/index.html` — no
+network, no server, opens from a USB stick in the pit. `<run-id>` comes from the
+log's match metadata (`2026cada-qm12`) or, for a sim log with none, its filename
+and timestamp (`sim-20260918-143022`). Re-running for the same log replaces that
+directory. The findings JSON is copied in beside the page.
+
+Write the findings file to `build/` — it is scratch, like the page it produces.
+
+### Schema
+
+```json
+{
+  "log": "build/ai-logs/akit_26-09-18_23-46-38.wpilog",
+  "question": "Why did we miss the shot at 12s?",
+  "verdict": "Flywheel plateaued 8% below setpoint for 1.4s. The shot fired anyway because Flywheels Up To Speed latched true at 11.9s, before the dip.",
+  "confidence": "clearly visible in logs",
+  "bundles": ["shooter"],
+  "stats": [
+    { "label": "Worst velocity deficit", "value": "7.6", "unit": "%", "severity": "critical" }
+  ],
+  "findings": [
+    {
+      "title": "Flywheel never recovered after the first feed",
+      "detail": "Velocity fell to 46.2 rot/s against a 50.0 setpoint at 12.1s and stayed there until the state left SHOOT.",
+      "severity": "critical",
+      "window": [11.0, 14.5],
+      "charts": [
+        {
+          "form": "timeseries",
+          "title": "Flywheel velocity vs setpoint",
+          "unit": "rot/s",
+          "tolerance_pct": 0.05,
+          "include_zero": true,
+          "series": [
+            { "key": "RealOutputs/Shooter/Shooter Flywheels/Current Velocity", "label": "Actual" },
+            { "key": "RealOutputs/Shooter/Shooter Flywheels/Target Velocity", "label": "Target" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Top level:** `log` (required) · `question` · `verdict` · `confidence` ·
+`label` (overrides the run-id) · `bundles` · `stats` · `findings`.
+At least one of `findings` or `bundles` must be present.
+
+**`bundles`** renders a baseline set of preset charts, collapsed under
+"Baseline". One per investigate preset: `auto`, `shooter`, `intake`, `drive`,
+`vision`. Bundle charts tolerate missing keys.
+
+**`findings[]`:** `title` (required) · `detail` · `severity` · `window` ·
+`charts`. A finding's `window` becomes the default window for its own charts.
+`severity` is one of `info`, `good`, `warning`, `serious`, `critical`.
+
+**`charts[]`:** `form` (required) · `title` · `series` (required) · `unit` ·
+`window` · `include_zero` · `note`.
+
+| `form`       | What it draws                                     | Extra fields                              |
+| ------------ | ------------------------------------------------- | ----------------------------------------- |
+| `timeseries` | Numeric signals over time, one shared y-axis      | `tolerance_pct` (band around last series) |
+| `timeline`   | One state-machine lane per series                 | —                                         |
+| `path`       | XY field path, equal aspect. 1–2 series           | `error_key` (adds an error chart below)   |
+
+### Rules that keep the charts honest
+
+- **One unit per `timeseries`.** Velocity and current go in two charts, never
+  two y-scales on one. The script has no dual-axis mode on purpose.
+- **A key that is not in the log is an error**, not an empty chart — it suggests
+  the closest key it found. Bundle charts are the exception.
+- **Every chart has a table view**, so no value is reachable only by hover.
+- Charts plot raw logged keys. If a chart contradicts your prose, the chart is
+  right.
+
+### Worked flow
+
+```bash
+# 1. investigate (text, as above)
+python scripts/wpilog_to_csv.py <FILE> --investigate shooter
+python scripts/wpilog_to_csv.py <FILE> --keys "..." --from 11 --to 15
+
+# 2. write build/findings.json from what you concluded
+
+# 3. render
+python scripts/log_charts.py build/findings.json
+```
