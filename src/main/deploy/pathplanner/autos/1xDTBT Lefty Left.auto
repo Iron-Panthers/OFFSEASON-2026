@@ -9,54 +9,9 @@
           "name" : "Smart zero"
         }
       }, {
-        "type" : "race",
+        "type" : "path",
         "data" : {
-          "commands" : [ {
-            "type" : "path",
-            "data" : {
-              "pathName" : "2xTB 1 Left"
-            }
-          }, {
-            "type" : "named",
-            "data" : {
-              "name" : "Check If Off"
-            }
-          } ]
-        }
-      }, {
-        "type" : "named",
-        "data" : {
-          "name" : "Translate To Shoot"
-        }
-      }, {
-        "type" : "named",
-        "data" : {
-          "name" : "Smart zero"
-        }
-      }, {
-        "type" : "named",
-        "data" : {
-          "name" : "ShootCommandFactory"
-        }
-      }, {
-        "type" : "race",
-        "data" : {
-          "commands" : [ {
-            "type" : "path",
-            "data" : {
-              "pathName" : "2xTB 2 Left"
-            }
-          }, {
-            "type" : "named",
-            "data" : {
-              "name" : "Check If Off"
-            }
-          } ]
-        }
-      }, {
-        "type" : "named",
-        "data" : {
-          "name" : "Translate To Shoot"
+          "pathName" : "xD Left"
         }
       }, {
         "type" : "named",
@@ -71,7 +26,22 @@
       }, {
         "type" : "path",
         "data" : {
-          "pathName" : "xT 2 Left"
+          "pathName" : "2xTB 3 Left"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "ShootCommandFactory"
+        }
+      }, {
+        "type" : "path",
+        "data" : {
+          "pathName" : "xT  Left"
         }
       } ]
     }

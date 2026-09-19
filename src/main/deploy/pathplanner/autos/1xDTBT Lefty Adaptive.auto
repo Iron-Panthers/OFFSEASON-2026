@@ -17,7 +17,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2xTT 1 Right"
+                  "pathName": "xD"
                 }
               },
               {
@@ -32,7 +32,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Translate To Shoot"
+            "name": "Align to shoot"
           }
         },
         {
@@ -44,7 +44,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Align and auto shoot full hopper (no intake)"
+            "name": "ShootCommandFactory"
           }
         },
         {
@@ -54,7 +54,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2xTT 2 Right"
+                  "pathName": "2xTB 3 Left"
                 }
               },
               {
@@ -69,7 +69,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Translate To Shoot"
+            "name": "Align to shoot"
           }
         },
         {
@@ -81,7 +81,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Align and auto shoot full hopper (no intake)"
+            "name": "ShootCommandFactory"
           }
         },
         {

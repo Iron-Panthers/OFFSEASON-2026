@@ -34,7 +34,7 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                                 .getTranslation()
                                 .getDistance(
                                     RobotState.getInstance().getEstimatedPose().getTranslation())
-                            > 1.8
+                            > DriveConstants.ADAPTIVE_AUTO_ERROR
                         && !swerve.isPIDAutoAlign())
             .andThen(
                 new InstantCommand(
@@ -75,11 +75,12 @@ public class WaitUnitlRobotStuckCommand extends SequentialCommandGroup {
                               .minus(dsitanceToMovingPose);
                       Logger.recordOutput("otherRobotTranslation2d", swerve.getTargetSpeed());
 
-                      // RobotState.getInstance().setAutoUnderTrench(true);
                       if (Math.abs(FlippingUtil.fieldSizeY / 2 - otherRobotTranslation2d.getY())
-                              > FlippingUtil.fieldSizeY / 2 - 1.8
+                              > FlippingUtil.fieldSizeY / 2
+                                  - 1.8 // we if it's 1.8 away from the wall, we want to go over
+                          // bump
                           && Math.abs(FlippingUtil.fieldSizeX / 2 - otherRobotTranslation2d.getX())
-                              > 2) {
+                              > 2) { // makes sure it's reasonably near the trench
                         RobotState.getInstance().setIsAutoUnderTrench(false);
                       }
                       Logger.recordOutput(

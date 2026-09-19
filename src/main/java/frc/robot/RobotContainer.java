@@ -37,6 +37,7 @@ import frc.robot.commands.AlignToShootPoseCommand;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.FieldAxisAssistCommand;
 import frc.robot.commands.IntakeCommand;
+import frc.robot.commands.IntakeCommandFactory;
 import frc.robot.commands.PassToPoseCommand;
 import frc.robot.commands.ShootCommandFactory;
 import frc.robot.commands.VibrateHIDCommand;
@@ -50,9 +51,11 @@ import frc.robot.subsystems.intake.IntakeController.IntakeState;
 import frc.robot.subsystems.intake.intake_rack.IntakeRack;
 import frc.robot.subsystems.intake.intake_rack.IntakeRackIO;
 import frc.robot.subsystems.intake.intake_rack.IntakeRackIOSim;
+import frc.robot.subsystems.intake.intake_rack.IntakeRackIOTalonFX;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollers;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIO;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOSim;
+import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOTalonFX;
 import frc.robot.subsystems.rgb.RGB;
 import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
@@ -131,6 +134,8 @@ public class RobotContainer {
   private ShooterOmniwheel shooterOmniwheel;
   private ShooterAccelerator shooterAccelerator;
 
+  private ShootCommandFactory shootCommand;
+
   public RobotContainer() {
 
     if (Constants.getRobotMode() != Mode.REPLAY) {
@@ -143,8 +148,8 @@ public class RobotContainer {
                   new ModuleIOTalonFXReal(DriveConstants.MODULE_CONFIGS[1]),
                   new ModuleIOTalonFXReal(DriveConstants.MODULE_CONFIGS[2]),
                   new ModuleIOTalonFXReal(DriveConstants.MODULE_CONFIGS[3]));
-          //   intakeRack = new IntakeRack(new IntakeRackIOTalonFX());
-          //   intakeRollers = new IntakeRollers(new IntakeRollersIOTalonFX());
+          intakeRack = new IntakeRack(new IntakeRackIOTalonFX());
+          intakeRollers = new IntakeRollers(new IntakeRollersIOTalonFX());
           vision =
               new Vision(
                   new VisionIOPhotonvision("CamC", 0),
@@ -263,6 +268,12 @@ public class RobotContainer {
             () -> shooterController.getCurrentVelocity(),
             () -> ShooterHoodConstants.BASE_TO_SHOOTER_HOOD_TRANSFORM,
             Units.Degrees.of(-180));
+    shootCommand =
+        new ShootCommandFactory(
+            shooterController,
+            intakeController,
+            matchTimerUpdater,
+            swerve::getShootingError); // TODO: Change degrees in fromDegrees
     nameCommands();
     configureAutos();
     configureBindings();
@@ -356,6 +367,9 @@ public class RobotContainer {
                             intakeController,
                             matchTimerUpdater,
                             false))));
+    NamedCommands.registerCommand(
+        "ShootCommandFactory",
+        shootCommand.whileHeld().raceWith(new WaitCommand(4)).andThen(shootCommand.onRelease()));
     NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",
         new AutoShootCommand(
@@ -476,7 +490,11 @@ public class RobotContainer {
     // SMART ZERO GYRO
     // driverA.x().onTrue(new InstantCommand(() -> swerve.smartZeroGyro()));
     // INTAKE
-    driverA.b().onTrue(new IntakeCommand(intakeController, shooterController));
+    IntakeCommandFactory intakeCommandFactory =
+        new IntakeCommandFactory(intakeController, shooterController, serializer);
+
+    driverA.b().onTrue(intakeCommandFactory.whileHeld());
+    driverA.b().onFalse(intakeCommandFactory.onRelease().until(() -> (driverA.b().getAsBoolean())));
     // STOW ROBOT
     // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
     driverA
@@ -486,14 +504,8 @@ public class RobotContainer {
                 swerve, new Pose2d(3.8, 0.8, new Rotation2d()), true, true, true));
 
     // SHOOTING COMMAND
-    ShootCommandFactory shootCommand =
-        new ShootCommandFactory(
-            shooterController,
-            intakeController,
-            matchTimerUpdater,
-            swerve::getShootingError); // TODO: Change degrees in fromDegrees
-    driverA.a().whileTrue(shootCommand.whileHeld());
-    driverA.a().onFalse(shootCommand.onRelease());
+    driverA.leftBumper().whileTrue(shootCommand.whileHeld());
+    driverA.leftBumper().onFalse(shootCommand.onRelease());
 
     // DEFENSE MODE
     driverA.povUp().whileTrue(new RunCommand(() -> swerve.setDefenseMode(), swerve));
@@ -564,7 +576,7 @@ public class RobotContainer {
 
     // ALIGN TO SHOOT
     driverA
-        .leftBumper()
+        .a()
         .whileTrue(
             new AlignToShootCommand(swerve, shooterController).alongWith(shootCommand.whileHeld()))
         .onFalse(shootCommand.onRelease());
@@ -631,6 +643,7 @@ public class RobotContainer {
 
   public Command getAutoCommand() {
     // When running headlessly for AI testing, bypass the dashboard chooser entirely.
+    // i love autos
     // Invoke: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
     String aiAutoName = System.getProperty("ai.auto.name");
     if (aiAutoName != null && !aiAutoName.isBlank()) {
@@ -648,6 +661,29 @@ public class RobotContainer {
   // runs when teleop starts
   public void teleopInit() {
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
+  }
+
+  public void testInit() {
+    Commands.sequence(
+            Commands.runOnce(
+                () -> new IntakeCommand(intakeController, shooterController, serializer)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            new WaitCommand(5.0))
+        .schedule();
+  }
+
+  public void testPeriodic() {}
+
+  public void testExit() {
+    shooterController.setTargetState(ShooterState.IDLE);
+    intakeController.setTargetState(IntakeState.IDLE);
   }
 
   /** Ran when periodic disabled */

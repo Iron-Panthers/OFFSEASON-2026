@@ -39,7 +39,7 @@ public class ShootCommandFactory {
     this.intakeController = intakeController;
     this.matchTimerUpdater = matchTimerUpdater;
     this.getHeadingError = getHeadingError;
-    SmartDashboard.putNumber("Intake Rack In Time", 10);
+    SmartDashboard.putNumber("Intake Rack In Time", 1.5);
   }
 
   /** Command to bind to whileTrue – repeats while the button is held. */
@@ -93,23 +93,24 @@ public class ShootCommandFactory {
                               ? ShooterState.SHOOT
                               : ShooterState.TOTAL_SPIN_UP);
                     })
-                .repeatedly(),
-            Commands.sequence(
-                    Commands.waitUntil(
-                        () -> shooterController.getTargetState() == ShooterState.SHOOT),
-                    Commands.runOnce(() -> time = Timer.getFPGATimestamp()),
-                    Commands.waitUntil(
-                        () ->
-                            ((SmartDashboard.getNumber("Intake Rack In Time", 10) + time))
-                                < Timer.getFPGATimestamp()),
-                    intakeController
-                        .setTargetStateCommand(IntakeState.SHOOTING_STOW)
-                        .withDeadline(
-                            Commands.waitUntil(
-                                () ->
-                                    shooterController.getTargetState()
-                                        == ShooterState.TOTAL_SPIN_UP)))
-                .repeatedly()));
+                .repeatedly()
+                .alongWith(
+                    (new WaitUntilCommand(
+                                () -> shooterController.getTargetState() == ShooterState.SHOOT)
+                            .andThen(new InstantCommand(() -> time = Timer.getFPGATimestamp()))
+                            .andThen(
+                                new WaitUntilCommand(
+                                    () ->
+                                        ((SmartDashboard.getNumber("Intake Rack In Time", 2)
+                                                + time)
+                                            < Timer.getFPGATimestamp())))
+                            .andThen(intakeController.setTargetStateCommand(IntakeState.STOW))
+                            .withDeadline(
+                                new WaitUntilCommand(
+                                    () ->
+                                        (shooterController.getTargetState()
+                                            == ShooterState.TOTAL_SPIN_UP))))
+                        .repeatedly()));
   }
 
   /** Command to bind to onFalse – runs when the button is released. */
@@ -138,7 +139,10 @@ public class ShootCommandFactory {
             new WaitCommand(1.5).andThen(intakeController.setTargetStateCommand(IntakeState.STOW)));
   }
 
-  public Command setJustShootCommand(boolean justShoot) {
-    return Commands.runOnce(() -> this.justShoot = justShoot);
+  public Command chunkShootGoBrrr(boolean justShoot) {
+    return Commands.runOnce(
+        () -> {
+          intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
+        });
   }
 }

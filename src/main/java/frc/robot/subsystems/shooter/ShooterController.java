@@ -38,7 +38,7 @@ public class ShooterController extends SubsystemBase {
         ShooterHoodTarget.STOW,
         ShooterFlywheelTarget.INTAKE,
         ShooterAcceleratorTarget.IDLE,
-        ShooterOmniwheelTarget.IDLE,
+        ShooterOmniwheelTarget.OFF,
         SerializerTarget.IDLE),
     /** hold: hold the balls in the hopper */
     HOLD(
@@ -78,13 +78,13 @@ public class ShooterController extends SubsystemBase {
         ShooterHoodTarget.SHOOT_TEMP,
         ShooterFlywheelTarget.SHOOT,
         ShooterAcceleratorTarget.SHOOT,
-        ShooterOmniwheelTarget.IDLE,
+        ShooterOmniwheelTarget.OFF,
         SerializerTarget.SPIN_UP),
     COMPACT_SPIN_UP(
         ShooterHoodTarget.STOW,
         ShooterFlywheelTarget.SHOOT,
         ShooterAcceleratorTarget.SHOOT,
-        ShooterOmniwheelTarget.IDLE,
+        ShooterOmniwheelTarget.OFF,
         SerializerTarget.SPIN_UP),
     ZEROING(
         ShooterHoodTarget.STOW,

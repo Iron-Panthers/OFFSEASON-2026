@@ -123,28 +123,28 @@ public class DriveConstants {
               CAN.at(11, "FL Drive"),
               CAN.at(62, "FL Steer"),
               3,
-              new Rotation2d(2.218136),
+              new Rotation2d(2.210466),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.Clockwise_Positive),
           new ModuleConfig(
               CAN.at(35, "FR Drive"),
               CAN.at(6, "FR Steer"),
-              9,
-              new Rotation2d(-0.513884),
+              12,
+              new Rotation2d(2.118427),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive),
           new ModuleConfig(
               CAN.at(3, "BL Drive"),
               CAN.at(4, "BL Steer"),
-              6,
-              new Rotation2d(2.822525),
+              9,
+              new Rotation2d(2.828661),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.Clockwise_Positive),
           new ModuleConfig(
               CAN.at(2, "BR Drive"),
               CAN.at(1, "BR Steer"),
-              12,
-              new Rotation2d(-0.770058),
+              6,
+              new Rotation2d(1.509437),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive)
         };
@@ -342,6 +342,8 @@ public class DriveConstants {
   public static final double AUTOALIGN_VELOCITY_DEADBAND = 0.01;
 
   public static final Pose2d INITIAL_POSE = new Pose2d(2.9, 3.8, new Rotation2d(1, 0));
+
+  public static final double ADAPTIVE_AUTO_ERROR = 1.8;
 
   public static final PPHolonomicDriveController HOLONOMIC_DRIVE_CONTROLLER =
       new PPHolonomicDriveController(

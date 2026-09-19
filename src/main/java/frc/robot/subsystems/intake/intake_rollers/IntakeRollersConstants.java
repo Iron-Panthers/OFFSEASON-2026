@@ -32,7 +32,7 @@ public class IntakeRollersConstants {
   // CURRENT LIMITS
   public static final double UPPER_VOLT_LIMIT = 12;
   public static final double LOWER_VOLT_LIMIT = -12;
-  public static final int CURRENT_LIMIT_AMPS = 30;
+  public static final int CURRENT_LIMIT_AMPS = 40;
   public static final double STATOR_CURRENT_LIMIT = 50;
 
   public static final IntakeRollerPhysicalConstants PHYSICAL_CONSTANTS =
