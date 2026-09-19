@@ -70,7 +70,7 @@ public abstract class BaseHeadingController {
         epsilonEquals(
             headingSupplier.get().getRadians(),
             controller.getGoal().position,
-            (hasReachedTarget ? Math.toRadians(5.5) : HEADING_CONTROLLER_CONSTANTS.tolerance()));
+            (hasReachedTarget ? Math.toRadians(2.0) : HEADING_CONTROLLER_CONSTANTS.tolerance()));
   }
 
   protected boolean epsilonEquals(double a, double b, double epsilon) {
