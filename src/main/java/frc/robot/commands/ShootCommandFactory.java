@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.subsystems.elastic_updater.ElasticUpdater;
 import frc.robot.subsystems.intake.IntakeController;
 import frc.robot.subsystems.intake.IntakeController.IntakeState;
@@ -110,7 +111,7 @@ public class ShootCommandFactory {
                                     () ->
                                         (shooterController.getTargetState()
                                             == ShooterState.TOTAL_SPIN_UP))))
-                        .repeatedly()));
+                        .repeatedly())));
   }
 
   /** Command to bind to onFalse – runs when the button is released. */
@@ -137,6 +138,10 @@ public class ShootCommandFactory {
         .repeatedly()
         .alongWith(
             new WaitCommand(1.5).andThen(intakeController.setTargetStateCommand(IntakeState.STOW)));
+  }
+
+  public Command setJustShootCommand(boolean justShoot) {
+    return Commands.runOnce(() -> this.justShoot = justShoot);
   }
 
   public Command chunkShootGoBrrr(boolean justShoot) {
