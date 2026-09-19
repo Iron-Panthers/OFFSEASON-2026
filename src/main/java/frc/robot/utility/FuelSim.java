@@ -922,8 +922,11 @@ public class FuelSim {
     }
 
     protected Translation3d getDispersalVelocity() {
+      // Seeded so an A/B test can replay identical field conditions. See SimRandom.
       return new Translation3d(
-          exitVelXMult * (Math.random() + 0.1) * 1.5, Math.random() * 2 - 1, 0);
+          exitVelXMult * (SimRandom.hub().nextDouble() + 0.1) * 1.5,
+          SimRandom.hub().nextDouble() * 2 - 1,
+          0);
     }
 
     /** Reset this hub's score to 0 */

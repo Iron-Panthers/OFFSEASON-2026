@@ -156,3 +156,25 @@ See `.claude/commands/` for skills:
 - `/simulation-agent` — run sim, capture logs, analyze, close the debugging loop
 - `/spec-driven-dev` — walk through Goal → Plan → Review → Implement → Verify
 - `/log-analysis` — investigate a `.wpilog` file for a specific failure
+- `/ab-test` — measure whether a change actually helped, at matched random seeds
+
+## Where Written Artifacts Go — `build/` vs `docs/`
+
+Decide by **audience**, not by how much effort the document took.
+
+| Audience | Location | Tracked by git? |
+| -------- | -------- | --------------- |
+| One person, one task, right now | `build/` | No — `/build/` is gitignored |
+| The whole team, or future readers | `docs/` | Yes |
+
+**`build/` — scratch work.** Implementation plans, design specs for a quick solo task, A/B test reports,
+sim run output, investigation notes. Anything whose value expires when the task is done. Subdirectories
+in use: `build/ai-logs/` (sim `.wpilog` files), `build/superpowers/specs/` (plans and design specs),
+`build/artifacts/` (generated reports).
+
+**`docs/` — shared reference.** Subsystem descriptions, game rules, hardware details, prompt templates,
+calibration results other people must not re-derive. If someone who did not do the work would need to
+read it later, it belongs here.
+
+When in doubt, write it to `build/`. Promoting a file to `docs/` later is cheap; unpicking a `docs/`
+tree cluttered with one-off task notes is not.
