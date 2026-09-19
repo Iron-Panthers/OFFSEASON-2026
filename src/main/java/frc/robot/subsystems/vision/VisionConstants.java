@@ -153,13 +153,13 @@ public class VisionConstants {
         default -> List.of(
             // 1 tag
             new TagCountDeviation(
-                new UnitDeviationParams(0.007329, 0, 0),
-                new UnitDeviationParams(0.007329, 0, 0),
-                new UnitDeviationParams(0.0166, 0, 0)),
+                new UnitDeviationParams(0.0157183, 0, 0),
+                new UnitDeviationParams(0.0157183, 0, 0),
+                new UnitDeviationParams(0.00966208, 0, 0)),
             // 2 tag
             new TagCountDeviation(
-                new UnitDeviationParams(0.00162493, 0, 0),
-                new UnitDeviationParams(0.0010625, 0, 0)),
+                new UnitDeviationParams(0.00540876, 0, 0),
+                new UnitDeviationParams(0.00179625, 0, 0)),
             // 3+ tag
             new TagCountDeviation(
                 new UnitDeviationParams(0, 0.0, 0.001), new UnitDeviationParams(0, 0, 0.0001)));

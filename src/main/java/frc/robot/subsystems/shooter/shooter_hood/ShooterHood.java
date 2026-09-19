@@ -63,18 +63,6 @@ public class ShooterHood extends GenericSuperstructure<ShooterHood.ShooterHoodTa
         getPositionTarget().getPosition());
   }
 
-  /**
-   * Function returns if the subsystem has reached its position target
-   *
-   * @return whether the subsystem has reached its position target
-   */
-
-  // TODO fix the logic for reaching Target Position on Shooter
-  public boolean reachedTarget() {
-    return Math.abs(super.getPosition() - (super.getPositionTarget().getPosition()))
-        <= super.getPositionTarget().getEpsilon();
-  }
-
   @Override
   public Pose3d getParentPosition() {
     if (loggableMechanism3dParent != null) {

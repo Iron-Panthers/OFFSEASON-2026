@@ -28,6 +28,7 @@ import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.MatchInputs;
 import frc.robot.utility.replay.MatchLogReader;
 import frc.robot.utility.replay.PoseAnchor;
+import frc.robot.commands.HappyBirthdayCommand;
 import java.io.File;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -431,11 +432,23 @@ public class Robot extends LoggedRobot {
 
   /** This function is called once when test mode is enabled. */
   @Override
-  public void testInit() {}
+  public void testInit() {
+    CommandScheduler.getInstance().cancelAll();
+    robotContainer.testInit();
+  }
 
   /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+    robotContainer.testPeriodic();
+  }
+
+  /** This function is called when test mode is disabled. */
+  @Override
+  public void testExit() {
+    robotContainer.testExit();
+    new HappyBirthdayCommand().schedule(); // Play Happy Birthday when exiting test mode
+  }
 
   /** This function is called once when the robot is first started up. */
   @Override

@@ -5,10 +5,8 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
@@ -77,8 +75,8 @@ public class RobotSimState {
     fuelSim.spawnStartingFuel();
     fuelSim.setLoggingFrequency(20);
     fuelSim.start();
-    
-    addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
+
+    // addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
   }
 
   // Get sim state from RobotContainer

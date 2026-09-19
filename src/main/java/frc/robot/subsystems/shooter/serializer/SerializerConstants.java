@@ -32,9 +32,9 @@ public class SerializerConstants {
         default -> new PIDGains(0, 0, 0, 0, 0, 0, 0);
       };
 
-  public static final int CURRENT_LIMIT_AMPS = 20;
+  public static final int CURRENT_LIMIT_AMPS = 35;
 
-  public static final double STATOR_CURRENT_LIMIT = 30;
+  public static final double STATOR_CURRENT_LIMIT = 40;
 
   public static final SerializerPhysicalConstants PHYSICAL_CONSTANTS =
       switch (Constants.getRobotType()) {

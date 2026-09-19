@@ -43,13 +43,9 @@ public class ShootCommandFactory {
 
   /** Command to bind to whileTrue – repeats while the button is held. */
   public Command whileHeld() {
-    return ((new WaitCommand(0.1)
-                .andThen(
-                    new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW)))
-                .andThen(new WaitCommand(0.1))
-                .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE)))
+    return (new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE))
             .andThen(
-                new WaitCommand(0.2)
+                new WaitCommand(1)
                     .andThen(
                         new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW)))
                     .andThen(new WaitCommand(0.1))
@@ -89,7 +85,7 @@ public class ShootCommandFactory {
                             .andThen(
                                 new WaitUntilCommand(
                                     () ->
-                                        ((SmartDashboard.getNumber("Intake Rack In Time", 1.5)
+                                        ((SmartDashboard.getNumber("Intake Rack In Time", 2)
                                                 + time)
                                             < Timer.getFPGATimestamp())))
                             .andThen(intakeController.setTargetStateCommand(IntakeState.STOW))
