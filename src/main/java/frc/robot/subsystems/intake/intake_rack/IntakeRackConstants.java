@@ -81,9 +81,15 @@ public class IntakeRackConstants {
       double maxExtensionMeters,
       boolean simulateGravity) {}
 
+  /** Sim travel bound in mechanism rotations, above all observed real travel (11.68 in q93). */
+  public static final double RACK_HARD_STOP_ROTATIONS = 13.0;
+
+  private static final double RACK_HARD_STOP_METERS =
+      RACK_HARD_STOP_ROTATIONS * 2.0 * Math.PI * 0.1;
+
   public static final IntakeRackPhysicalConstants PHYSICAL_CONSTANTS =
       switch (Constants.getRobotType()) {
-        case SIM -> new IntakeRackPhysicalConstants(0.1, 0.1, -15, 15, false);
+        case SIM -> new IntakeRackPhysicalConstants(0.1, 0.1, 0, RACK_HARD_STOP_METERS, false);
         case COMP -> new IntakeRackPhysicalConstants(0.1, 0, 0, 0, false);
         default -> new IntakeRackPhysicalConstants(0.1, 0, 0, 0, false);
       };

@@ -7,7 +7,13 @@ public class SerializerConstants {
   public static final SerializerConfig SERIALIZER_CONFIG =
       switch (Constants.getRobotType()) {
         case SIM -> new SerializerConfig(
-            CAN.at(32, "Serializer"), CAN.at(0, "Serializer 2"), 5, true, false, true);
+            CAN.at(32, "Serializer"),
+            CAN.at(0, "Serializer 2"),
+            // Matches COMP.
+            2.833333,
+            true,
+            false,
+            true);
         case COMP -> new SerializerConfig(
             CAN.at(33, "Serializer Left"),
             CAN.at(41, "Serializer Right"),
