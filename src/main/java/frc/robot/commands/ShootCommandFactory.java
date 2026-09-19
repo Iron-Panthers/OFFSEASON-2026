@@ -79,8 +79,8 @@ public class ShootCommandFactory {
                                       || matchTimerUpdater.getTimeUntilOurHubShifts() <= 2
                                       || matchTimerUpdater.getTimeUntilOurHubShifts()
                                           >= 24) // time correct
-                                  && (getHeadingError.get().getDegrees() < 4
-                                      || getHeadingError.get().getDegrees() > 356
+                                  && (getHeadingError.get().getDegrees() < 6
+                                      || getHeadingError.get().getDegrees() > 354
                                       || justShoot) // angle correct
                               ? ShooterState.SHOOT
                               : ShooterState.TOTAL_SPIN_UP);

@@ -442,7 +442,8 @@ public class RobotContainer {
                                       RobotState.getInstance().getEstimatedPose().getTranslation())
                               < .04)
                   .andThen(
-                      new InstantCommand(() -> RobotState.getInstance().resetDynamicObstacles()));
+                      new InstantCommand(() -> RobotState.getInstance().resetDynamicObstacles()))
+                  .andThen(new InstantCommand(()-> RobotState.getInstance().setIsAutoAdaptive(false)));
             },
             Set.of(swerve)));
   }
