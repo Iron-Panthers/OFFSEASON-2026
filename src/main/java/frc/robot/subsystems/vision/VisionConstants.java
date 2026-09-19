@@ -25,7 +25,7 @@ public class VisionConstants {
   // index 0 -> arducam-1, etc
   public static final Transform3d[] CAMERA_TRANSFORM =
       switch (getRobotType()) {
-        case COMP -> new Transform3d[] {
+        case COMP, SIM -> new Transform3d[] {
           // new Transform3d(new Translation3d(), new Rotation3d())
           // arducam-7 (front in rollers)
           new Transform3d(
@@ -95,23 +95,39 @@ public class VisionConstants {
               new Rotation3d(
                   Math.toRadians(5.739), Math.toRadians(-19.623), Math.toRadians(34.632 - 180)))
         };
-        case SIM -> new Transform3d[] {
-          // arducam-1 (front left)
-          new Transform3d(
-              0.299, 0.2744, 0.3464, new Rotation3d(0, -Math.toRadians(35), Math.toRadians(55))),
-          // arducam-2 (front center)
-          new Transform3d(0.3017, 0, 0.3373, new Rotation3d(0, -Math.toRadians(35), 0)),
-          // arducam-3 (front right)
-          new Transform3d(
-              0.299, -0.2744, 0.3464, new Rotation3d(0, -Math.toRadians(35), -Math.toRadians(55))),
-          // arducam-4 (back right)
-          new Transform3d(
-              -0.17, -0.298, 0.3651, new Rotation3d(0, 0, Math.PI - Math.toRadians(12))),
-          // arducam-5 (back left)
-          new Transform3d(-0.17, 0.298, 0.3651, new Rotation3d(0, 0, -Math.PI + Math.toRadians(12)))
-        };
         default -> new Transform3d[0];
       };
+
+  /**
+   * Simulated camera model. Noise is injected in pixels on tag corners, so pose error grows with
+   * range. Resolution, FOV, latency and frame rate are representative OV9281 values, not this
+   * robot's calibration.
+   */
+  public static final int SIM_CAMERA_WIDTH_PX = 1280;
+
+  public static final int SIM_CAMERA_HEIGHT_PX = 800;
+
+  public static final double SIM_CAMERA_FOV_DIAGONAL_DEGREES = 70.0;
+
+  public static final double SIM_CAMERA_FPS = 40.0;
+
+  public static final double SIM_CAMERA_LATENCY_MS = 25.0;
+
+  public static final double SIM_CAMERA_LATENCY_STD_DEV_MS = 8.0;
+
+  /**
+   * Corner detection error in pixels, fitted so two cameras on the same loop disagree as much as
+   * the real robot's do (0.07-0.08 m at 2-4 m).
+   */
+  public static final double SIM_CAMERA_CALIB_ERROR_PX = 0.75;
+
+  public static final double SIM_CAMERA_CALIB_ERROR_STD_DEV_PX = 0.25;
+
+  /** Just past the furthest target any real camera reported across five matches, 10.13 m. */
+  public static final double SIM_MAX_SIGHT_RANGE_METERS = 10.2;
+
+  /** Smallest tag, as a percent of the image, a pipeline can still resolve. */
+  public static final double SIM_MIN_TARGET_AREA_PERCENT = 0.03;
 
   public static final List<TagCountDeviation> HIGH_RES_TAG_COUNT_DEVIATIONS =
       switch (getRobotType()) {

@@ -102,8 +102,7 @@ public class ShootCommandFactory {
                             .andThen(
                                 new WaitUntilCommand(
                                     () ->
-                                        ((SmartDashboard.getNumber("Intake Rack In Time", 2)
-                                                + time)
+                                        ((SmartDashboard.getNumber("Intake Rack In Time", 2) + time)
                                             < Timer.getFPGATimestamp())))
                             .andThen(intakeController.setTargetStateCommand(IntakeState.STOW))
                             .withDeadline(

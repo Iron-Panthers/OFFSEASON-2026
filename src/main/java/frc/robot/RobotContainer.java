@@ -87,6 +87,9 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonvision;
 import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
+import frc.robot.utility.SimBattery;
+import frc.robot.utility.replay.LogInputPlayer;
+import frc.robot.utility.replay.PoseAnchor;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
@@ -116,6 +119,7 @@ public class RobotContainer {
 
   // private SendableChooser<Command> autoChooser;
   private LoggedDashboardChooser<Command> autoChooser;
+  private PoseAnchor poseAnchor;
 
   private final CommandXboxController driverA = new CommandXboxController(0);
   private final CommandXboxController driverB = new CommandXboxController(1);
@@ -202,8 +206,11 @@ public class RobotContainer {
           vision =
               new Vision(
                   new VisionIOPhotonvisionSim(
-                      "arducam-3", 3, driveSimulation::getSimulatedDriveTrainPose));
-          new VisionIOPhotonvisionSim("arducam-4", 4, driveSimulation::getSimulatedDriveTrainPose);
+                      "CamC", 0, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamA", 1, driveSimulation::getSimulatedDriveTrainPose),
+                  new VisionIOPhotonvisionSim(
+                      "CamB", 2, driveSimulation::getSimulatedDriveTrainPose));
 
           // INTAKE
           intakeRack = new IntakeRack(new IntakeRackIOSim());
@@ -641,11 +648,30 @@ public class RobotContainer {
     SmartDashboard.putData("Auto Chooser", autoChooser.getSendableChooser());
   }
 
+  /** Attach the replay pose anchor. SIM only; no-op elsewhere. */
+  public void attachPoseAnchor(double intervalSeconds) {
+    if (Constants.getRobotMode() != Constants.Mode.SIM) {
+      return;
+    }
+    poseAnchor = new PoseAnchor(RobotSimState.getInstance().getDriveSimulation(), intervalSeconds);
+  }
+
+  /** Run the replay pose anchor for this loop. */
+  public void updatePoseAnchor(LogInputPlayer player) {
+    if (poseAnchor != null && player != null) {
+      poseAnchor.update(player);
+    }
+  }
+
   public Command getAutoCommand() {
     // When running headlessly for AI testing, bypass the dashboard chooser entirely.
     // i love autos
     // Invoke: ./gradlew simulateJava -Pheadless -Pai.logging -Pauto.name=2x4TRight
     String aiAutoName = System.getProperty("ai.auto.name");
+    if (aiAutoName == null || aiAutoName.isBlank()) {
+      // In log-driven replay, run whatever auto the real match ran.
+      aiAutoName = System.getProperty("ai.replay.auto.name");
+    }
     if (aiAutoName != null && !aiAutoName.isBlank()) {
       return AutoBuilder.buildAuto(aiAutoName);
     }
@@ -712,6 +738,9 @@ public class RobotContainer {
     SimulatedArena.getInstance().simulationPeriodic();
     RobotSimState.getInstance().updateTerrainState();
     RobotSimState.getInstance().getFuelSim().updateSim();
+
+    // After the arena tick: maple-sim overwrites RoboRioSim voltage during it.
+    SimBattery.getInstance().update();
     Logger.recordOutput(
         "Field Simulation/Robot Position", RobotSimState.getInstance().getRobotPose3d());
     Logger.recordOutput(

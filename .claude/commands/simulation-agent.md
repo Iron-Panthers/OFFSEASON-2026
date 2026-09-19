@@ -85,6 +85,113 @@ The file will be named with a timestamp, e.g., `robot_2026-05-17_14-30-00.wpilog
 
 ---
 
+## Log-Driven Replay (fidelity mode)
+
+Feed a **real match's driver inputs** through the simulation, then compare the output against the real log. This is the mode to use when the question is "does the sim behave like the real robot?" rather than "does my new feature work?".
+
+```bash
+./gradlew simulateJava --no-daemon -Pheadless -Pai.logging \
+  "-Preplay.inputs=C:\Users\bruce\Downloads\LOGS-2026-main\LOGS-2026-main\Worlds\akit_26-04-30_14-50-56_johnson_q54.wpilog"
+```
+
+The player reads `DriverStation/Joystick{0,1}/{AxisValues,ButtonValues,POVs}` plus the enable/autonomous/alliance timeline and the recorded auto chooser value, then injects them **frame-locked to the robot loop** (one 20 ms step per `robotPeriodic`, never wall clock). The robot runs the same auto the real match ran and hands over to teleop with the real driver's sticks.
+
+### Flags
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `-Preplay.inputs=<path>` | — | Real `.wpilog` to replay. Required to enter this mode. |
+| `-Preplay.anchor=<sec>` | `10.0` | Teleop pose re-anchor interval. `0` disables. |
+| `-Preplay.battery=<V>:<ohms>[:<V/min>]` | `12.24:0.0112:0.6` | Per-match battery nominal voltage, internal resistance, and droop. |
+| `-Preplay.teleopOnly` | off | Skip auto, start at the logged teleop-entry pose. |
+
+### What is and is not trustworthy after auto
+
+- **Auto segment** — pose is trusted and free-running. Valid for comparison.
+- **Teleop** — the real robot got hit, defended and blocked; the sim does not model that. **Pose is not comparable after auto.** Power draw and mechanism curves still are.
+- The pose is snapped back to the logged pose every `-Preplay.anchor` seconds so the sim robot cannot wedge into a wall and draw current that never happened. Chassis speeds are captured and restored across the snap, because maple-sim's `setSimulationWorldPose` zeroes linear velocity.
+
+### `Replay/Anchor Error` measures drivetrain fidelity
+
+The drift accumulated in each anchor window is published before the correction:
+
+```bash
+python scripts/wpilog_to_csv.py build/ai-logs/<LOG>.wpilog \
+  --keys "RealOutputs/Replay/Anchor Error/Translation Meters,RealOutputs/Replay/Anchor Error/Rotation Degrees"
+```
+
+A drivetrain with the right mass, MOI and wheel friction drifts slowly and without systematic bias. Large or consistently-signed drift points at a specific modelling error. Only valid in stretches where the real robot was not being hit — inspect outliers rather than averaging them in.
+
+### Battery model
+
+`SimBattery` sums every simulated motor's supply current into `V = nominal - I * R_internal` and publishes it through `RoboRioSim.setVInVoltage()`. Every `*IOSim` already reads `RobotController.getBatteryVoltage()`, so the sag reaches all motors and reduces available torque — brownouts are physical, not cosmetic. Check it registered everything:
+
+```bash
+python scripts/wpilog_to_csv.py build/ai-logs/<LOG>.wpilog \
+  --keys "RealOutputs/SimBattery/SourceCount,RealOutputs/SimBattery/Voltage,RealOutputs/SimBattery/TotalCurrentAmps"
+```
+
+`SourceCount` should be **15** (7 mechanisms + 8 swerve motors). Lower means a registration was missed.
+
+### Mechanism load model — do not "fix" the coefficients
+
+WPILib's `FlywheelSim` and `ElevatorSim` are frictionless, and worse, `getCurrentDrawAmps()` is
+**structurally zero at every steady state** — the sim recovers gearing from its own plant matrices
+and then reports `(V - omega*G/Kv)/R`, so the two terms cancel for any plant it is given. Swapping
+in `identifyVelocitySystem(kV, kA)` does not help; this has been tried and the reason is algebraic.
+
+Each roller IOSim therefore does two things together, and both are required:
+
+1. subtracts `SimCurrentLimit.dragVolts(...)` from the plant input, and
+2. reports `SimCurrentLimit.statorAmps(...)` against the **commanded** voltage, not the reduced one.
+
+`DRAG_AMPS_PER_RAD_PER_SEC` in each IOSim, and `LOAD_VOLTS` in `IntakeRackIOSim`, are **calibrated
+against five real matches** — each is set so the simulated mean stator current lands on the median
+real one. They are lumped average match loads, not bearing friction, and they are documented as
+such in each file. Changing one without re-measuring against the logs will break the current fit.
+
+If mean pack current is wrong, check the mechanism *duty cycles* first — how much of the match each
+mechanism spends running — before touching a coefficient. That is where the current known error is.
+
+### Drivetrain and vision fidelity
+
+`scripts/log_compare.py` scores signals but cannot say *why* the drivetrain diverges. This does:
+
+```bash
+python scripts/drive_vision_fidelity.py <sim>.wpilog <real>.wpilog
+```
+
+It reports, identically on both sides:
+
+- **module disagreement** -- fits a rigid-body motion to the four module states; whatever no rigid
+  body can explain is slip or scrub. Depends on nothing but module states, so pose drift cannot
+  contaminate it.
+- **gyro minus modules** -- the same thing from an independent sensor.
+- **wheel path / pose path** -- wheels that slip travel further than the robot does.
+- **vision error between two cameras on the same loop** -- both saw the same robot at the same
+  instant, so their disagreement is vision error with the pose estimator removed. Binned by target
+  distance, because the number that matters is whether it *grows* with range.
+
+**Split autonomous from teleop before drawing conclusions.** Teleop contains being shoved by other
+robots, which shows up in every one of these metrics and which no replay can reproduce. Real teleop
+module disagreement is 2.8x the same match's autonomous figure. Calibrate against autonomous.
+
+Simulated vision noise lives in `VisionConstants.SIM_CAMERA_*` and is injected in **pixels on the
+tag corners**, so accuracy degrades with distance on its own. Simulated odometry error lives in
+`ModuleIOTalonFXSim.ODOMETRY_SCALE_*` and is applied to the reported position and velocity only,
+never to the physics -- maple-sim sets wheel speed exactly equal to ground speed whenever a module
+is not actively skidding, so without it simulated odometry is perfect.
+
+### Then compare against the real log
+
+```bash
+python scripts/wpilog_to_csv.py --compare build/ai-logs/<LOG>.wpilog "<REAL_LOG>" --json build/ai-logs/fit.json
+```
+
+See the Comparison Mode section of `/log-analysis`.
+
+---
+
 ## Replaying a Match Log
 
 Replay mode runs the real robot's logged sensor inputs through the current code — deterministic, fast, no GUI needed.
