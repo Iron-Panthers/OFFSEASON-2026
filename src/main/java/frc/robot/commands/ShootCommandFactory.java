@@ -30,6 +30,7 @@ public class ShootCommandFactory {
 
   private boolean justShoot = false;
   double time = Timer.getFPGATimestamp();
+  private boolean justShoot = false;
 
   public ShootCommandFactory(
       ShooterController shooterController,
@@ -87,10 +88,12 @@ public class ShootCommandFactory {
                                       || shooterController.getTargetState() == ShooterState.SHOOT)
                                   && shooterController.flywheelsUpToSpeed()
                                   && (matchTimerUpdater.isOurHubActive()
-                                      || matchTimerUpdater.getTimeUntilOurHubShifts() < 2
+                                      || matchTimerUpdater.getTimeUntilOurHubShifts() <= 2
                                       || matchTimerUpdater.getTimeUntilOurHubShifts()
-                                          > 24) // time correct
-                                  && getHeadingError.get().getDegrees() < 4 // angle correct
+                                          >= 24) // time correct
+                                  && (getHeadingError.get().getDegrees() < 4
+                                      || getHeadingError.get().getDegrees() > 356
+                                      || justShoot) // angle correct
                               ? ShooterState.SHOOT
                               : ShooterState.TOTAL_SPIN_UP);
                     })
@@ -148,5 +151,9 @@ public class ShootCommandFactory {
         () -> {
           intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
         });
+  }
+
+  public Command setJustShootCommand(boolean justShoot) {
+    return new InstantCommand(() -> this.justShoot = justShoot);
   }
 }

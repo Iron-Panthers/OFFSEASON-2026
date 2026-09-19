@@ -22,6 +22,11 @@ public class AlignToShootCommand extends Command {
     shooterController.setAutoAimCommand(true);
   }
 
+  public void execute() { // WORLDS CHANGE
+    swerve.setMovementScoped(true);
+    shooterController.setAutoAim(true);
+  }
+
   public void end(boolean interrupted) {
     swerve.setMovementScoped(false);
     shooterController.setAutoAimCommand(false);

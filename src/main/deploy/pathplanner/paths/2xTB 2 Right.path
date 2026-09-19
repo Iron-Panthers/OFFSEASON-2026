@@ -102,6 +102,10 @@
       "rotationDegrees": -87.86668774464484
     },
     {
+      "waypointRelativePos": 2.3889875666074425,
+      "rotationDegrees": 0.0
+    },
+    {
       "waypointRelativePos": 3.236842105263203,
       "rotationDegrees": 166.61358805058066
     },
@@ -113,6 +117,12 @@
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
+    {
+      "name": "Intake down",
+      "waypointRelativePos": 0.13498312710909802,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
     {
       "name": "Spin up shooter",
       "waypointRelativePos": 4.0,

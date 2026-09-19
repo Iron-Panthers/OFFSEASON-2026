@@ -63,12 +63,12 @@
       "y" : 5.591347439236111
     },
     "prevControl" : {
-      "x" : 6.30726203816943,
-      "y" : 5.563218646658311
+      "x" : 5.70131826385384,
+      "y" : 5.613369275478064
     },
     "nextControl" : {
-      "x" : 4.513009693287037,
-      "y" : 5.622250000000001
+      "x" : 4.516154668764354,
+      "y" : 5.508563957030503
     },
     "isLocked" : false,
     "linkedName" : null
@@ -117,7 +117,7 @@
   "pointTowardsZones" : [ ],
   "eventMarkers" : [ {
     "name" : "Intake down",
-    "waypointRelativePos" : 0.0,
+    "waypointRelativePos" : 0.1,
     "endWaypointRelativePos" : null,
     "command" : null
   }, {

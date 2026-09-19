@@ -87,7 +87,7 @@ public class DriveConstants {
         default -> 1.5;
       };
 
-  public static final Matrix<N3, N1> STATE_STD_DEVS = VecBuilder.fill(0.001, 0.001, 0.001);
+  public static final Matrix<N3, N1> STATE_STD_DEVS = VecBuilder.fill(0.005, 0.005, 0.005);
 
   public static final Translation2d[] MODULE_TRANSLATIONS =
       new Translation2d[] {

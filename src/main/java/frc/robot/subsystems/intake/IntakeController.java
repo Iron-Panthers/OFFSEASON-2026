@@ -66,7 +66,7 @@ public class IntakeController extends SubsystemBase {
       // if else set control mode to zero
     } else if (intakeRack.getControlMode() == GenericSuperstructure.ControlMode.ZEROING) {
       intakeRollers.setVelocityTarget(targetState.getIntakeRollersTarget());
-    } else if (intakeRack.getPosition() < 7 && targetState == IntakeState.INTAKE) {
+    } else if (intakeRack.getPosition() < 1.5 && targetState == IntakeState.INTAKE) {
       intakeRollers.setVelocityTarget(IntakeRollersTarget.IDLE);
       intakeRack.setPositionTarget(targetState.getIntakeRackTarget());
     } else if (targetState == IntakeState.STOW && !intakeRack.reachedTarget()) {
@@ -126,6 +126,10 @@ public class IntakeController extends SubsystemBase {
 
   public boolean getIntakeRackActive() {
     return intakeRackActive;
+  }
+
+  public void stopZeroing() {
+    intakeRack.endZeroing();
   }
 
   public double getRackStatorCurrentAmps() {

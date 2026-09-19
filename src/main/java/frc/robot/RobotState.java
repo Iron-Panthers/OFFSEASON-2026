@@ -310,13 +310,13 @@ public class RobotState {
           addEntry(4.5, new HoodParams(73, 9, 1.561));
         }
         default -> {
-          addEntry(1.3, new HoodParams(83, 8.5, 1.09));
-          addEntry(2.0, new HoodParams(77, 8.4, .97));
-          addEntry(2.5, new HoodParams(73, 9, 1.14));
-          addEntry(3.0, new HoodParams(73, 9.4, 1.15)); // tuned to here
-          addEntry(3.5, new HoodParams(69, 9.5, 1.22));
-          addEntry(4.0, new HoodParams(67, 10.2, 1.3));
-          addEntry(4.5, new HoodParams(67, 10.5, 1.34));
+          addEntry(1.3, new HoodParams(83, 8.5, 1.09)); // stupid
+          addEntry(2.0, new HoodParams(77, 8.4, .97)); // :)
+          addEntry(2.5, new HoodParams(73, 8.7, 1.14)); // teeny too far
+          addEntry(3.0, new HoodParams(73, 9.2, 1.15));
+          addEntry(3.5, new HoodParams(69, 9.4, 1.22));
+          addEntry(4.0, new HoodParams(67, 9.8, 1.3));
+          addEntry(4.5, new HoodParams(67, 10.4, 1.34));
           addEntry(5.2, new HoodParams(64, 10.9, 1.39));
         }
       }
@@ -574,6 +574,18 @@ public class RobotState {
   @AutoLogOutput(key = "Robot State/is auto adaptive")
   public boolean isAutoAdaptive() {
     return isAutoAdaptive;
+  }
+
+  @AutoLogOutput(key = "Robot State/distance from hub")
+  public double distanceFromHub() {
+    return getEstimatedPose()
+        .getTranslation()
+        .getDistance(
+            new Translation2d(
+                (isAllianceRed() ? DriveConstants.RED_HUB_ORIGIN : DriveConstants.BLUE_HUB_ORIGIN)
+                    .getX(),
+                (isAllianceRed() ? DriveConstants.RED_HUB_ORIGIN : DriveConstants.BLUE_HUB_ORIGIN)
+                    .getY()));
   }
 
   public void setIsAutoAdaptive(boolean isAutoAdaptive) {
