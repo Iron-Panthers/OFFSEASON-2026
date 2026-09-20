@@ -1,0 +1,43 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Straight D Lefty"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Smart zero"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootCommandFactory Faster"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 9.81
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Straight T Left"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

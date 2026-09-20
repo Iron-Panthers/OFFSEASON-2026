@@ -9,7 +9,7 @@ public class ShooterOmniwheelIOSim extends GenericRollersIOSim implements Shoote
   public ShooterOmniwheelIOSim() {
     super(
         SHOOTER_OMNIWHEEL_CONFIG.motorID(),
-        CURRENT_LIMIT_AMPS,
+        SUPPLY_CURRENT_LIMIT_AMPS,
         SHOOTER_OMNIWHEEL_CONFIG.inverted(),
         SHOOTER_OMNIWHEEL_CONFIG.brake(),
         SHOOTER_OMNIWHEEL_CONFIG.reduction(),

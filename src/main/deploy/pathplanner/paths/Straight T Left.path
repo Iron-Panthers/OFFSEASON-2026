@@ -1,0 +1,54 @@
+{
+  "version" : "2025.0",
+  "waypoints" : [ {
+    "anchor" : {
+      "x" : 3.891008303677343,
+      "y" : 7.246619217081851
+    },
+    "prevControl" : null,
+    "nextControl" : {
+      "x" : 8.50670225385528,
+      "y" : 7.494080664294188
+    },
+    "isLocked" : false,
+    "linkedName" : "Trench Shooting Pose Left"
+  }, {
+    "anchor" : {
+      "x" : 8.517461447212337,
+      "y" : 7.246619217081851
+    },
+    "prevControl" : {
+      "x" : 4.267580071174379,
+      "y" : 7.009916963226573
+    },
+    "nextControl" : null,
+    "isLocked" : false,
+    "linkedName" : null
+  } ],
+  "rotationTargets" : [ {
+    "waypointRelativePos" : 0.5,
+    "rotationDegrees" : -90.33408239174872
+  } ],
+  "constraintZones" : [ ],
+  "pointTowardsZones" : [ ],
+  "eventMarkers" : [ ],
+  "globalConstraints" : {
+    "maxVelocity" : 3.1,
+    "maxAcceleration" : 4.0,
+    "maxAngularVelocity" : 540.0,
+    "maxAngularAcceleration" : 720.0,
+    "nominalVoltage" : 12.0,
+    "unlimited" : false
+  },
+  "goalEndState" : {
+    "velocity" : 0,
+    "rotation" : 86.7845160082519
+  },
+  "reversed" : false,
+  "folder" : "Left Paths (auto generated)",
+  "idealStartingState" : {
+    "velocity" : 0,
+    "rotation" : -77.00538320808346
+  },
+  "useDefaultConstraints" : true
+}
