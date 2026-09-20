@@ -387,6 +387,16 @@ public class RobotContainer {
                             .raceWith(new WaitCommand(3.75))
                             .andThen(shootCommand.onRelease()))));
     NamedCommands.registerCommand(
+        "ShootCommandFactory Faster",
+        new AlignToShootCommand(swerve, shooterController)
+            .withDeadline(
+                new WaitCommand(0.2)
+                    .andThen(
+                        shootCommand
+                            .whileHeld()
+                            .raceWith(new WaitCommand(3))
+                            .andThen(shootCommand.onRelease()))));
+    NamedCommands.registerCommand(
         "Auto shoot full hopper (no intake)",
         new AutoShootCommand(
             swerve, shooterController, intakeController, matchTimerUpdater, false));

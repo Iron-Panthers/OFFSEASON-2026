@@ -36,7 +36,7 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "ShootCommandFactory"
+          "name" : "ShootCommandFactory Faster"
         }
       }, {
         "type" : "path",
