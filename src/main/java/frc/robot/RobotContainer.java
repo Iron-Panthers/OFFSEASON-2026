@@ -384,7 +384,7 @@ public class RobotContainer {
                     .andThen(
                         shootCommand
                             .whileHeld()
-                            .raceWith(new WaitCommand(3.75))
+                            .raceWith(new WaitCommand(3.5))
                             .andThen(shootCommand.onRelease()))));
     NamedCommands.registerCommand(
         "ShootCommandFactory Faster",
