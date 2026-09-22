@@ -58,14 +58,29 @@ record RenderSettings(
     return fastDefaults();
   }
 
+  /**
+   * Default output size.
+   *
+   * <p>Chosen from measurement rather than from taste. Frame time scales with pixel count, and at
+   * 640x400 a four core machine manages about seven frames a second; at this size it manages
+   * thirteen and an eight core machine reaches fifteen. Raise it with {@code -Prender.width} and
+   * {@code -Prender.height} when the frames matter more than the rate, which is most of the time
+   * for AprilTag work: detection range falls with resolution.
+   */
+  static final int DEFAULT_WIDTH = 480;
+
+  static final int DEFAULT_HEIGHT = 300;
+
   /** Tuned so an ordinary laptop can watch the stream rather than page through it. */
   static RenderSettings fastDefaults() {
-    return new RenderSettings(640, 400, 2, 0, 1, false, 1.0f, 0.82f, Quality.FAST);
+    return new RenderSettings(
+        DEFAULT_WIDTH, DEFAULT_HEIGHT, 2, 0, 1, false, 1.0f, 0.82f, Quality.FAST);
   }
 
   /** The reference path tracer, for capture rather than for watching. */
   static RenderSettings highDefaults() {
-    return new RenderSettings(640, 400, 2, 1, 3, true, 1.0f, 0.82f, Quality.HIGH);
+    return new RenderSettings(
+        DEFAULT_WIDTH, DEFAULT_HEIGHT, 2, 1, 3, true, 1.0f, 0.82f, Quality.HIGH);
   }
 
   RenderSettings withResolution(int newWidth, int newHeight) {

@@ -144,7 +144,6 @@ public class RobotContainer {
   private IntakeRollers intakeRollers;
   private IntakeController intakeController;
   private ObjectDetection objectDetection;
-  private RGB rgb;
   private Serializer serializer;
   private ShooterFlywheel shooterFlywheels;
   private ShooterHood shooterHood;
