@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.commands.HappyBirthdayCommand;
 import frc.robot.utility.SimRandom;
 import frc.robot.utility.ab.AbBench;
+import frc.robot.utility.coprocessor.CoprocessorManager;
 import frc.robot.utility.rendering.RenderingEngine;
 import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.MatchInputs;
@@ -512,6 +513,10 @@ public class Robot extends LoggedRobot {
     // otherwise. Kept here rather than in RobotContainer so the several seconds of field loading
     // happen once, off the path of anything that runs every loop.
     RenderingEngine.startIfEnabled();
+
+    // Coprocessor modules, with -Pcoproc=objdetect. Must follow the renderer: the stream URL a
+    // module is handed is the port the renderer actually bound, which is only known once it has.
+    CoprocessorManager.startIfEnabled();
   }
 
   /** This function is called periodically whilst in simulation. */

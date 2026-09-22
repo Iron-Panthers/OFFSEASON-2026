@@ -262,6 +262,46 @@ public final class RenderingEngine {
     return framesRendered;
   }
 
+  /**
+   * The URL a camera is actually being served on.
+   *
+   * <p>Actually, not nominally: {@link #start()} walks upward from the configured base port when
+   * something already holds it, so the port a consumer needs is only knowable from here. Anything
+   * that hardcodes 1191 upward is one busy port away from silently reading nothing.
+   *
+   * @param cameraIndex index into {@code VisionConstants.CAMERA_TRANSFORM}
+   * @return the MJPEG stream URL, or null if that camera is not being served
+   */
+  public String streamUrl(int cameraIndex) {
+    for (CameraStream camera : cameras) {
+      if (camera.index() == cameraIndex) {
+        return "http://localhost:" + camera.server().port() + "/stream.mjpg";
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @return how many cameras are being served
+   */
+  public int cameraCount() {
+    return cameras.size();
+  }
+
+  /**
+   * @return width of the frames being rendered, in pixels
+   */
+  public int frameWidth() {
+    return settings.width();
+  }
+
+  /**
+   * @return height of the frames being rendered, in pixels
+   */
+  public int frameHeight() {
+    return settings.height();
+  }
+
   /** Shuts down the streams and the render threads. */
   public synchronized void stop() {
     running = false;

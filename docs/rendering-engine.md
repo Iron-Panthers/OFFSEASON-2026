@@ -12,6 +12,15 @@ roboRIO.
 ./gradlew simulateJava -Prender
 ```
 
+There are two modes. **Fast** is the default and is what you want for watching the robot drive or
+collecting a lot of frames. **High** is the reference path tracer, five to nine times slower, for
+when the frames matter more than the rate.
+
+```bash
+./gradlew simulateJava -Prender                    # fast
+./gradlew simulateJava -Prender -Prender.mode=high # reference path tracer
+```
+
 Each camera in `VisionConstants.CAMERA_TRANSFORM` gets its own port starting at **1191**:
 
 | URL | What it is |
@@ -35,19 +44,22 @@ All are `-P` flags on `simulateJava`.
 
 | Flag | Default | Notes |
 | --- | --- | --- |
-| `-Prender.width` / `-Prender.height` | 640 x 400 | Half the simulated camera resolution. Cost scales with pixel count. |
-| `-Prender.spp` | 2 | Samples per pixel. The main quality/time dial. |
-| `-Prender.bounces` | 1 | Indirect diffuse bounces. 0 flattens the lighting noticeably. |
-| `-Prender.transparency` | 3 | How many polycarbonate panels a ray may see through. |
-| `-Prender.denoise` | true | `false` shows the raw Monte Carlo noise. |
+| `-Prender.mode` | `fast` | `fast` or `high`. |
+| `-Prender.width` / `-Prender.height` | 480 x 300 | Frame time scales with pixel count, so this is the biggest dial. |
+| `-Prender.spp` | 2 | Samples per pixel. In fast mode this buys anti-aliasing only, since the lighting carries no noise. |
+| `-Prender.bounces` | 0 fast / 1 high | Traced indirect bounces. Fast mode reads indirect light from the bake instead. |
+| `-Prender.transparency` | 1 fast / 3 high | How many polycarbonate panels a ray may see through. |
+| `-Prender.denoise` | off fast / on high | Fast mode has no Monte Carlo noise to remove, and filtering would only soften tags. |
 | `-Prender.gain` | 1.0 | Sensor noise multiplier. Raise it to test a pipeline against a bad exposure. |
-| `-Prender.quality` | 0.82 | JPEG quality. |
+| `-Prender.jpeg` | 0.82 | JPEG quality. |
 | `-Prender.port` | 1191 | First port to try. |
 
-Example, matching the real camera resolution at higher quality:
+**Resolution sets tag detection range**, so raise it for AprilTag work. At the simulated camera's
+own 1280x800 tags decode out to 5 m; at the 480x300 default they are good to roughly 2.5-3 m.
 
 ```bash
-./gradlew simulateJava -Prender -Prender.width=1280 -Prender.height=800 -Prender.spp=4
+# The frames matter more than the frame rate
+./gradlew simulateJava -Prender -Prender.mode=high -Prender.width=1280 -Prender.height=800 -Prender.spp=4
 ```
 
 ## Assets
@@ -60,6 +72,29 @@ Vendored under `advantage_scope_files/`, pulled from a local AdvantageScope inst
 | `Field3d_2026FRCFieldV2/model_0.glb` | The Fuel ball. Kept for reference; the renderer draws fuel analytically. |
 | `Field3d_2026FRCFieldV2/config.json` | Tag poses, field size, game piece definitions. |
 | `AprilTag_36h11/0NN.png` | The real 36h11 bitmaps, 10x10 px, extracted from the AdvantageScope bundle and SHA256-verified against its own index. |
+
+## The two modes
+
+|  | fast (default) | high |
+| --- | --- | --- |
+| Static shadows and indirect light | read from a baked `IrradianceVolume` | traced per pixel |
+| Contact shadows from balls and robots | traced, against moving geometry only | traced |
+| Primary visibility | ray traced | ray traced |
+| Lens distortion, ball silhouettes, tag sharpness | identical | identical |
+
+Fast mode bakes the static lighting once into a grid of 108k cells, about 1.6 s, cached to disk
+next to the geometry. Each cell holds an ambient cube: six incoming radiance values, one per axis.
+Shading then reads and interpolates that instead of tracing eight rays.
+
+The 20 cm cells sound coarse and are not, for this scene specifically. A 3.8 m fixture 8 m up casts
+a penumbra around half a metre wide, so the real shadows on this field are already softer than the
+grid. What a grid cannot represent is a shadow sharper than its own cells, and the only sharp
+shadows here are the ones under fuel, which are still traced live.
+
+What fast mode gives up is the physical accuracy of the lighting: specular highlights are broader,
+because the reflection direction reads the same band-limited volume, and light leaks slightly
+across thin geometry where a cell straddles both sides of it. What it does not touch is anything
+geometric, which is why the tag decode tests pass in both modes.
 
 ## How it works
 
@@ -128,7 +163,10 @@ threshold that fails at an event. The pipeline models:
 | --- | --- |
 | `FieldSceneTest` | Geometry lands in the right place, staged fuel is gone, all 32 tags are decalled and within 20 mm of the layout, the carpet is not metal. |
 | `TagDecodeTest` | **WPILib's own AprilTag detector reads the rendered tags back** and gets the ID the field layout says should be there, out to 5 m, at the real camera resolution. This is the test that proves the frames are usable rather than merely convincing. |
-| `RenderPreviewTest` | Three fixed viewpoints render, are sensibly exposed and have real contrast. Also writes them to `build/render-preview/` so a person can look. |
+| `RenderPreviewTest` | Three fixed viewpoints render, are sensibly exposed and have real contrast. Also writes them to `build/render-preview/` so a person can look. Pinned to high mode, since it exists to judge the best the renderer can do. |
+
+Fast mode decodes tags too, and slightly more strongly than the path tracer does: margin 137
+against 128 at the same range, because there is no sampling noise in the lighting to fight.
 
 Tag detection currently holds to **5 m** at 1280x800 through a 70 degree lens, with decision
 margins above 100. That is an optical limit rather than a rendering one: a 6.5 inch tag subtends
@@ -136,21 +174,75 @@ about 38 px at that range, and neither more samples nor more resolution changes 
 
 ## Performance
 
-Measured on this machine, headless simulation running alongside:
+Every number below is a whole frame at 640x400, including denoise, tone mapping and JPEG encode,
+measured by pinning the renderer to a thread count on one machine. Treat the thread counts as a
+stand-in for machine size rather than as exact laptop figures.
 
-| Setting | Rate |
-| --- | --- |
-| 640 x 400, 2 spp, one camera being watched | **~1.5 FPS** |
-| 480 x 360, 4 spp, standalone (no simulation) | ~0.45 s trace + 0.02 s post per frame |
+| Threads | high (path traced) | fast, 2 spp | fast, 1 spp |
+| --- | --- | --- | --- |
+| 4 | 0.6 FPS | 3.7 | **7.2** |
+| 8 | 1.1 FPS | 4.7 | **8.7** |
+| 24 | 1.7 FPS | 8.7 | **15.0** |
 
-The cost is dominated by BVH traversal over roughly four million triangles, not by shading or by
-post-processing, so the levers that actually matter are resolution and `-Prender.spp`. Flattening
-the shadow-ray inner loop and parallelising the denoiser and the film stage together moved
-post-processing from about 200 ms to about 20 ms a frame and barely changed the total.
+At the 480x300 default:
 
-This is fast enough to watch the robot drive and more than fast enough to capture a varied test set
-(~90 frames a minute), but it is not real time and is not meant to be. Only cameras being watched
-are rendered, so closing a stream gives the remaining ones their time back.
+| Threads | fast, 2 spp | fast, 1 spp |
+| --- | --- | --- |
+| 4 | 5.8 FPS | ~11 |
+| 24 | 16.1 FPS | ~28 |
+
+**Those are standalone figures. Running alongside the simulation costs roughly half.** Measured
+live through the MJPEG stream on a 24 core machine with the physics running: 8.1 FPS at 480x300.
+The renderer deliberately leaves a core free and runs below the simulation's priority, and
+maple-sim plus the fuel simulation are not cheap themselves. So a four core laptop should expect
+something closer to 3-4 FPS live than to 5.8.
+
+Two things that are *not* the cause, both checked: the instanced ego robot model is free (181 ms
+against 173 ms, inside the noise) and thread scaling is healthy (11.3x on 24 threads).
+
+### Where the time goes, and what did not help
+
+Profiling the path tracer at 640x400 on four threads put the frame at 1124 ms:
+
+| Stage | Cost | Share |
+| --- | --- | --- |
+| Shadow rays, six fixtures | ~515 ms | 45% |
+| Diffuse bounce and its shadow ray | ~285 ms | 25% |
+| Per-hit shading maths | ~175 ms | 16% |
+| Primary rays | ~150 ms | 13% |
+
+Fast mode exists because the first two of those recompute something that cannot change. It removes
+them and is five to nine times faster as a result.
+
+These were tried and **rejected on measurement**, and are recorded so nobody spends the afternoon
+again:
+
+- Shrinking BVH node memory from 93 MB to 9 MB by growing the leaves: **no change at all**. The
+  traversal is not bound by node memory.
+- Removing the `order[]` indirection from the triangle loop, so leaves read contiguously: **no
+  change**.
+- Culling the 32% of triangles that are rivets and PEM nuts: 1.29x on eight threads, *slower* on
+  four, inside the run-to-run noise. Available as a flag, not enabled.
+- Replacing `Math.pow` in the shading hot path: 2.5%. Kept, but it is not a lever.
+- The procedural surface noise: 3%. The sphere index at 300 balls: 14%.
+
+What remains is primary ray traversal at roughly 0.85 M rays per second per thread, which is about
+what an unvectorised Java BVH costs. Going meaningfully past it means either fewer pixels or
+rasterising primary visibility, and rasterising would cost the exact lens distortion and analytic
+ball silhouettes that make these frames worth rendering in the first place.
+
+## If it still is not fast enough
+
+In order of effort:
+
+1. `-Prender.spp=1`. Fast mode carries no lighting noise, so the second sample buys anti-aliasing
+   and nothing else. Roughly doubles the rate, at the cost of harder edges on tags.
+2. Drop the resolution further. Frame time is linear in pixel count.
+3. Rasterise primary visibility instead of tracing it. This is the only remaining large win and it
+   has not been done, because a rasteriser produces a pinhole image: the lens distortion would have
+   to be applied afterwards by resampling, and the fuel would have to be tessellated or drawn as
+   impostors. Those two properties, exact distortion and exact ball silhouettes, are most of why
+   these frames are worth more than a screenshot of AdvantageScope.
 
 ## Known limits
 

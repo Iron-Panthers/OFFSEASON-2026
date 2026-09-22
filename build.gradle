@@ -243,6 +243,22 @@ tasks.withType(JavaExec).configureEach {
             }
         }
     }
+    // Coprocessor modules. Runs the real coprocessor program as its own process beside the
+    // simulation, reading a rendered camera instead of a real one.
+    //   ./gradlew simulateJava -Prender -Pcoproc=objdetect
+    //   ./gradlew simulateJava -Prender -Pcoproc=objdetect -Pcoproc.objdetect.conf=0.4
+    // Requires -Prender, unless -Pcoproc.<module>.source points somewhere else.
+    if (project.hasProperty('coproc')) {
+        jvmArgs "-Dcoproc.modules=${project.getProperty('coproc')}"
+        // Anything of the form -Pcoproc.foo=bar becomes -Dcoproc.foo=bar, so a module's own
+        // options need no plumbing here when one is added.
+        project.properties.each { key, value ->
+            if (key.startsWith('coproc.')) {
+                jvmArgs "-D${key}=${value}"
+            }
+        }
+    }
+
     if (project.hasProperty('teleop.duration')) {
         jvmArgs "-Dai.teleop.duration=${project.getProperty('teleop.duration')}"
     }
