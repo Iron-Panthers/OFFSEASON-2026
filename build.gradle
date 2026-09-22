@@ -206,6 +206,8 @@ dependencies {
 test {
     useJUnitPlatform()
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+    // The rendering engine tests load the full 2026 field: ~4M triangles of geometry plus its BVH.
+    maxHeapSize = '4g'
 }
 
 // Simulation configuration (e.g. environment variables).
