@@ -19,6 +19,7 @@ package frc.robot.utility.rendering;
  * @param sensorGain multiplies photon and read noise; 1 is a well-lit camera, higher is a noisier
  *     one, and turning it up is a cheap way to test a pipeline against a bad exposure
  * @param jpegQuality MJPEG encoder quality from 0 to 1
+ * @param quality which lighting model to use
  */
 record RenderSettings(
     int width,
@@ -28,10 +29,43 @@ record RenderSettings(
     int transparencyDepth,
     boolean denoise,
     float sensorGain,
-    float jpegQuality) {
+    float jpegQuality,
+    RenderSettings.Quality quality) {
+
+  /** Which lighting model a stream runs. */
+  enum Quality {
+    /**
+     * Every pixel's shadows and bounce light are traced.
+     *
+     * <p>The reference. Use it to build training and validation sets, where the frames matter more
+     * than how long they took.
+     */
+    HIGH,
+
+    /**
+     * Static lighting is read from a baked {@link IrradianceVolume} instead of traced.
+     *
+     * <p>Roughly five times faster, because it removes the shadow and bounce rays that profiling
+     * showed were seventy percent of a frame. Moving objects still cast real traced contact
+     * shadows, and primary visibility is still ray traced, so lens distortion, ball silhouettes and
+     * tag sharpness are unaffected. What it gives up is the physical accuracy of the lighting
+     * itself: shadows are band limited to the volume grid and specular highlights are broader.
+     */
+    FAST
+  }
 
   static RenderSettings defaults() {
-    return new RenderSettings(640, 480, 2, 1, 3, true, 1.0f, 0.82f);
+    return fastDefaults();
+  }
+
+  /** Tuned so an ordinary laptop can watch the stream rather than page through it. */
+  static RenderSettings fastDefaults() {
+    return new RenderSettings(640, 400, 2, 0, 1, false, 1.0f, 0.82f, Quality.FAST);
+  }
+
+  /** The reference path tracer, for capture rather than for watching. */
+  static RenderSettings highDefaults() {
+    return new RenderSettings(640, 400, 2, 1, 3, true, 1.0f, 0.82f, Quality.HIGH);
   }
 
   RenderSettings withResolution(int newWidth, int newHeight) {
@@ -43,7 +77,8 @@ record RenderSettings(
         transparencyDepth,
         denoise,
         sensorGain,
-        jpegQuality);
+        jpegQuality,
+        quality);
   }
 
   RenderSettings withSamplesPerPixel(int samples) {
@@ -55,7 +90,8 @@ record RenderSettings(
         transparencyDepth,
         denoise,
         sensorGain,
-        jpegQuality);
+        jpegQuality,
+        quality);
   }
 
   int pixelCount() {

@@ -230,13 +230,14 @@ tasks.withType(JavaExec).configureEach {
     }
     // Camera rendering. Serves each simulated camera as MJPEG on 1191, 1192, ...
     // (not 1181: the PhotonVision simulation in the same process already binds that range)
-    //   ./gradlew simulateJava -Prender
+    //   ./gradlew simulateJava -Prender                    (fast mode, baked static lighting)
+    //   ./gradlew simulateJava -Prender -Prender.mode=high  (reference path tracer)
     //   ./gradlew simulateJava -Prender -Prender.width=1280 -Prender.height=800 -Prender.spp=4
     // The 2026 field is ~4M triangles plus its BVH, so the heap has to be raised to hold it.
     if (project.hasProperty('render')) {
         jvmArgs '-Drender.enabled=true'
         jvmArgs '-Xmx4g'
-        ['width', 'height', 'spp', 'bounces', 'transparency', 'denoise', 'gain', 'quality', 'port'].each { knob ->
+        ['mode', 'width', 'height', 'spp', 'bounces', 'transparency', 'denoise', 'gain', 'jpeg', 'port'].each { knob ->
             if (project.hasProperty("render.${knob}")) {
                 jvmArgs "-Drender.${knob}=${project.getProperty("render.${knob}")}"
             }

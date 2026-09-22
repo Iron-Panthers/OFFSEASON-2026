@@ -58,16 +58,55 @@ final class Renderer {
 
   private static final float FINISH_DEPTH = 1.1f;
 
+  /**
+   * How much a surface still receives when a moving object stands between it and the truss.
+   *
+   * <p>Not zero: the fast path tests one direction, but the field is lit from six fixtures and the
+   * whole sky, so a ball blocking one of them does not black out the carpet beneath it.
+   */
+  private static final float DYNAMIC_SHADOW_FLOOR = 0.32f;
+
+  /** How far a contact shadow test looks for a blocker. Beyond this the penumbra is invisible. */
+  private static final float DYNAMIC_SHADOW_REACH = 4f;
+
+  /**
+   * Rays used for a contact shadow.
+   *
+   * <p>Four rather than one. Measuring showed these rays cost nothing next to the primary ray,
+   * because they only ever test a few hundred moving objects rather than the field, and one ray
+   * gives a binary result that reads as speckle under every ball once the denoiser is off.
+   */
+  private static final int DYNAMIC_SHADOW_SAMPLES = 4;
+
   private final FieldScene scene;
   private final ArenaLighting lighting;
   private final ExecutorService workers;
   private final int threadCount;
 
+  /**
+   * Baked static lighting, or null to light every pixel by tracing.
+   *
+   * <p>Presence of this is what selects the fast path. Everything the volume answers, shadow rays
+   * and the diffuse bounce, is static by construction, so reading it is not an approximation of the
+   * traced result so much as a cached one, band limited to the grid.
+   */
+  private final IrradianceVolume volume;
+
   Renderer(FieldScene scene, ArenaLighting lighting, ExecutorService workers, int threadCount) {
+    this(scene, lighting, workers, threadCount, null);
+  }
+
+  Renderer(
+      FieldScene scene,
+      ArenaLighting lighting,
+      ExecutorService workers,
+      int threadCount,
+      IrradianceVolume volume) {
     this.scene = scene;
     this.lighting = lighting;
     this.workers = workers;
     this.threadCount = threadCount;
+    this.volume = volume;
   }
 
   /**
@@ -502,6 +541,10 @@ final class Renderer {
     float[] out = current.color;
 
     Surface surface = point.surface;
+    if (volume != null) {
+      shadeFromVolume(context, level, viewX, viewY, viewZ);
+      return;
+    }
     float metallic = surface.metallic();
     // Vary the finish along with the colour. Constant roughness gives every panel an identically
     // shaped highlight, which is what makes a lit CG surface look moulded rather than made.
@@ -557,6 +600,119 @@ final class Renderer {
     out[2] += albedo[2] * diffuseWeight * incoming[2];
 
     environmentSpecular(context, level, viewX, viewY, viewZ, roughness, metallic, escaped);
+  }
+
+  /**
+   * Shading from the baked volume: no shadow rays, no bounce ray.
+   *
+   * <p>One contact shadow ray survives, and only against moving geometry. It is the one thing the
+   * bake genuinely cannot know, and it is also the most legible shadow in the frame: a ball resting
+   * on carpet with no darkening under it reads as a ball hovering.
+   */
+  private void shadeFromVolume(Context context, int level, float viewX, float viewY, float viewZ) {
+
+    Level current = context.levels[level];
+    ShadePoint point = current.point;
+    float[] albedo = current.albedo;
+    float[] out = current.color;
+
+    Surface surface = point.surface;
+    float metallic = surface.metallic();
+    float roughness = Materials.clampRoughness(surface.roughness());
+
+    // Step off the surface before sampling: cells inside solid geometry are unlit, and a point
+    // sitting exactly on a wall would interpolate half its light from inside the wall.
+    float offset = volume.cellSize() * 0.6f;
+    float[] irradiance = current.incoming;
+    volume.sample(
+        point.x + point.normalX * offset,
+        point.y + point.normalY * offset,
+        point.z + point.normalZ * offset,
+        point.normalX,
+        point.normalY,
+        point.normalZ,
+        irradiance);
+
+    float visibility = dynamicVisibility(context, point);
+
+    out[0] = albedo[0] * surface.emissive();
+    out[1] = albedo[1] * surface.emissive();
+    out[2] = albedo[2] * surface.emissive();
+
+    float diffuse = (1f - metallic) * visibility / PI;
+    out[0] += albedo[0] * irradiance[0] * diffuse;
+    out[1] += albedo[1] * irradiance[1] * diffuse;
+    out[2] += albedo[2] * irradiance[2] * diffuse;
+
+    // Specular reflects whatever the volume says arrives along the mirror direction. Broad and
+    // dim next to a traced highlight, which is the honest cost of not tracing one.
+    float normalDotView =
+        Math.max(1e-4f, point.normalX * viewX + point.normalY * viewY + point.normalZ * viewZ);
+    float reflectX = 2f * normalDotView * point.normalX - viewX;
+    float reflectY = 2f * normalDotView * point.normalY - viewY;
+    float reflectZ = 2f * normalDotView * point.normalZ - viewZ;
+
+    float[] reflected = current.skySharp;
+    volume.sample(
+        point.x + point.normalX * offset,
+        point.y + point.normalY * offset,
+        point.z + point.normalZ * offset,
+        reflectX,
+        reflectY,
+        reflectZ,
+        reflected);
+
+    float rx = 1f - roughness;
+    float ry = 0.0425f - 0.0275f * roughness;
+    float rz = 1.04f - 0.572f * roughness;
+    float rw = 0.022f * roughness - 0.04f;
+    float a004 = Math.min(rx * rx, exp2(-9.28f * normalDotView)) * rx + ry;
+    float scale = -1.04f * a004 + rz;
+    float bias = 1.04f * a004 + rw;
+
+    for (int c = 0; c < 3; c++) {
+      float f0 = 0.04f + (albedo[c] - 0.04f) * metallic;
+      out[c] += reflected[c] / PI * (f0 * scale + bias) * visibility;
+    }
+  }
+
+  /**
+   * One shadow ray, against moving geometry only.
+   *
+   * <p>Aimed up because the truss is overhead, jittered so the penumbra has a soft edge rather than
+   * a hard one, and tested against the few hundred balls and robots rather than against four
+   * million static triangles.
+   */
+  private float dynamicVisibility(Context context, ShadePoint point) {
+    if (point.normalZ <= 0.02f) {
+      return 1f; // a downward or vertical face never catches a contact shadow from above
+    }
+    float originX = point.x + point.normalX * SHADOW_BIAS;
+    float originY = point.y + point.normalY * SHADOW_BIAS;
+    float originZ = point.z + point.normalZ * SHADOW_BIAS;
+
+    int blocked = 0;
+    for (int sample = 0; sample < DYNAMIC_SHADOW_SAMPLES; sample++) {
+      // Spread over the arc the truss actually occupies, so the penumbra widens with height the
+      // way a real one does.
+      float jitterX = (nextFloat(context) - 0.5f) * 0.55f;
+      float jitterY = (nextFloat(context) - 0.5f) * 0.55f;
+      float length = (float) Math.sqrt(jitterX * jitterX + jitterY * jitterY + 1f);
+      if (context.dynamic.occluded(
+          originX,
+          originY,
+          originZ,
+          jitterX / length,
+          jitterY / length,
+          1f / length,
+          DYNAMIC_SHADOW_REACH,
+          context.query,
+          context.occlusionScratch)) {
+        blocked++;
+      }
+    }
+    float fraction = (float) blocked / DYNAMIC_SHADOW_SAMPLES;
+    return 1f - fraction * (1f - DYNAMIC_SHADOW_FLOOR);
   }
 
   /**

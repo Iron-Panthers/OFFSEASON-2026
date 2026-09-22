@@ -140,6 +140,29 @@ final class TriangleSoup {
     }
   }
 
+  /**
+   * Reorders the triangles, so that a caller that has worked out a better traversal order can make
+   * that order the storage order.
+   *
+   * <p>Only indices and surface IDs move. Vertices stay where they are, since they are shared
+   * between triangles and reordering them would mean rewriting every index anyway.
+   *
+   * @param order new position i takes the triangle currently at {@code order[i]}
+   */
+  void permute(int[] order) {
+    int[] newIndices = new int[indices.length];
+    int[] newSurfaceIds = new int[surfaceIds.length];
+    for (int i = 0; i < order.length; i++) {
+      int from = order[i];
+      newIndices[i * 3] = indices[from * 3];
+      newIndices[i * 3 + 1] = indices[from * 3 + 1];
+      newIndices[i * 3 + 2] = indices[from * 3 + 2];
+      newSurfaceIds[i] = surfaceIds[from];
+    }
+    System.arraycopy(newIndices, 0, indices, 0, indices.length);
+    System.arraycopy(newSurfaceIds, 0, surfaceIds, 0, surfaceIds.length);
+  }
+
   /** Writes the axis-aligned bounds of one triangle into {@code out} as min xyz then max xyz. */
   void triangleBounds(int triangle, float[] out) {
     int base = triangle * 3;

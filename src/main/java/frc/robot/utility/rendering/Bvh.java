@@ -113,7 +113,24 @@ final class Bvh {
     bvh.buildTree(soup, count);
     bvh.centroids = null;
     bvh.trim();
+    bvh.flattenOrder(soup);
     return bvh;
+  }
+
+  /**
+   * Permutes the triangles into traversal order so {@link #order} becomes the identity.
+   *
+   * <p>The inner loop used to read {@code order[i]} to get a triangle, then that triangle's three
+   * vertex indices, then those vertices. The first of those is a random access into an eleven
+   * megabyte array on every triangle test, and it exists only because the build shuffles triangles
+   * rather than moving them. Moving them once at the end removes the lookup outright and leaves
+   * each leaf's indices contiguous in memory.
+   */
+  private void flattenOrder(TriangleSoup soup) {
+    soup.permute(order);
+    for (int i = 0; i < order.length; i++) {
+      order[i] = i;
+    }
   }
 
   /**
@@ -402,7 +419,7 @@ final class Bvh {
       if (count > 0) {
         int first = nodeLeftFirst[node];
         for (int i = 0; i < count; i++) {
-          intersectTriangle(soup, order[first + i], ox, oy, oz, dx, dy, dz, hit);
+          intersectTriangle(soup, first + i, ox, oy, oz, dx, dy, dz, hit);
         }
       } else {
         int left = nodeLeftFirst[node];
@@ -469,7 +486,7 @@ final class Bvh {
       if (count > 0) {
         int first = nodeLeftFirst[node];
         for (int i = 0; i < count; i++) {
-          int triangle = order[first + i];
+          int triangle = first + i;
           hit.reset(maxDistance);
           intersectTriangle(soup, triangle, ox, oy, oz, dx, dy, dz, hit);
           if (hit.triangle < 0) {

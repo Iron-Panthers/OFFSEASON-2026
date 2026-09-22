@@ -68,6 +68,14 @@ public final class RenderingEngine {
       Path.of("advantage_scope_files", "Robot_2026FRC", "model.glb");
   private static final Path CACHE = Path.of("build", "render-cache");
 
+  /**
+   * Grid spacing for the baked static lighting.
+   *
+   * <p>Coarse on purpose. The truss casts penumbrae around half a metre wide, so there is no shadow
+   * on this field sharp enough for a finer grid to resolve.
+   */
+  private static final float VOLUME_CELL_SIZE_METERS = 0.20f;
+
   private static RenderingEngine instance;
 
   private final RenderSettings settings;
@@ -113,16 +121,20 @@ public final class RenderingEngine {
       return null;
     }
 
+    boolean high = "high".equalsIgnoreCase(System.getProperty("render.mode", "fast"));
+    RenderSettings base = high ? RenderSettings.highDefaults() : RenderSettings.fastDefaults();
+
     RenderSettings settings =
         new RenderSettings(
-            Integer.getInteger("render.width", VisionConstants.SIM_CAMERA_WIDTH_PX / 2),
-            Integer.getInteger("render.height", VisionConstants.SIM_CAMERA_HEIGHT_PX / 2),
-            Integer.getInteger("render.spp", 2),
-            Integer.getInteger("render.bounces", 1),
-            Integer.getInteger("render.transparency", 3),
-            !"false".equalsIgnoreCase(System.getProperty("render.denoise", "true")),
-            floatProperty("render.gain", 1.0f),
-            floatProperty("render.quality", 0.82f));
+            Integer.getInteger("render.width", base.width()),
+            Integer.getInteger("render.height", base.height()),
+            Integer.getInteger("render.spp", base.samplesPerPixel()),
+            Integer.getInteger("render.bounces", base.diffuseBounces()),
+            Integer.getInteger("render.transparency", base.transparencyDepth()),
+            booleanProperty("render.denoise", base.denoise()),
+            floatProperty("render.gain", base.sensorGain()),
+            floatProperty("render.jpeg", base.jpegQuality()),
+            base.quality());
 
     RenderingEngine engine = new RenderingEngine(settings);
     try {
@@ -168,7 +180,17 @@ public final class RenderingEngine {
               thread.setPriority(Thread.NORM_PRIORITY - 2);
               return thread;
             });
-    renderer = new Renderer(scene, lighting, workers, threads);
+    IrradianceVolume volume = null;
+    if (settings.quality() == RenderSettings.Quality.FAST) {
+      long bakeStarted = System.nanoTime();
+      volume =
+          IrradianceVolume.bakeOrLoad(
+              scene, lighting, VOLUME_CELL_SIZE_METERS, CACHE, volumeCacheKey(scene));
+      System.out.printf(
+          "[Rendering] Baked static lighting: %,d cells at %.2f m in %.1f s%n",
+          volume.cellCount(), volume.cellSize(), (System.nanoTime() - bakeStarted) / 1e9);
+    }
+    renderer = new Renderer(scene, lighting, workers, threads, volume);
 
     Transform3d[] mountings = VisionConstants.CAMERA_TRANSFORM;
     int nextPort = Integer.getInteger("render.port", BASE_PORT);
@@ -201,12 +223,13 @@ public final class RenderingEngine {
         (System.nanoTime() - began) / 1e9);
     for (CameraStream camera : cameras) {
       System.out.printf(
-          "[Rendering] %s -> http://localhost:%d/  (%dx%d, %d spp)%n",
+          "[Rendering] %s -> http://localhost:%d/  (%dx%d, %d spp, %s)%n",
           camera.server().name(),
           camera.server().port(),
           settings.width(),
           settings.height(),
-          settings.samplesPerPixel());
+          settings.samplesPerPixel(),
+          settings.quality());
     }
   }
 
@@ -344,6 +367,44 @@ public final class RenderingEngine {
             + ".."
             + (firstPort + PORT_SEARCH_RANGE - 1),
         lastFailure);
+  }
+
+  /**
+   * Identifies the baked lighting, so a stale volume is never reused.
+   *
+   * <p>Keyed on the geometry and on the classes that define the light rig and the bake, which is
+   * what changes when someone retunes the lighting.
+   */
+  private static String volumeCacheKey(FieldScene scene) {
+    long hash = scene.soup.triangleCount * 0x9E3779B97F4A7C15L;
+    hash ^= Float.floatToIntBits(VOLUME_CELL_SIZE_METERS) * 0x85EBCA6BL;
+    hash ^= Double.doubleToLongBits(scene.tagAlignmentErrorMeters);
+    for (Class<?> type : new Class<?>[] {ArenaLighting.class, IrradianceVolume.class}) {
+      hash = hash * 31 + classHash(type);
+    }
+    return Long.toHexString(hash);
+  }
+
+  /** Hashes a compiled class, so editing the light rig rebakes rather than reusing old light. */
+  private static long classHash(Class<?> type) {
+    String resource = type.getName().replace('.', '/') + ".class";
+    try (java.io.InputStream stream = type.getClassLoader().getResourceAsStream(resource)) {
+      if (stream == null) {
+        return type.getName().hashCode();
+      }
+      long hash = 1125899906842597L;
+      for (byte value : stream.readAllBytes()) {
+        hash = hash * 31 + value;
+      }
+      return hash;
+    } catch (IOException unreadable) {
+      return type.getName().hashCode();
+    }
+  }
+
+  private static boolean booleanProperty(String key, boolean fallback) {
+    String value = System.getProperty(key);
+    return value == null ? fallback : Boolean.parseBoolean(value);
   }
 
   private static float floatProperty(String key, float fallback) {

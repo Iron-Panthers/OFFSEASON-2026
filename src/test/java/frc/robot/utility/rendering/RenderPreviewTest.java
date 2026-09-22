@@ -76,8 +76,10 @@ class RenderPreviewTest {
 
   private BufferedImage renderFrom(String name, Pose3d robotPose, Transform3d mounting)
       throws Exception {
+    // Explicitly the reference path tracer: these previews exist to judge the best the renderer
+    // can do, not what the default mode ships.
     RenderSettings settings =
-        RenderSettings.defaults().withResolution(WIDTH, HEIGHT).withSamplesPerPixel(4);
+        RenderSettings.highDefaults().withResolution(WIDTH, HEIGHT).withSamplesPerPixel(4);
 
     RenderCamera camera = new RenderCamera(WIDTH, HEIGHT, 70.0);
     camera.place(robotPose, mounting);

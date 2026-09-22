@@ -27,6 +27,28 @@ final class FieldScene {
   /** Node names for the staged fuel that ships inside the field mesh. */
   private static final String STAGED_FUEL_NODE = "Fuel";
 
+  /**
+   * Part families dropped when loading without fine hardware.
+   *
+   * <p>These are fasteners: press-in nuts, rivets, screws, bolts and bearings, none of which is
+   * more than a few millimetres across. Together they are about 1.5 of the 4 million triangles in
+   * the export, and at any distance a camera can actually see them from they are sub-pixel. They
+   * are named explicitly rather than culled by size because the exporter merges every instance of a
+   * part into one mesh spanning the whole field, so there is no per-instance size to measure.
+   */
+  private static final String[] FINE_HARDWARE = {
+    "PEM ", "Rivet", "Screw_", "Hex bolt", "Bearing", "Spacer", "Cable Tie", "Washer"
+  };
+
+  private static boolean isFineHardware(String nodeName) {
+    for (String family : FINE_HARDWARE) {
+      if (nodeName.contains(family)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Names the tag panels as {@code FE-00083-ID13-Vinyl: AprilTag Vinyl}. */
   private static final Pattern TAG_PANEL = Pattern.compile("-ID(\\d+)-Vinyl");
 
@@ -70,6 +92,20 @@ final class FieldScene {
   static FieldScene load(
       Path fieldDirectory, Path tagDirectory, AprilTagFieldLayout layout, Path cacheDirectory)
       throws IOException {
+    return load(fieldDirectory, tagDirectory, layout, cacheDirectory, true);
+  }
+
+  /**
+   * @param fineHardware keep the fastener geometry. Dropping it costs nothing visible and buys back
+   *     the traversal spent on triangles smaller than a pixel.
+   */
+  static FieldScene load(
+      Path fieldDirectory,
+      Path tagDirectory,
+      AprilTagFieldLayout layout,
+      Path cacheDirectory,
+      boolean fineHardware)
+      throws IOException {
 
     Path modelFile = fieldDirectory.resolve("model.glb");
     Path configFile = fieldDirectory.resolve("config.json");
@@ -77,7 +113,10 @@ final class FieldScene {
     double fieldWidth = layout.getFieldWidth();
 
     SceneCache cache = cacheDirectory == null ? null : new SceneCache(cacheDirectory);
-    String key = cache == null ? null : SceneCache.keyFor(modelFile, configFile, tagDirectory);
+    String key =
+        cache == null
+            ? null
+            : SceneCache.keyFor(modelFile, configFile, tagDirectory) + (fineHardware ? "f" : "c");
 
     if (cache != null) {
       SceneCache.Entry cached = cache.read(key);
@@ -95,6 +134,9 @@ final class FieldScene {
     double worstTagError = 0;
 
     for (Glb.Mesh mesh : model.meshes()) {
+      if (!fineHardware && isFineHardware(mesh.nodeName())) {
+        continue;
+      }
       if (mesh.nodeName().contains(STAGED_FUEL_NODE)) {
         // Fuel is drawn from the live simulation as spheres, so the staged balls would be both
         // wrong and 295 k triangles of duplicate work.

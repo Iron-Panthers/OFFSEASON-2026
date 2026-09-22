@@ -48,6 +48,7 @@ class TagDecodeTest {
   private static FieldScene scene;
   private static ExecutorService workers;
   private static Renderer renderer;
+  private static Renderer fastRenderer;
   private static AprilTagFieldLayout layout;
 
   @BeforeAll
@@ -66,9 +67,13 @@ class TagDecodeTest {
             Path.of("build", "render-cache"));
     int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
     workers = Executors.newFixedThreadPool(threads);
-    renderer =
-        new Renderer(
-            scene, ArenaLighting.forField(scene.fieldLength, scene.fieldWidth), workers, threads);
+    ArenaLighting lighting = ArenaLighting.forField(scene.fieldLength, scene.fieldWidth);
+    renderer = new Renderer(scene, lighting, workers, threads);
+
+    IrradianceVolume volume =
+        IrradianceVolume.bakeOrLoad(
+            scene, lighting, 0.20f, Path.of("build", "render-cache"), "tagdecode");
+    fastRenderer = new Renderer(scene, lighting, workers, threads, volume);
   }
 
   /**
@@ -100,6 +105,13 @@ class TagDecodeTest {
 
   /** Renders a camera standing {@code range} metres out from a tag, square to its face. */
   private BufferedImage lookAtTag(int tagId, double range) {
+    return lookAtTag(tagId, range, false);
+  }
+
+  /**
+   * @param fast render through the baked lighting rather than by tracing every pixel
+   */
+  private BufferedImage lookAtTag(int tagId, double range, boolean fast) {
     Pose3d tag = layout.getTagPose(tagId).orElseThrow();
     double facing = tag.getRotation().getZ();
 
@@ -119,11 +131,18 @@ class TagDecodeTest {
     // checks at a higher quality than the engine actually delivers would make them pass on frames
     // nobody will ever see.
     RenderSettings settings =
-        RenderSettings.defaults().withResolution(WIDTH, HEIGHT).withSamplesPerPixel(2);
+        RenderSettings.highDefaults().withResolution(WIDTH, HEIGHT).withSamplesPerPixel(2);
     SceneSnapshot snapshot = new SceneSnapshot(0, robot, List.of(), new float[0], 0);
+    Renderer active = renderer;
+    if (fast) {
+      settings = RenderSettings.fastDefaults().withResolution(WIDTH, HEIGHT).withSamplesPerPixel(2);
+      active = fastRenderer;
+    }
     Renderer.Frame frame =
-        renderer.render(camera, settings, DynamicScene.from(snapshot, null, null), 0);
-    Denoiser.apply(frame, 3);
+        active.render(camera, settings, DynamicScene.from(snapshot, null, null), 0);
+    if (settings.denoise()) {
+      Denoiser.apply(frame, 3);
+    }
     return new Film().develop(frame, settings.sensorGain());
   }
 
@@ -218,5 +237,20 @@ class TagDecodeTest {
       }
       assertTrue(found, "tag 13 was not detectable at " + range + " m");
     }
+  }
+
+  @Test
+  void a_tag_still_decodes_in_fast_mode() {
+    // Fast mode changes how surfaces are lit, not where they are or what they are printed with.
+    // If that ever stops being true, tags will start failing here before anyone notices by eye.
+    AprilTagDetection[] detections = detect(lookAtTag(13, 3.0, true));
+    boolean found = false;
+    for (AprilTagDetection detection : detections) {
+      if (detection.getId() == 13 && detection.getHamming() == 0) {
+        found = true;
+        System.out.printf("DECODE fast mode, tag 13 margin %.1f%n", detection.getDecisionMargin());
+      }
+    }
+    assertTrue(found, "tag 13 did not decode from a fast mode frame");
   }
 }
