@@ -3,12 +3,12 @@ package frc.robot.utility.rendering;
 /**
  * Turns AdvantageScope field materials into surfaces that survive being lit.
  *
- * <p>The exporter stamps every single material in the 2026 field model with {@code
- * metallicFactor = 1.0} and {@code roughnessFactor = 0.212}, and ships no textures at all. Rendered
- * literally that makes the carpet, the vinyl banners and the polycarbonate walls all behave like
- * polished chrome, which is the difference between a frame that looks like a photo and one that
- * looks like a screensaver. So the only usable signal is the base colour plus the CAD part name on
- * the owning node, and every rule below is keyed on one of those two.
+ * <p>The exporter stamps every single material in the 2026 field model with {@code metallicFactor =
+ * 1.0} and {@code roughnessFactor = 0.212}, and ships no textures at all. Rendered literally that
+ * makes the carpet, the vinyl banners and the polycarbonate walls all behave like polished chrome,
+ * which is the difference between a frame that looks like a photo and one that looks like a
+ * screensaver. So the only usable signal is the base colour plus the CAD part name on the owning
+ * node, and every rule below is keyed on one of those two.
  *
  * <p>The mapping was read off the actual model rather than guessed: each case names the part
  * families that carry that material and how many triangles they account for.
@@ -129,11 +129,11 @@ final class Materials {
   /**
    * Peak reflectance of a saturated pigment.
    *
-   * <p>The export writes alliance red as pure {@code (1, 0, 0)} and alliance blue as pure
-   * {@code (0, 0, 1)}. No real pigment behaves like that: a bright vinyl wrap returns roughly 40
-   * percent of the light in its own band, and never returns zero in the others. Rendered
-   * literally the walls clip to pure primaries, which both looks wrong and destroys two of the
-   * three colour channels for anything trying to white balance or threshold against them.
+   * <p>The export writes alliance red as pure {@code (1, 0, 0)} and alliance blue as pure {@code
+   * (0, 0, 1)}. No real pigment behaves like that: a bright vinyl wrap returns roughly 40 percent
+   * of the light in its own band, and never returns zero in the others. Rendered literally the
+   * walls clip to pure primaries, which both looks wrong and destroys two of the three colour
+   * channels for anything trying to white balance or threshold against them.
    */
   private static final float PIGMENT_PEAK_REFLECTANCE = 0.42f;
 

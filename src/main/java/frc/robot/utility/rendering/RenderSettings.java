@@ -48,7 +48,14 @@ record RenderSettings(
 
   RenderSettings withSamplesPerPixel(int samples) {
     return new RenderSettings(
-        width, height, samples, diffuseBounces, transparencyDepth, denoise, sensorGain, jpegQuality);
+        width,
+        height,
+        samples,
+        diffuseBounces,
+        transparencyDepth,
+        denoise,
+        sensorGain,
+        jpegQuality);
   }
 
   int pixelCount() {

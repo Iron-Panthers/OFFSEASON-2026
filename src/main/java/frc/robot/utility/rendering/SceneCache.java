@@ -78,7 +78,9 @@ final class SceneCache {
   private static byte[] classBytes(Class<?> type) throws IOException {
     String resource = type.getName().replace('.', '/') + ".class";
     try (InputStream stream = type.getClassLoader().getResourceAsStream(resource)) {
-      return stream == null ? type.getName().getBytes(StandardCharsets.UTF_8) : stream.readAllBytes();
+      return stream == null
+          ? type.getName().getBytes(StandardCharsets.UTF_8)
+          : stream.readAllBytes();
     }
   }
 

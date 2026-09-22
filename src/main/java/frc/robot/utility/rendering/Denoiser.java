@@ -1,5 +1,7 @@
 package frc.robot.utility.rendering;
 
+import java.util.stream.IntStream;
+
 /**
  * Edge-avoiding a-trous filter over the indirect lighting.
  *
@@ -97,7 +99,14 @@ final class Denoiser {
 
   /** Scales down any pixel far brighter than the eight around it, preserving its hue. */
   private static void clampFireflies(float[] source, float[] target, int width, int height) {
-    for (int y = 0; y < height; y++) {
+    IntStream.range(0, height)
+        .parallel()
+        .forEach(y -> clampFireflyRow(source, target, width, height, y));
+  }
+
+  private static void clampFireflyRow(
+      float[] source, float[] target, int width, int height, int y) {
+    {
       for (int x = 0; x < width; x++) {
         int center = y * width + x;
         float sum = 0;
@@ -138,14 +147,33 @@ final class Denoiser {
     }
   }
 
+  /**
+   * Runs one a-trous pass.
+   *
+   * <p>Rows are independent, and this filter is a large enough share of the post-processing that
+   * leaving it single threaded halves the achievable frame rate on its own.
+   */
   private static void filter(
       Renderer.Frame frame, float[] source, float[] target, int width, int height, int stride) {
+    IntStream.range(0, height)
+        .parallel()
+        .forEach(y -> filterRow(frame, source, target, width, height, stride, y));
+  }
+
+  private static void filterRow(
+      Renderer.Frame frame,
+      float[] source,
+      float[] target,
+      int width,
+      int height,
+      int stride,
+      int y) {
 
     float[] normals = frame.normal();
     float[] depth = frame.depth();
     float inverseDepthTolerance = 1f / (DEPTH_TOLERANCE * stride);
 
-    for (int y = 0; y < height; y++) {
+    {
       for (int x = 0; x < width; x++) {
         int center = y * width + x;
 

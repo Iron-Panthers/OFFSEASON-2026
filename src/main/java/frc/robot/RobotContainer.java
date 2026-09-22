@@ -20,6 +20,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -90,6 +91,7 @@ import frc.robot.subsystems.vision.VisionIOPhotonvision;
 import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
 import frc.robot.utility.SimBattery;
+import frc.robot.utility.rendering.RenderingEngine;
 import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.PoseAnchor;
 import java.util.Set;
@@ -805,5 +807,27 @@ public class RobotContainer {
 
     // Handle automatic shooter firing
     RobotSimState.getInstance().periodicShooter();
+
+    updateCameraRendering();
+  }
+
+  /**
+   * Hands the current field state to the camera renderer, when it is running.
+   *
+   * <p>Enabled with {@code -Prender}; a no-op otherwise. This only copies state into an atomic
+   * reference, so it costs the loop microseconds whether or not anything is being rendered.
+   */
+  private void updateCameraRendering() {
+    RenderingEngine rendering = RenderingEngine.getInstance();
+    if (rendering == null) {
+      return;
+    }
+    rendering.update(
+        Timer.getFPGATimestamp(),
+        RobotSimState.getInstance().getRobotPose3d(),
+        RobotSimState.getInstance().getObstaclePositions(),
+        RobotSimState.getInstance().getFuelSim().getFuelPositions());
+    Logger.recordOutput("Rendering/Frames", rendering.framesRendered());
+    Logger.recordOutput("Rendering/FrameSeconds", rendering.lastFrameSeconds());
   }
 }

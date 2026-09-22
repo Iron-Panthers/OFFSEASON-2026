@@ -194,8 +194,7 @@ final class Bvh {
       for (int i = start; i < end; i++) {
         int triangle = order[i];
         int bin =
-            Math.min(
-                BIN_COUNT - 1, (int) ((centroids[triangle * 3 + axis] - centroidMin) * scale));
+            Math.min(BIN_COUNT - 1, (int) ((centroids[triangle * 3 + axis] - centroidMin) * scale));
         binCount[bin]++;
         soup.triangleBounds(triangle, triBounds);
         for (int a = 0; a < 3; a++) {
@@ -476,11 +475,11 @@ final class Bvh {
           if (hit.triangle < 0) {
             continue;
           }
-          Surface surface = soup.surfaces.get(soup.surfaceIds[triangle]);
-          if (!surface.isTransparent()) {
+          int surface = soup.surfaceIds[triangle];
+          if (soup.surfaceOpaque[surface]) {
             return 0f;
           }
-          transmission *= 1f - surface.alpha();
+          transmission *= 1f - soup.surfaceAlpha[surface];
           if (transmission < 0.01f) {
             return 0f;
           }

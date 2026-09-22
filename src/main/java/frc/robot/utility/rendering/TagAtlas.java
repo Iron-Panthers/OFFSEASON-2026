@@ -67,8 +67,7 @@ final class TagAtlas {
       for (int col = 0; col < size; col++) {
         // The bitmaps are pure black or pure white, so one channel decides the cell.
         boolean white = (image.getRGB(col, row) & 0xFF) > 127;
-        cells[row * size + col] =
-            white ? TagDecal.VINYL_REFLECTANCE : TagDecal.INK_REFLECTANCE;
+        cells[row * size + col] = white ? TagDecal.VINYL_REFLECTANCE : TagDecal.INK_REFLECTANCE;
       }
     }
     bitmaps.put(id, cells);

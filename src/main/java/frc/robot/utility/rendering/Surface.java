@@ -46,14 +46,12 @@ record Surface(
     return new Surface(red, green, blue, metallic, roughness, 1f, 0f, Pattern.NONE, null);
   }
 
-  static Surface transparent(
-      float red, float green, float blue, float roughness, float alpha) {
+  static Surface transparent(float red, float green, float blue, float roughness, float alpha) {
     return new Surface(red, green, blue, 0f, roughness, alpha, 0f, Pattern.NONE, null);
   }
 
   Surface withPattern(Pattern newPattern) {
-    return new Surface(
-        red, green, blue, metallic, roughness, alpha, emissive, newPattern, decal);
+    return new Surface(red, green, blue, metallic, roughness, alpha, emissive, newPattern, decal);
   }
 
   Surface withDecal(TagDecal newDecal) {
@@ -62,8 +60,7 @@ record Surface(
   }
 
   Surface withEmissive(float newEmissive) {
-    return new Surface(
-        red, green, blue, metallic, roughness, alpha, newEmissive, pattern, decal);
+    return new Surface(red, green, blue, metallic, roughness, alpha, newEmissive, pattern, decal);
   }
 
   boolean isTransparent() {

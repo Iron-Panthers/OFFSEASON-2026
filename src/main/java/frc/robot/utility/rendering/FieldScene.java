@@ -136,10 +136,10 @@ final class FieldScene {
   /**
    * Rewrites vertices from the export frame into WPILib field coordinates, in place.
    *
-   * <p>The export is glTF Y-up and centred on the field, and AdvantageScope presents it
-   * {@code wall-blue}, which puts the blue alliance wall at negative X with the field running away
-   * to the right. WPILib instead puts the origin at the blue wall corner with X running toward the
-   * red alliance, so both horizontal axes reverse:
+   * <p>The export is glTF Y-up and centred on the field, and AdvantageScope presents it {@code
+   * wall-blue}, which puts the blue alliance wall at negative X with the field running away to the
+   * right. WPILib instead puts the origin at the blue wall corner with X running toward the red
+   * alliance, so both horizontal axes reverse:
    *
    * <pre>
    *   X =  -gltfX + fieldLength / 2
@@ -252,8 +252,7 @@ final class FieldScene {
     if (pose.isEmpty()) {
       return 0;
     }
-    return pose
-        .get()
+    return pose.get()
         .getTranslation()
         .getDistance(
             new edu.wpi.first.math.geometry.Translation3d(

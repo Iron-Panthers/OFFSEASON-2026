@@ -29,8 +29,8 @@ final class Renderer {
   private static final float SHADOW_BIAS = 2e-4f;
 
   /**
-   * Deep enough for the primary ray, the panels it may see through, and a diffuse bounce, with
-   * room left over. Recursion is capped by this rather than by the settings alone.
+   * Deep enough for the primary ray, the panels it may see through, and a diffuse bounce, with room
+   * left over. Recursion is capped by this rather than by the settings alone.
    */
   private static final int MAX_LEVELS = 8;
 
@@ -41,6 +41,22 @@ final class Renderer {
    * reflects a narrow lobe that often escapes anyway, so specular is dimmed rather than cut.
    */
   private static final float OCCLUDED_SPECULAR_FRACTION = 0.35f;
+
+  /** Spatial frequency of the surface wear pattern, in cycles per metre. */
+  private static final float WEAR_SCALE = 11f;
+
+  /**
+   * Albedo variation from wear.
+   *
+   * <p>Larger than it looks. Summing octaves and then averaging two lookups pulls the noise hard
+   * toward its own mean, so the realised swing is roughly a third of this number.
+   */
+  private static final float WEAR_DEPTH = 0.42f;
+
+  /** Finish variation is broader than colour variation, as polishing and scuffing tend to be. */
+  private static final float FINISH_SCALE = 3.5f;
+
+  private static final float FINISH_DEPTH = 1.1f;
 
   private final FieldScene scene;
   private final ArenaLighting lighting;
@@ -62,7 +78,8 @@ final class Renderer {
    * @param normal shading normal, used as a denoiser edge guide
    * @param depth distance to the first hit, infinite where the ray escaped
    */
-  record Frame(int width, int height, float[] color, float[] albedo, float[] normal, float[] depth) {
+  record Frame(
+      int width, int height, float[] color, float[] albedo, float[] normal, float[] depth) {
 
     static Frame allocate(int width, int height) {
       int pixels = width * height;
@@ -275,8 +292,8 @@ final class Renderer {
    * @param bouncesLeft how many more diffuse bounces are allowed
    * @param level recursion level, which selects the scratch storage
    * @param countEmitters whether a ray that leaves the scene may see the light fixtures. False on
-   *     paths that already accounted for the lights by sampling them, since counting a fixture
-   *     both ways produces blown-out single pixels that no filter removes cleanly.
+   *     paths that already accounted for the lights by sampling them, since counting a fixture both
+   *     ways produces blown-out single pixels that no filter removes cleanly.
    * @return true if the ray hit geometry rather than escaping to sky
    */
   private boolean radiance(
@@ -458,7 +475,16 @@ final class Renderer {
         out[2] = reflectance;
       }
       case NONE -> {
-        // Flat base colour.
+        // Nothing real is uniform. Aluminium is brushed and scuffed, vinyl creases and collects
+        // dust, and a field that has been played on is marked all over. Without this every flat
+        // panel renders as one exact value across hundreds of pixels, which is the single most
+        // obvious tell left once the lighting is right.
+        float wear =
+            Noise.spatial(point.x * WEAR_SCALE, point.y * WEAR_SCALE, point.z * WEAR_SCALE, 3);
+        float tint = 1f + WEAR_DEPTH * (wear - 0.5f);
+        out[0] *= tint;
+        out[1] *= tint;
+        out[2] *= tint;
       }
     }
   }
@@ -476,8 +502,17 @@ final class Renderer {
     float[] out = current.color;
 
     Surface surface = point.surface;
-    float roughness = Materials.clampRoughness(surface.roughness());
     float metallic = surface.metallic();
+    // Vary the finish along with the colour. Constant roughness gives every panel an identically
+    // shaped highlight, which is what makes a lit CG surface look moulded rather than made.
+    float roughnessNoise =
+        surface.pattern() == Surface.Pattern.NONE
+            ? Noise.spatial(
+                point.x * FINISH_SCALE, point.y * FINISH_SCALE, point.z * FINISH_SCALE, 2)
+            : 0.5f;
+    float roughness =
+        Materials.clampRoughness(
+            surface.roughness() * (1f + FINISH_DEPTH * (roughnessNoise - 0.5f)));
 
     out[0] = albedo[0] * surface.emissive();
     out[1] = albedo[1] * surface.emissive();
@@ -512,8 +547,7 @@ final class Renderer {
       incoming[1] = bounce[1];
       incoming[2] = bounce[2];
     } else {
-      lighting.ambient(
-          point.normalX, point.normalY, point.normalZ, incoming, current.skyScratch);
+      lighting.ambient(point.normalX, point.normalY, point.normalZ, incoming, current.skyScratch);
     }
 
     // Cosine sampling cancels the cosine and the pi, leaving just the albedo.
@@ -732,7 +766,11 @@ final class Renderer {
     float visibility = 0.5f / Math.max(1e-6f, lambdaView + lambdaLight);
     float specularStrength = distribution * visibility;
 
-    float fresnelScale = (float) Math.pow(1.0 - viewDotHalf, 5.0);
+    // Schlick's fifth power, by multiplication. Math.pow with a constant small exponent is not
+    // folded by the JIT and this runs once per shadow ray.
+    float oneMinusCosine = 1f - viewDotHalf;
+    float squared = oneMinusCosine * oneMinusCosine;
+    float fresnelScale = squared * squared * oneMinusCosine;
     for (int c = 0; c < 3; c++) {
       // Dielectrics reflect about four percent head on; metals reflect their own colour.
       float f0 = 0.04f + (albedo[c] - 0.04f) * metallic;
@@ -780,8 +818,7 @@ final class Renderer {
     float ry = 0.0425f - 0.0275f * roughness;
     float rz = 1.04f - 0.572f * roughness;
     float rw = 0.022f * roughness - 0.04f;
-    float a004 =
-        Math.min(rx * rx, (float) Math.pow(2.0, -9.28 * normalDotView)) * rx + ry;
+    float a004 = Math.min(rx * rx, exp2(-9.28f * normalDotView)) * rx + ry;
     float scale = -1.04f * a004 + rz;
     float bias = 1.04f * a004 + rw;
 
@@ -797,15 +834,33 @@ final class Renderer {
   // Sampling
   // ---------------------------------------------------------------------------------------------
 
+  /**
+   * Two to the power of a non-positive exponent, by exponent-field construction.
+   *
+   * <p>Accurate to about half a percent, which is far inside the error already present in the
+   * split-sum approximation it feeds, and several times cheaper than {@link Math#pow}.
+   */
+  private static float exp2(float exponent) {
+    if (exponent < -30f) {
+      return 0f;
+    }
+    int whole = (int) Math.floor(exponent);
+    float fraction = exponent - whole;
+    // Degree-two fit to 2^f over [0, 1].
+    float mantissa = 1f + fraction * (0.6565f + fraction * 0.3435f);
+    return Float.intBitsToFloat((whole + 127) << 23) * mantissa;
+  }
+
   /** Cosine-weighted direction in the hemisphere about a normal. */
-  private static void cosineHemisphere(
-      Context context, float nx, float ny, float nz, float[] out) {
+  private static void cosineHemisphere(Context context, float nx, float ny, float nz, float[] out) {
     float r1 = nextFloat(context);
     float r2 = nextFloat(context);
     float radius = (float) Math.sqrt(r1);
     float phi = 2f * PI * r2;
     float localX = radius * (float) Math.cos(phi);
     float localY = radius * (float) Math.sin(phi);
+    // Kept as the library trig: these run once per bounce ray rather than per shadow ray, and a
+    // polynomial approximation here showed up as banding in the indirect term.
     float localZ = (float) Math.sqrt(Math.max(0f, 1f - r1));
 
     // Branchless orthonormal basis, Duff et al.

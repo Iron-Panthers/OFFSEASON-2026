@@ -38,8 +38,7 @@ final class DynamicScene {
    * @param egoModel the robot the cameras are mounted on, or null to leave it out
    * @param opponentModel model used for the other robots on the field, or null to leave them out
    */
-  static DynamicScene from(
-      SceneSnapshot snapshot, RobotModel egoModel, RobotModel opponentModel) {
+  static DynamicScene from(SceneSnapshot snapshot, RobotModel egoModel, RobotModel opponentModel) {
     SphereIndex fuel =
         new SphereIndex(snapshot.fuelCenters(), snapshot.fuelCount(), SphereIndex.FUEL_RADIUS);
 

@@ -182,7 +182,6 @@ class RenderPreviewTest {
 
     assertTrue(mean > 12 && mean < 235, name + " is not exposed sensibly, mean " + mean);
     assertTrue(maximum - minimum > 60, name + " has almost no contrast");
-    assertTrue(
-        occupiedBuckets > 40, name + " only uses " + occupiedBuckets + " brightness levels");
+    assertTrue(occupiedBuckets > 40, name + " only uses " + occupiedBuckets + " brightness levels");
   }
 }

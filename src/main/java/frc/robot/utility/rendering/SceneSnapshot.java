@@ -40,10 +40,7 @@ record SceneSnapshot(
    * @param obstacles opponent poses from {@code RobotSimState.getObstaclePositions()}
    */
   static SceneSnapshot of(
-      double timestampSeconds,
-      Pose3d robotPose,
-      List<Pose2d> obstacles,
-      Translation3d[] fuel) {
+      double timestampSeconds, Pose3d robotPose, List<Pose2d> obstacles, Translation3d[] fuel) {
     float[] centers = new float[fuel.length * 3];
     for (int i = 0; i < fuel.length; i++) {
       centers[i * 3] = (float) fuel[i].getX();

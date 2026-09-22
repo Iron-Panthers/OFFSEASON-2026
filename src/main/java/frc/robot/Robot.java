@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.commands.HappyBirthdayCommand;
 import frc.robot.utility.SimRandom;
 import frc.robot.utility.ab.AbBench;
+import frc.robot.utility.rendering.RenderingEngine;
 import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.MatchInputs;
 import frc.robot.utility.replay.MatchLogReader;
@@ -490,7 +491,12 @@ public class Robot extends LoggedRobot {
 
   /** This function is called once when the robot is first started up. */
   @Override
-  public void simulationInit() {}
+  public void simulationInit() {
+    // Starts the camera renderer when the run asked for it with -Prender, and does nothing
+    // otherwise. Kept here rather than in RobotContainer so the several seconds of field loading
+    // happen once, off the path of anything that runs every loop.
+    RenderingEngine.startIfEnabled();
+  }
 
   /** This function is called periodically whilst in simulation. */
   @Override

@@ -108,8 +108,7 @@ class FieldSceneTest {
   void a_ray_dropped_from_above_open_carpet_lands_on_the_floor() {
     Bvh.Scratch scratch = new Bvh.Scratch();
     assertTrue(
-        scene.bvh.intersect(
-            scene.soup, OPEN_CARPET_X, OPEN_CARPET_Y, 3.0f, 0, 0, -1, 10f, scratch),
+        scene.bvh.intersect(scene.soup, OPEN_CARPET_X, OPEN_CARPET_Y, 3.0f, 0, 0, -1, 10f, scratch),
         "nothing under an open patch of the field");
     assertEquals(
         3.0, scratch.hit.distance, 0.05, "the first surface below should be the carpet at z = 0");
@@ -130,7 +129,8 @@ class FieldSceneTest {
 
     Bvh.Scratch scratch = new Bvh.Scratch();
     assertTrue(
-        scene.bvh.intersect(scene.soup, standX, standY, standZ, dx / length, dy / length, 0, 5f, scratch),
+        scene.bvh.intersect(
+            scene.soup, standX, standY, standZ, dx / length, dy / length, 0, 5f, scratch),
         "no geometry between the viewpoint and tag 1");
 
     Surface surface = scene.soup.surfaces.get(scene.soup.surfaceIds[scratch.hit.triangle]);

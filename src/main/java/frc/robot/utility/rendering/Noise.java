@@ -49,6 +49,20 @@ final class Noise {
   }
 
   /**
+   * Fractal noise over a point in space, in [0, 1].
+   *
+   * <p>Built from two decorrelated 2D lookups rather than true 3D noise. A single {@code (x, y)}
+   * lookup is constant along z, which paints vertical streaks down every wall on the field, and
+   * that reads worse than no variation at all. Mixing in a second lookup on skewed axes costs one
+   * extra evaluation and removes the streaking.
+   */
+  static float spatial(float x, float y, float z, int octaves) {
+    float planar = fractal(x, y, octaves);
+    float skewed = fractal(y * 1.7f + z * 2.3f, x * 0.9f - z * 1.3f, octaves);
+    return 0.5f * (planar + skewed);
+  }
+
+  /**
    * Fractal sum of {@link #value} octaves, in [0, 1].
    *
    * @param octaves how many doublings of frequency to sum; 3 is enough at camera distances

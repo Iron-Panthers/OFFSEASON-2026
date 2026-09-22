@@ -1,15 +1,16 @@
 package frc.robot.utility.rendering;
 
 import java.awt.image.BufferedImage;
-import java.util.Random;
+import java.util.SplittableRandom;
+import java.util.stream.IntStream;
 
 /**
  * Turns linear radiance into something a camera would actually have produced.
  *
- * <p>This stage is not decoration. A vision pipeline never sees radiance; it sees an
- * auto-exposed, tone mapped, vignetted, noisy, lens-distorted JPEG. Skipping it would hand a
- * detector cleaner data than it will ever get on the field, and a threshold tuned against clean
- * data is a threshold that fails at an event.
+ * <p>This stage is not decoration. A vision pipeline never sees radiance; it sees an auto-exposed,
+ * tone mapped, vignetted, noisy, lens-distorted JPEG. Skipping it would hand a detector cleaner
+ * data than it will ever get on the field, and a threshold tuned against clean data is a threshold
+ * that fails at an event.
  *
  * <p>Exposure is metered and smoothed across frames the way a real auto-exposure loop behaves, so
  * driving from a bright open field into the shade under the trench produces the same lag and
@@ -43,9 +44,14 @@ final class Film {
   /** Extra corner falloff beyond the natural cosine-fourth term. */
   private static final float VIGNETTE_STRENGTH = 0.32f;
 
-  private final Random noise = new Random(0x5EED);
   private float smoothedExposure = 1f;
   private boolean metered;
+
+  /**
+   * Advances every developed frame, so sensor noise changes from frame to frame rather than baking
+   * in as a fixed pattern, while staying reproducible for a given Film and frame number.
+   */
+  private long frameIndex;
 
   /**
    * Develops a frame.
@@ -64,25 +70,34 @@ final class Film {
     float centerX = width * 0.5f;
     float centerY = height * 0.5f;
     float maxRadius = (float) Math.hypot(centerX, centerY);
+    long developIndex = frameIndex++;
 
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-        int pixel = y * width + x;
+    // Rows are independent once each has its own noise stream, and this loop is a big enough
+    // share of the per-frame cost to be worth spreading out.
+    int[] pixels = new int[width * height];
+    IntStream.range(0, height)
+        .parallel()
+        .forEach(
+            y -> {
+              SplittableRandom rowNoise =
+                  new SplittableRandom(developIndex * 0x9E3779B97F4A7C15L + y);
+              for (int x = 0; x < width; x++) {
+                int pixel = y * width + x;
+                float falloff = vignette((float) Math.hypot(x - centerX, y - centerY) / maxRadius);
 
-        float radius = (float) Math.hypot(x - centerX, y - centerY) / maxRadius;
-        float falloff = vignette(radius);
+                int rgb = 0;
+                for (int c = 0; c < 3; c++) {
+                  float value = exposed[pixel * 3 + c] * falloff;
+                  value = addSensorNoise(value, gain, rowNoise);
+                  value = acesToneMap(value);
+                  int quantised = Math.round(linearToSrgb(value) * 255f);
+                  rgb = (rgb << 8) | Math.min(255, Math.max(0, quantised));
+                }
+                pixels[pixel] = rgb;
+              }
+            });
 
-        int rgb = 0;
-        for (int c = 0; c < 3; c++) {
-          float value = exposed[pixel * 3 + c] * falloff;
-          value = addSensorNoise(value, gain);
-          value = acesToneMap(value);
-          int quantised = Math.round(linearToSrgb(value) * 255f);
-          rgb = (rgb << 8) | Math.min(255, Math.max(0, quantised));
-        }
-        image.setRGB(x, y, rgb);
-      }
-    }
+    image.setRGB(0, 0, width, height, pixels, 0, width);
     return image;
   }
 
@@ -180,16 +195,32 @@ final class Film {
    * cleaner than dark ones. That asymmetry is why a detector that works on a brightly lit tag can
    * still fail on one in shadow, and a fixed-sigma noise model would hide it.
    */
-  private float addSensorNoise(float value, float gain) {
+  private static float addSensorNoise(float value, float gain, SplittableRandom noise) {
     if (gain <= 0f) {
       return value;
     }
     float signal = Math.max(0f, value);
     float shot = (float) Math.sqrt(signal / PHOTON_SCALE) * gain;
     float total = shot + READ_NOISE * gain;
-    // nextGaussian is synchronised on the Random instance, but developing a frame is single
-    // threaded and takes a fraction of the trace, so contention never arises.
-    return Math.max(0f, signal + (float) noise.nextGaussian() * total);
+    return Math.max(0f, signal + (float) gaussian(noise) * total);
+  }
+
+  /**
+   * A standard normal sample by the polar method.
+   *
+   * <p>{@link SplittableRandom} has no Gaussian of its own, and the alternative, sharing one {@link
+   * Random}, synchronises on every pixel.
+   */
+  private static double gaussian(SplittableRandom noise) {
+    double u;
+    double v;
+    double lengthSquared;
+    do {
+      u = noise.nextDouble() * 2 - 1;
+      v = noise.nextDouble() * 2 - 1;
+      lengthSquared = u * u + v * v;
+    } while (lengthSquared >= 1 || lengthSquared == 0);
+    return u * Math.sqrt(-2 * Math.log(lengthSquared) / lengthSquared);
   }
 
   /** Narkowicz's fit to the ACES filmic curve. */

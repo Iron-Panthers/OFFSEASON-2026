@@ -65,10 +65,16 @@ final class ArenaLighting {
    */
   private static final float[] FIXTURE_RADIANCE = {62.0f, 63.4f, 67.0f};
 
-  /** Bounce off the house ceiling and the far walls, which keeps shadows from crushing to black. */
-  private static final float[] ZENITH_RADIANCE = {0.118f, 0.128f, 0.155f};
+  /**
+   * Bounce off the house ceiling and the far walls, which keeps shadows from crushing to black.
+   *
+   * <p>Deliberately much darker than the lit field. What a camera sees over the field wall is an
+   * unlit arena interior, and every step this gets brighter is a step toward the frame looking like
+   * it was shot in fog.
+   */
+  private static final float[] ZENITH_RADIANCE = {0.074f, 0.080f, 0.098f};
 
-  private static final float[] HORIZON_RADIANCE = {0.072f, 0.072f, 0.079f};
+  private static final float[] HORIZON_RADIANCE = {0.043f, 0.044f, 0.050f};
 
   /** Below the horizon a ray is looking at the surrounding floor, not at sky. */
   private static final float[] GROUND_RADIANCE = {0.030f, 0.028f, 0.026f};
@@ -81,12 +87,17 @@ final class ArenaLighting {
 
   /** Builds a symmetric truss rig sized to the field. */
   static ArenaLighting forField(double fieldLength, double fieldWidth) {
+    return forField(fieldLength, fieldWidth, FIXTURES_PER_SIDE);
+  }
+
+  /** Builds a rig with an explicit fixture count, for measuring what shadow rays actually cost. */
+  static ArenaLighting forField(double fieldLength, double fieldWidth, int fixturesPerSide) {
     List<AreaLight> lights = new ArrayList<>();
     float[] down = {0, 0, -1};
 
-    for (int i = 0; i < FIXTURES_PER_SIDE; i++) {
+    for (int i = 0; i < fixturesPerSide; i++) {
       // Spread the fixtures evenly along the field, inset by half a spacing from each end.
-      float x = (float) (fieldLength * (i + 0.5) / FIXTURES_PER_SIDE);
+      float x = (float) (fieldLength * (i + 0.5) / fixturesPerSide);
       for (int side = 0; side < 2; side++) {
         float y = side == 0 ? -TRUSS_OUTBOARD : (float) fieldWidth + TRUSS_OUTBOARD;
         lights.add(
@@ -135,11 +146,9 @@ final class ArenaLighting {
    * again by happening to hit it, is what produces the isolated blown-out pixels that no amount of
    * filtering removes cleanly.
    */
-  void escapedRadiance(
-      float ox, float oy, float oz, float dx, float dy, float dz, float[] out) {
+  void escapedRadiance(float ox, float oy, float oz, float dx, float dy, float dz, float[] out) {
     for (AreaLight light : lights) {
-      float denominator =
-          light.normal()[0] * dx + light.normal()[1] * dy + light.normal()[2] * dz;
+      float denominator = light.normal()[0] * dx + light.normal()[1] * dy + light.normal()[2] * dz;
       if (denominator > -1e-6f) {
         continue; // travelling away from the emitting face
       }

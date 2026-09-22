@@ -14,9 +14,9 @@ import java.nio.file.Path;
  * the robot out would produce frames with a clean view in every direction, which is exactly the
  * kind of easy data that makes a detector look better in simulation than it is on the field.
  *
- * <p>Only the chassis mesh is rendered. The AdvantageScope export also ships articulated
- * components as separate files, but those need live mechanism positions to place correctly, so
- * moving parts are out of frame for now.
+ * <p>Only the chassis mesh is rendered. The AdvantageScope export also ships articulated components
+ * as separate files, but those need live mechanism positions to place correctly, so moving parts
+ * are out of frame for now.
  */
 final class RobotModel {
 
@@ -35,10 +35,10 @@ final class RobotModel {
   /**
    * Loads a robot chassis from an AdvantageScope robot asset folder.
    *
-   * <p>Those assets are authored Y-up and facing along the model's own Z, and the folder's
-   * {@code config.json} carries the rotations that stand them up. For every 2026 robot asset that
-   * works out to X+90 then Z+90, which maps glTF {@code (x, y, z)} onto robot {@code (z, x, y)}:
-   * robot +X forward, +Y left, +Z up, matching WPILib.
+   * <p>Those assets are authored Y-up and facing along the model's own Z, and the folder's {@code
+   * config.json} carries the rotations that stand them up. For every 2026 robot asset that works
+   * out to X+90 then Z+90, which maps glTF {@code (x, y, z)} onto robot {@code (z, x, y)}: robot +X
+   * forward, +Y left, +Z up, matching WPILib.
    *
    * @param modelFile the {@code model.glb} inside the robot asset folder
    */
@@ -84,10 +84,10 @@ final class RobotModel {
   /**
    * One placement of the model.
    *
-   * <p>Rays are pulled into the model's frame rather than the geometry being pushed into the
-   * world, so the tree is built once and reused no matter how many robots there are or how they
-   * move. The transform is a rigid motion, so distances survive it untouched and hit distances
-   * compare directly against everything else in the scene.
+   * <p>Rays are pulled into the model's frame rather than the geometry being pushed into the world,
+   * so the tree is built once and reused no matter how many robots there are or how they move. The
+   * transform is a rigid motion, so distances survive it untouched and hit distances compare
+   * directly against everything else in the scene.
    */
   final class Instance {
     /** Rotation rows, which double as the columns of its inverse. */
@@ -185,7 +185,9 @@ final class RobotModel {
       float w = 1f - hit.u - hit.v;
       for (int axis = 0; axis < 3; axis++) {
         out[axis] =
-            soup.normals[a + axis] * w + soup.normals[b + axis] * hit.u + soup.normals[c + axis] * hit.v;
+            soup.normals[a + axis] * w
+                + soup.normals[b + axis] * hit.u
+                + soup.normals[c + axis] * hit.v;
       }
       float length = (float) Math.sqrt(out[0] * out[0] + out[1] * out[1] + out[2] * out[2]);
       if (length > 1e-9f) {

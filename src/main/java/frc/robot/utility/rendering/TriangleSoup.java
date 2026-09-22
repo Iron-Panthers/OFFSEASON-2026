@@ -29,29 +29,38 @@ final class TriangleSoup {
 
   final List<Surface> surfaces;
 
+  /**
+   * Per-surface opacity flags and alphas, flattened out of {@link #surfaces}.
+   *
+   * <p>Shadow rays test these for every triangle they touch, which is the single hottest loop in
+   * the renderer. Reaching through an {@code ArrayList} and a record to ask the same question costs
+   * more there than the ray-triangle intersection that preceded it.
+   */
+  final boolean[] surfaceOpaque;
+
+  final float[] surfaceAlpha;
+
   final int triangleCount;
 
   private TriangleSoup(
-      float[] positions,
-      float[] normals,
-      int[] indices,
-      int[] surfaceIds,
-      List<Surface> surfaces) {
+      float[] positions, float[] normals, int[] indices, int[] surfaceIds, List<Surface> surfaces) {
     this.positions = positions;
     this.normals = normals;
     this.indices = indices;
     this.surfaceIds = surfaceIds;
     this.surfaces = surfaces;
+    this.surfaceOpaque = new boolean[surfaces.size()];
+    this.surfaceAlpha = new float[surfaces.size()];
+    for (int i = 0; i < surfaces.size(); i++) {
+      surfaceOpaque[i] = !surfaces.get(i).isTransparent();
+      surfaceAlpha[i] = surfaces.get(i).alpha();
+    }
     this.triangleCount = indices.length / 3;
   }
 
   /** Rebuilds an instance from cached arrays, skipping the glTF parse entirely. */
   static TriangleSoup fromArrays(
-      float[] positions,
-      float[] normals,
-      int[] indices,
-      int[] surfaceIds,
-      List<Surface> surfaces) {
+      float[] positions, float[] normals, int[] indices, int[] surfaceIds, List<Surface> surfaces) {
     return new TriangleSoup(positions, normals, indices, surfaceIds, surfaces);
   }
 
