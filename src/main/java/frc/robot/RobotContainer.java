@@ -58,6 +58,10 @@ import frc.robot.subsystems.intake.intake_rollers.IntakeRollers;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIO;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOSim;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOTalonFX;
+import frc.robot.subsystems.object_detection.ObjectDetection;
+import frc.robot.subsystems.object_detection.ObjectDetectionIO;
+import frc.robot.subsystems.object_detection.ObjectDetectionIOLimelight;
+import frc.robot.subsystems.object_detection.ObjectDetectionIOSim;
 import frc.robot.subsystems.rgb.RGB;
 import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
@@ -90,6 +94,7 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonvision;
 import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
+import frc.robot.utility.FuelSim;
 import frc.robot.utility.SimBattery;
 import frc.robot.utility.rendering.RenderingEngine;
 import frc.robot.utility.replay.LogInputPlayer;
@@ -121,6 +126,9 @@ public class RobotContainer {
 
   private ElasticUpdater matchTimerUpdater = new ElasticUpdater();
 
+  private static final String FULL_MATCH_AUTO_NAME = "Full Match Auto";
+  private static final double AI_FULL_MATCH_AUTO_SEC = 150.0;
+
   // private SendableChooser<Command> autoChooser;
   private LoggedDashboardChooser<Command> autoChooser;
   private PoseAnchor poseAnchor;
@@ -135,6 +143,8 @@ public class RobotContainer {
   private IntakeRack intakeRack;
   private IntakeRollers intakeRollers;
   private IntakeController intakeController;
+  private ObjectDetection objectDetection;
+  private RGB rgb;
   private Serializer serializer;
   private ShooterFlywheel shooterFlywheels;
   private ShooterHood shooterHood;
@@ -172,6 +182,7 @@ public class RobotContainer {
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOTalonFX());
           shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOTalonFX());
           serializer = new Serializer(new SerializerIOTalonFX());
+          objectDetection = new ObjectDetection(new ObjectDetectionIOLimelight());
         }
         case VISION -> {
           swerve =
@@ -225,6 +236,7 @@ public class RobotContainer {
           shooterFlywheels = new ShooterFlywheel(new ShooterFlywheelIOSim());
           shooterHood = new ShooterHood(new ShooterHoodIOSim());
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOSim());
+          objectDetection = new ObjectDetection(new ObjectDetectionIOSim());
           shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOSim());
         }
       }
@@ -268,6 +280,12 @@ public class RobotContainer {
     shooterController =
         new ShooterController(
             shooterFlywheels, shooterHood, shooterOmniwheel, shooterAccelerator, serializer);
+
+    // VISION
+    if (vision == null) vision = new Vision(new VisionIO() {}, new VisionIO() {});
+
+    // OBJECT DETECTION
+    if (objectDetection == null) objectDetection = new ObjectDetection(new ObjectDetectionIO() {});
 
     // init shooter with testing values
     RobotState.getInstance()
@@ -503,6 +521,10 @@ public class RobotContainer {
 
     // Use pov down and left for testing buttons please!! (Drivers get annoyed when we use other
     // buttons)
+
+    // setup full match auto commands
+    RobotState.getInstance()
+        .initFullMatchAuto(swerve, intakeController, shooterController, objectDetection);
   }
 
   private void configureDriverAButtons() {
@@ -681,6 +703,7 @@ public class RobotContainer {
 
     autoChooser =
         new LoggedDashboardChooser<Command>("Auto Chooser", AutoBuilder.buildAutoChooser());
+    autoChooser.addOption(FULL_MATCH_AUTO_NAME, RobotState.getInstance().fullMatchAutoCommand());
     VisionTuningCommands.addTuningCommandsToAutoChooser(vision, autoChooser);
     SmartDashboard.putData("Auto Chooser", autoChooser.getSendableChooser());
   }
@@ -710,6 +733,11 @@ public class RobotContainer {
       aiAutoName = System.getProperty("ai.replay.auto.name");
     }
     if (aiAutoName != null && !aiAutoName.isBlank()) {
+      // The full match auto is a chooser option, not a .auto file, and never ends on its own.
+      // Bound it here so the headless harness can finish and flush its log.
+      if (aiAutoName.equals(FULL_MATCH_AUTO_NAME)) {
+        return RobotState.getInstance().fullMatchAutoCommand().withTimeout(AI_FULL_MATCH_AUTO_SEC);
+      }
       return AutoBuilder.buildAuto(aiAutoName);
     }
     return autoChooser.get();
@@ -785,8 +813,10 @@ public class RobotContainer {
     Logger.recordOutput(
         "Field Simulation/Robot Position", RobotSimState.getInstance().getRobotPose3d());
     Logger.recordOutput(
-        "FieldSimulation/RobotFuel", RobotSimState.getInstance().getIntakeGamePieces());
-    Logger.recordOutput("FieldSimulation/FuelCount", RobotSimState.getInstance().getFuelCount());
+        "Field Simulation/Robot Fuel", RobotSimState.getInstance().getIntakeGamePieces());
+    Logger.recordOutput("Field Simulation/Fuel Count", RobotSimState.getInstance().getFuelCount());
+    Logger.recordOutput("Field Simulation/Red Score", FuelSim.Hub.RED_HUB.getScore());
+    Logger.recordOutput("Field Simulation/Blue Score", FuelSim.Hub.BLUE_HUB.getScore());
     RobotSimState.getInstance().logScoring();
     Logger.recordOutput(
         "FieldSimulation/ObstaclePositions",
