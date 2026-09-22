@@ -4,14 +4,9 @@
     "type" : "sequential",
     "data" : {
       "commands" : [ {
-        "type" : "named",
-        "data" : {
-          "name" : "Smart zero"
-        }
-      }, {
         "type" : "path",
         "data" : {
-          "pathName" : "xD Left"
+          "pathName" : "Straight D Lefty Left"
         }
       }, {
         "type" : "named",
@@ -21,27 +16,17 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "ShootCommandFactory"
+          "name" : "ShootCommandFactory Faster"
+        }
+      }, {
+        "type" : "wait",
+        "data" : {
+          "waitTime" : 9.81
         }
       }, {
         "type" : "path",
         "data" : {
-          "pathName" : "2xTB 3 Left"
-        }
-      }, {
-        "type" : "named",
-        "data" : {
-          "name" : "Smart zero"
-        }
-      }, {
-        "type" : "named",
-        "data" : {
-          "name" : "ShootCommandFactory"
-        }
-      }, {
-        "type" : "path",
-        "data" : {
-          "pathName" : "xT  Left"
+          "pathName" : "Straight T Left"
         }
       } ]
     }

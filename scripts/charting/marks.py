@@ -21,6 +21,7 @@ from bisect import bisect_right
 from dataclasses import dataclass, field
 
 from .palette import SlotRegistry, on_series_var, series_var
+from .spec import Prose
 from .scales import (
     Scale,
     coalesce_blocks,
@@ -65,6 +66,9 @@ class Rendered:
     table_html: str
     subtitle: str = ""
     note: str = ""
+    # Carried from the spec so the page can print the reading of the chart
+    # directly beneath it, where the reader is still looking at the lines.
+    reads_as: Prose = field(default_factory=Prose)
     legend: tuple = field(default_factory=tuple)   # ((label, slot), ...)
     hover: dict | None = None
     empty_reason: str = ""
@@ -417,6 +421,7 @@ def timeseries(spec, data, t_end=None) -> Rendered:
         table_html=_numeric_table(clipped, x0, x1),
         subtitle=subtitle,
         note=spec.note,
+        reads_as=spec.reads_as,
         legend=tuple((label, slot) for label, slot, _ in clipped),
         hover=hover,
     )
@@ -553,6 +558,7 @@ def timeline(spec, data, t_end=None, registry: SlotRegistry | None = None) -> Re
         table_html=_timeline_table(lanes),
         subtitle=f"{format_number(x0, 0.01)}s to {format_number(x1, 0.01)}s",
         note=spec.note,
+        reads_as=spec.reads_as,
         legend=tuple(sorted(legend_values.items(), key=lambda item: item[1])),
     )
 
@@ -694,6 +700,7 @@ def path(spec, data, t_end=None) -> Rendered:
         table_html=_path_table(first_points),
         subtitle=f"{len(first_points):,} poses · equal aspect",
         note=spec.note,
+        reads_as=spec.reads_as,
         legend=tuple((label, slot) for label, slot, _ in resolved),
         hover={
             "mode": "xy",

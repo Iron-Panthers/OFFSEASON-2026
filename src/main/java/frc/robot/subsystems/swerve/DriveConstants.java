@@ -324,7 +324,7 @@ public class DriveConstants {
   // Tolerance in Radians
   public static final HeadingControllerConstants HEADING_CONTROLLER_CONSTANTS =
       switch (getRobotType()) {
-        case COMP -> new HeadingControllerConstants(6, 0, 5, 200, 0.03);
+        case COMP -> new HeadingControllerConstants(6, 0, 5, 200, 0.02);
         case SIM -> new HeadingControllerConstants(6, 0, 5, 200, 0.01);
         case VISION -> new HeadingControllerConstants(3, 0, 5, 15, 0.007);
         case ALPHA -> new HeadingControllerConstants(6, 0, 5, 200, 0.002);

@@ -37,7 +37,7 @@ from charting import bundles as bundle_catalogue  # noqa: E402
 from charting.marks import RENDERERS  # noqa: E402
 from charting.page import render_page  # noqa: E402
 from charting.palette import SlotRegistry  # noqa: E402
-from charting.spec import ChartSpec, SeriesSpec, SpecError, parse_report  # noqa: E402
+from charting.spec import ChartSpec, Prose, SeriesSpec, SpecError, parse_report  # noqa: E402
 from wpilog_to_csv import read_log  # noqa: E402
 
 DEFAULT_OUT_ROOT = Path("build/artifacts")
@@ -101,6 +101,11 @@ def expand_charts(charts):
     rather than a second y-scale on the path plot -- encoding metres-of-error
     into a chart already using both axes for metres-of-position is exactly the
     dual-axis mistake.
+
+    The derived chart gets a derived reading. It is not the analyst's claim --
+    it just says what the second chart is measuring -- but the page's rule is
+    that no chart appears without one, and generating it here is better than
+    making every path finding hand-write the same sentence.
     """
     out = []
     for chart in charts:
@@ -115,6 +120,13 @@ def expand_charts(charts):
                     window=chart.window,
                     include_zero=True,
                     required=chart.required,
+                    reads_as=Prose(
+                        lead=(
+                            "The path above shows where the robot went; this shows how "
+                            "far that was from where it was told to be at each instant. "
+                            "Read the peaks against the turns in the path."
+                        )
+                    ),
                 )
             )
     return out

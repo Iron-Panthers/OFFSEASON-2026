@@ -12,13 +12,14 @@ public class ShooterOmniwheelIOTalonFX extends GenericRollersIOTalonFX
     super(
         new GenericRollersConfiguration()
             .withID(SHOOTER_OMNIWHEEL_CONFIG.motorID())
-            .withSupplyCurrentLimit(CURRENT_LIMIT_AMPS)
+            .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS)
             .withMotorDirection(
                 SHOOTER_OMNIWHEEL_CONFIG.inverted()
                     ? InvertedValue.CounterClockwise_Positive
                     : InvertedValue.Clockwise_Positive)
             .withNeutralMode(SHOOTER_OMNIWHEEL_CONFIG.brake())
-            .withReduction(SHOOTER_OMNIWHEEL_CONFIG.reduction()));
+            .withReduction(SHOOTER_OMNIWHEEL_CONFIG.reduction())
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS));
     super.setSlot0(GAINS.kP(), GAINS.kI(), GAINS.kD(), GAINS.kS(), GAINS.kV(), GAINS.kA());
   }
 }

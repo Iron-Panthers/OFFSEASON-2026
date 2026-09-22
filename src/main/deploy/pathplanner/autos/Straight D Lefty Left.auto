@@ -1,0 +1,27 @@
+{
+  "version" : "2025.0",
+  "command" : {
+    "type" : "sequential",
+    "data" : {
+      "commands" : [ {
+        "type" : "path",
+        "data" : {
+          "pathName" : "Straight D Lefty Left"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Spin up shooter"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "ShootCommandFactory Faster"
+        }
+      } ]
+    }
+  },
+  "resetOdom" : true,
+  "folder" : "Left Autos (auto generated)",
+  "choreoAuto" : false
+}

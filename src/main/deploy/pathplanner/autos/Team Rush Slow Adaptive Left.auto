@@ -14,7 +14,7 @@
           "commands" : [ {
             "type" : "path",
             "data" : {
-              "pathName" : "xD Left"
+              "pathName" : "2xTB Slow 1 Left"
             }
           }, {
             "type" : "named",
@@ -26,7 +26,7 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "Align to shoot"
+          "name" : "Translate To Shoot"
         }
       }, {
         "type" : "named",
@@ -44,7 +44,7 @@
           "commands" : [ {
             "type" : "path",
             "data" : {
-              "pathName" : "2xTB 3 Left"
+              "pathName" : "2xTB 2 Left"
             }
           }, {
             "type" : "named",
@@ -56,7 +56,7 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "Align to shoot"
+          "name" : "Translate To Shoot"
         }
       }, {
         "type" : "named",
@@ -66,12 +66,12 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "ShootCommandFactory"
+          "name" : "ShootCommandFactory Faster"
         }
       }, {
         "type" : "path",
         "data" : {
-          "pathName" : "xT  Left"
+          "pathName" : "xT 2 Left"
         }
       } ]
     }
