@@ -2,13 +2,13 @@
   "version" : "2025.0",
   "waypoints" : [ {
     "anchor" : {
-      "x" : 3.038,
-      "y" : 5.214
+      "x" : 3.1303333333333336,
+      "y" : 5.837164887307237
     },
     "prevControl" : null,
     "nextControl" : {
-      "x" : 3.91252669039146,
-      "y" : 5.81564650059312
+      "x" : 4.0048600237247935,
+      "y" : 6.438811387900357
     },
     "isLocked" : false,
     "linkedName" : "Shooting Pose Left"
@@ -59,23 +59,26 @@
     "linkedName" : null
   }, {
     "anchor" : {
-      "x" : 2.686,
-      "y" : 4.869
+      "x" : 2.872215854577851,
+      "y" : 5.068181066680374
     },
     "prevControl" : {
-      "x" : 1.1043772241992889,
-      "y" : 5.277686832740214
+      "x" : 1.2905930787771398,
+      "y" : 5.476867899420588
     },
     "nextControl" : null,
     "isLocked" : false,
     "linkedName" : "Shooting Pose 2 Left"
   } ],
   "rotationTargets" : [ {
-    "waypointRelativePos" : 0.42204724409448785,
+    "waypointRelativePos" : 0.17968750000000003,
     "rotationDegrees" : -180.0
   }, {
     "waypointRelativePos" : 1.801065719360589,
     "rotationDegrees" : 90.0
+  }, {
+    "waypointRelativePos" : 3.087460691823899,
+    "rotationDegrees" : -29.930781688966306
   } ],
   "constraintZones" : [ {
     "name" : "Intake",
@@ -124,13 +127,13 @@
   },
   "goalEndState" : {
     "velocity" : 0,
-    "rotation" : -27.088351095441226
+    "rotation" : 4.8617813603428885
   },
   "reversed" : false,
   "folder" : "Left Paths (auto generated)",
   "idealStartingState" : {
     "velocity" : 0,
-    "rotation" : -55.0
+    "rotation" : -50.5449523937682
   },
   "useDefaultConstraints" : true
 }

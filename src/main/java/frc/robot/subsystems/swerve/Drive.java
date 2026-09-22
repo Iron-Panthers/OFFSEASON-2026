@@ -61,9 +61,6 @@ public class Drive extends SubsystemBase {
   private ChassisSpeeds targetSpeeds = new ChassisSpeeds();
   private ChassisSpeeds trajectorySpeeds = new ChassisSpeeds();
 
-  @AutoLogOutput(key = "Swerve/Center of Rotation")
-  private Translation2d centerOfRotation = new Translation2d();
-
   private double speedMagnitude =
       Math.hypot(targetSpeeds.vxMetersPerSecond, targetSpeeds.vyMetersPerSecond);
 
@@ -93,6 +90,8 @@ public class Drive extends SubsystemBase {
     // update inputs
     gyroIO.updateInputs(gyroInputs);
     Logger.processInputs("Swerve/Gyro", gyroInputs);
+
+    speedMagnitude = Math.hypot(targetSpeeds.vxMetersPerSecond, targetSpeeds.vyMetersPerSecond);
 
     fieldRelativeYaw =
         Rotation2d.fromDegrees(
@@ -139,15 +138,7 @@ public class Drive extends SubsystemBase {
           }
         }
         isFromTeleop = true;
-
-        ChassisSpeeds vSpeeds =
-            new ChassisSpeeds(
-                -targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getY(),
-                targetSpeeds.omegaRadiansPerSecond * centerOfRotation.getX(),
-                0.0);
-        targetSpeeds = targetSpeeds.plus(vSpeeds);
       }
-
       case TRAJECTORY -> {
         Logger.recordOutput(
             "Swerve/Distance From Setpoint",
@@ -167,7 +158,9 @@ public class Drive extends SubsystemBase {
       case AUTO_ALIGN -> {
         if (pidAutoAlignController != null) {
           targetSpeeds = pidAutoAlignController.update();
-          targetSpeeds.omegaRadiansPerSecond = autoAlignHeadingController.update();
+          if (autoAlignHeadingController != null) {
+            targetSpeeds.omegaRadiansPerSecond = autoAlignHeadingController.update();
+          }
 
           if (speedMagnitude < 0.01
               && Math.abs(targetSpeeds.omegaRadiansPerSecond) < 0.1
@@ -491,15 +484,22 @@ public class Drive extends SubsystemBase {
     }
   }
 
+  public ChassisSpeeds getTargetSpeed() {
+    return targetSpeeds;
+  }
+
   public boolean reachedAutoAlignTarget() {
     if (driveMode != DriveModes.AUTO_ALIGN) {
       return false;
     }
-    return autoAlignHeadingController.atTarget() && pidAutoAlignController.atTarget();
+    return autoAlignHeadingController != null
+        && pidAutoAlignController != null
+        && autoAlignHeadingController.atTarget()
+        && pidAutoAlignController.atTarget();
   }
 
   public boolean almostReachedAutoAlignTarget() {
-    if (driveMode != DriveModes.AUTO_ALIGN || driveMode != DriveModes.DEFENSE) {
+    if (driveMode != DriveModes.AUTO_ALIGN && driveMode != DriveModes.DEFENSE) {
       return false;
     }
     return pidAutoAlignController.almostAtTarget();
@@ -513,13 +513,5 @@ public class Drive extends SubsystemBase {
 
   public boolean getIsScoped() {
     return isScoped;
-  }
-
-  public void setCenterOfRotation(Translation2d centerOfRotation) {
-    this.centerOfRotation = centerOfRotation;
-  }
-
-  public Translation2d getCenterOfRotation() {
-    return centerOfRotation;
   }
 }

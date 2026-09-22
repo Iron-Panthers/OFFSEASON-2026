@@ -1,0 +1,174 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.891008303677343,
+        "y": 7.246619217081851
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.701139157397599,
+        "y": 7.27725034207274
+      },
+      "isLocked": false,
+      "linkedName": "Trench Shooting Pose Left"
+    },
+    {
+      "anchor": {
+        "x": 6.0377744857874305,
+        "y": 7.246619217081851
+      },
+      "prevControl": {
+        "x": 5.560971541754944,
+        "y": 7.286441504776061
+      },
+      "nextControl": {
+        "x": 7.172649190568986,
+        "y": 7.15183518196563
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.019308295815678,
+        "y": 6.5968359926730225
+      },
+      "prevControl": {
+        "x": 7.441683068453083,
+        "y": 6.943604794571006
+      },
+      "nextControl": {
+        "x": 8.93677025070244,
+        "y": 6.046051214217783
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.640827209127826,
+        "y": 3.682067112464689
+      },
+      "prevControl": {
+        "x": 8.385867145793323,
+        "y": 3.4796305738749713
+      },
+      "nextControl": {
+        "x": 6.6006574417372885,
+        "y": 3.964694065589689
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.312514400158899,
+        "y": 5.197007580773305
+      },
+      "prevControl": {
+        "x": 6.8827366776595955,
+        "y": 5.2240124419129925
+      },
+      "nextControl": {
+        "x": 4.314045230843927,
+        "y": 5.102363115730932
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.8667010394597456,
+        "y": 6.161548872263418
+      },
+      "prevControl": {
+        "x": 2.852188156036511,
+        "y": 5.588817718261072
+      },
+      "nextControl": {
+        "x": 2.877346122439972,
+        "y": 6.581642556055791
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.891008303677343,
+        "y": 7.246619217081851
+      },
+      "prevControl": {
+        "x": 2.958151979608051,
+        "y": 6.810995707538842
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Trench Shooting Pose Left"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.499746963562753,
+      "rotationDegrees": -105.51356886634453
+    },
+    {
+      "waypointRelativePos": 1.5808767712550604,
+      "rotationDegrees": 144.58156941014593
+    },
+    {
+      "waypointRelativePos": 2.5019294028340084,
+      "rotationDegrees": 83.946858341984
+    },
+    {
+      "waypointRelativePos": 2.9736842105263204,
+      "rotationDegrees": -9.584999461905026
+    },
+    {
+      "waypointRelativePos": 3.8727226720647776,
+      "rotationDegrees": -90.11810447741532
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Intake down",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Spin up shooter",
+      "waypointRelativePos": 3.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Intake mid",
+      "waypointRelativePos": 3.9,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.1,
+    "maxAcceleration": 4.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -77.00538320808346
+  },
+  "reversed": false,
+  "folder": "Left Paths (auto generated)",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -77.00538320808346
+  },
+  "useDefaultConstraints": true
+}

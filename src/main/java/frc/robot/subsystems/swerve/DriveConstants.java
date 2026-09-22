@@ -68,16 +68,16 @@ public class DriveConstants {
             4.5,
             10,
             6);
+          // Matches COMP.
         case SIM -> new DrivebaseConfig(
-            Units.inchesToMeters(1.925),
-            Units.inchesToMeters(22.5),
-            Units.inchesToMeters(22.5),
-            Units.inchesToMeters(34),
-            Units.inchesToMeters(34),
-            3.75, // 3.75,
+            Units.inchesToMeters(1.97),
+            Units.inchesToMeters(19.75),
+            Units.inchesToMeters(24.25),
+            Units.inchesToMeters(33),
+            Units.inchesToMeters(37),
+            5,
             10,
-            // TODO: make it actually max acceleration in m/s^2
-            6); // (multiply by max velocity to get m/s^2)
+            8);
       };
 
   // max velocity of the robot for shooting while moving
@@ -87,7 +87,7 @@ public class DriveConstants {
         default -> 1.5;
       };
 
-  public static final Matrix<N3, N1> STATE_STD_DEVS = VecBuilder.fill(0.001, 0.001, 0.001);
+  public static final Matrix<N3, N1> STATE_STD_DEVS = VecBuilder.fill(0.005, 0.005, 0.005);
 
   public static final Translation2d[] MODULE_TRANSLATIONS =
       new Translation2d[] {
@@ -123,28 +123,28 @@ public class DriveConstants {
               CAN.at(11, "FL Drive"),
               CAN.at(62, "FL Steer"),
               3,
-              new Rotation2d(2.218136),
+              new Rotation2d(2.210466),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.Clockwise_Positive),
           new ModuleConfig(
               CAN.at(35, "FR Drive"),
               CAN.at(6, "FR Steer"),
               12,
-              new Rotation2d(2.126097),
+              new Rotation2d(2.118427),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive),
           new ModuleConfig(
               CAN.at(3, "BL Drive"),
               CAN.at(4, "BL Steer"),
               9,
-              new Rotation2d(2.820991),
+              new Rotation2d(2.828661),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.Clockwise_Positive),
           new ModuleConfig(
               CAN.at(2, "BR Drive"),
               CAN.at(1, "BR Steer"),
               6,
-              new Rotation2d(1.501767),
+              new Rotation2d(1.509437),
               InvertedValue.CounterClockwise_Positive,
               InvertedValue.CounterClockwise_Positive)
         };
@@ -263,10 +263,11 @@ public class DriveConstants {
             (45.0 / 15) * (17.0 / 27) * (50.0 / 16), // MK4i L2.5 16 tooth
             150.0 / 7,
             3.125);
+          // Gains match COMP.
         case SIM -> new ModuleConstants(
-            new Gains(0.25, 2.26, 0, 70, 0, 0),
+            new Gains(0.24, 2.4, 0.08, 70, 0, 0),
             new MotionProfileGains(4, 64, 640),
-            new Gains(0.13, 0.79, 0.387, 2, 0, 0),
+            new Gains(0.16, 0.67, 0, 1.5, 0, 0),
             (30.0 / 15) * (25.0 / 32) * (54.0 / 14), // MK5n R2 ratio
             287.0 / 11,
             3.125);
@@ -279,10 +280,18 @@ public class DriveConstants {
    * These are the configs for the maple sim drivebase This should be updated to be similar to the
    * comp bot drivebase
    */
+  /**
+   * Tyre friction coefficient; maple-sim skids a wheel when demanded force exceeds it. Published
+   * tread-on-carpet value, not fitted. Remaining slip is modelled in ModuleIOTalonFXSim.
+   */
+  public static final double WHEEL_COEFFICIENT_OF_FRICTION = 1.05;
+
   public static final DriveTrainSimulationConfig
       mapleSimConfig = // TODO: update this to be similar to comp bot drive base
       DriveTrainSimulationConfig.Default()
               .withRobotMass(Kilograms.of(54.4311))
+              .withBumperSize(
+                  Meters.of(DRIVE_CONFIG.bumperWidthX()), Meters.of(DRIVE_CONFIG.bumperWidthY()))
               .withCustomModuleTranslations(MODULE_TRANSLATIONS)
               .withGyro(COTS.ofPigeon2())
               .withSwerveModule(
@@ -295,7 +304,10 @@ public class DriveConstants {
                       Volts.of(0.25),
                       Meters.of(DRIVE_CONFIG.wheelRadius()),
                       KilogramSquareMeters.of(0.04),
-                      1.4));
+                      WHEEL_COEFFICIENT_OF_FRICTION));
+
+  public static final DriveTrainSimulationConfig obstacleConfig =
+      DriveTrainSimulationConfig.Default().withRobotMass(Kilograms.of(1000000000));
 
   public static final TrajectoryFollowerConstants TRAJECTORY_CONFIG =
       switch (getRobotType()) {
@@ -332,13 +344,15 @@ public class DriveConstants {
       };
   public static final double ROTATION_FINISH_PERCENT = 0.9;
 
-  public static final double PATHPLANNER_PID_OFFSET = 1.5;
+  public static final double PATHPLANNER_PID_OFFSET = 0.4;
 
   public static final double AUTOALIGN_POSITION_DEADBAND = 0.01;
 
   public static final double AUTOALIGN_VELOCITY_DEADBAND = 0.01;
 
   public static final Pose2d INITIAL_POSE = new Pose2d(2.9, 3.8, new Rotation2d(1, 0));
+
+  public static final double ADAPTIVE_AUTO_ERROR = 1.8;
 
   public static final PPHolonomicDriveController HOLONOMIC_DRIVE_CONTROLLER =
       new PPHolonomicDriveController(
@@ -360,22 +374,25 @@ public class DriveConstants {
 
   // pathfinding constants
 
-  public static final double buffer = 0.387;
-
+  // BUFFER_X = .44 works decently, test more
+  public static final double BUFFER_X = 0.387;
+  public static final double BUFFER_Y = 0.28;
   public static final List<Pair<Translation2d, Translation2d>> OBSTACLES_FOR_TRENCH_WALL =
       List.of(
           Pair.of(
-              new Translation2d(3.977 - buffer, 1.287 - buffer),
-              new Translation2d(5.322 + buffer, 1.592 + buffer)),
+              new Translation2d(3.977 - BUFFER_X, 1.287 - BUFFER_Y),
+              new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y)),
           Pair.of(
-              new Translation2d(3.977 - buffer, 6.477 - buffer),
-              new Translation2d(5.322 + buffer, 6.783 + buffer)),
+              new Translation2d(3.977 - BUFFER_X, 6.477 - BUFFER_Y),
+              new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y)),
           Pair.of(
-              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 1.287 - buffer)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 1.592 + buffer))),
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 1.287 - BUFFER_Y)),
+              FlippingUtil.flipFieldPosition(
+                  new Translation2d(5.322 + BUFFER_X, 1.592 + BUFFER_Y))),
           Pair.of(
-              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - buffer, 6.477 - buffer)),
-              FlippingUtil.flipFieldPosition(new Translation2d(5.322 + buffer, 6.783 + buffer))));
+              FlippingUtil.flipFieldPosition(new Translation2d(3.977 - BUFFER_X, 6.477 - BUFFER_Y)),
+              FlippingUtil.flipFieldPosition(
+                  new Translation2d(5.322 + BUFFER_X, 6.783 + BUFFER_Y))));
 
   /*
   List.of(
@@ -410,6 +427,20 @@ public class DriveConstants {
           Pair.of(
               FlippingUtil.flipFieldPosition(new Translation2d(4.039, 1.337)),
               FlippingUtil.flipFieldPosition(new Translation2d(5.216, 0))));
+
+  public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_RIGHT =
+      Pair.of(
+          new Translation2d(0, FlippingUtil.fieldSizeY / 2 - 0.05 - 2.5),
+          new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2 + .05 - 2.5));
+  public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_LEFT =
+      Pair.of(
+          new Translation2d(0, FlippingUtil.fieldSizeY / 2 - 0.05 + 2.5),
+          new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2 + .05 + 2.5));
+
+  public static final Pair<Translation2d, Translation2d> FIELD_SPLITTING_LINE_CENTER =
+      Pair.of(
+          new Translation2d(0, FlippingUtil.fieldSizeY / 2 + .1),
+          new Translation2d(FlippingUtil.fieldSizeX, FlippingUtil.fieldSizeY / 2));
 
   public static final Translation2d CENTER_OF_FIELD = new Translation2d(8.27, 4.035);
   public static final Translation3d BLUE_HUB_ORIGIN = new Translation3d(4.5974, 4.034536, 1.5748);

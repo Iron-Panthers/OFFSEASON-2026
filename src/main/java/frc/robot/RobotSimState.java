@@ -5,8 +5,10 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.Units;
@@ -18,11 +20,14 @@ import frc.robot.Constants.RobotType;
 import frc.robot.subsystems.intake.intake_rack.IntakeRackConstants;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.utility.FuelSim;
+import frc.robot.utility.SimRandom;
 import frc.robot.utility.TrenchTerrainSim;
+import java.util.ArrayList;
+import java.util.List;
 import org.dyn4j.geometry.Vector2;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
-import org.ironmaple.simulation.seasonspecific.rebuilt2026.*;
+import org.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -32,6 +37,14 @@ public class RobotSimState {
 
   private int fuelCount = START_FUEL_CAPACITY;
   private boolean intakeActive = false;
+
+  /**
+   * Shots launched this run. Score alone cannot tell "shot fewer, made more" apart from "shot the
+   * same, made more", so an A/B test needs the attempt count to compute accuracy.
+   */
+  private int shotsFired = 0;
+
+  List<SwerveDriveSimulation> obstacles = new ArrayList<SwerveDriveSimulation>();
 
   private RobotSimState() {
     // init the arena (drive sim only, no game piece placement)
@@ -69,9 +82,27 @@ public class RobotSimState {
         () -> intakeActive && fuelCount < 60,
         () -> fuelCount++);
 
+    // Hub scores live on static singletons, so clear them before the run starts.
+    FuelSim.Hub.BLUE_HUB.resetScore();
+    FuelSim.Hub.RED_HUB.resetScore();
+
     fuelSim.spawnStartingFuel();
     fuelSim.setLoggingFrequency(20);
     fuelSim.start();
+
+    addObstacleToSim(new Pose2d(new Translation2d(6.17, 2.6), new Rotation2d()));
+  }
+
+  // Get sim state from RobotContainer
+
+  public List<Pose2d> getObstaclePositions() {
+    return obstacles.stream().map((obstacle) -> obstacle.getSimulatedDriveTrainPose()).toList();
+  }
+
+  public void addObstacleToSim(Pose2d pose) {
+    SwerveDriveSimulation obstacle = new SwerveDriveSimulation(DriveConstants.obstacleConfig, pose);
+    obstacles.add(obstacle);
+    SimulatedArena.getInstance().addDriveTrainSimulation(obstacle);
   }
 
   // Singleton instance
@@ -186,12 +217,17 @@ public class RobotSimState {
       Distance shooterWidth) {
     if (fuelCount <= 0) return; // no fuel to shoot
     fuelCount--;
+    shotsFired++;
 
-    // Build a transform that includes the shooter's position and combines the hood pitch with the
+    // Build a transform that includes the shooter's position and combines the hood
+    // pitch with the
     // shooter's yaw
     Transform3d shooterOffset =
         new Transform3d(
-            new Translation3d(0, (Math.random() * 2 - 1) * (shooterWidth.in(Units.Meters) * .5), 0),
+            new Translation3d(
+                0,
+                (SimRandom.shooter().nextDouble() * 2 - 1) * (shooterWidth.in(Units.Meters) * .5),
+                0),
             new Rotation3d());
 
     Transform3d launchTransform =
@@ -211,6 +247,43 @@ public class RobotSimState {
 
   public int getFuelCount() {
     return fuelCount;
+  }
+
+  /**
+   * Overrides how much fuel the robot is holding.
+   *
+   * <p>Used by the {@code drain} A/B benchmark to preload the robot and measure how fast it can
+   * empty itself. The intake stops accepting fuel at 60, so values above that cannot be reached
+   * through normal play and are clamped here for consistency.
+   */
+  public void setFuelCount(int count) {
+    fuelCount = Math.max(0, Math.min(count, 60));
+  }
+
+  /** Total shots launched this run, scored or not. */
+  public int getShotsFired() {
+    return shotsFired;
+  }
+
+  /**
+   * Publishes scoring telemetry.
+   *
+   * <p>{@code Hub.getScore()} has always counted fuel through the hub but nothing ever read it, so
+   * no log contained a score. Everything the A/B runner measures for game-outcome benchmarks comes
+   * from these keys.
+   */
+  public void logScoring() {
+    int blue = FuelSim.Hub.BLUE_HUB.getScore();
+    int red = FuelSim.Hub.RED_HUB.getScore();
+    int scored = RobotState.getInstance().isAllianceRed() ? red : blue;
+
+    Logger.recordOutput("Field Simulation/Blue Score", blue);
+    Logger.recordOutput("Field Simulation/Red Score", red);
+    Logger.recordOutput("Field Simulation/Score", scored);
+    Logger.recordOutput("Field Simulation/Shots Fired", shotsFired);
+    Logger.recordOutput("Field Simulation/Held Fuel", fuelCount);
+    Logger.recordOutput(
+        "Field Simulation/Accuracy", shotsFired == 0 ? 0.0 : (double) scored / shotsFired);
   }
 
   public Pose3d[] getIntakeGamePieces() {

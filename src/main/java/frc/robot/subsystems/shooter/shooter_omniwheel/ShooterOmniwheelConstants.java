@@ -6,7 +6,9 @@ import frc.robot.subsystems.can_watchdog.CANWatchdogConstants.CAN;
 public class ShooterOmniwheelConstants {
   public static final ShooterOmniwheelConfig SHOOTER_OMNIWHEEL_CONFIG =
       switch (Constants.getRobotType()) {
-        case SIM -> new ShooterOmniwheelConfig(CAN.at(39, "Shooter Omniwheel"), 1, false, true);
+          // Matches COMP.
+        case SIM -> new ShooterOmniwheelConfig(
+            CAN.at(39, "Shooter Omniwheel"), 20.0 / 16, false, true);
         default -> new ShooterOmniwheelConfig(
             CAN.at(12, "Shooter Omniwheel"), 20.0 / 16, false, true);
       };
@@ -14,18 +16,17 @@ public class ShooterOmniwheelConstants {
   // CONTROL LOOP GAINS AND MOTION MAGIC CONFIG
   public static final PIDGains GAINS =
       switch (Constants.getRobotType()) {
-        case SIM -> new PIDGains(1, 0, 0, 0, .1, 0, 0);
+        case SIM -> new PIDGains(0.4, 0, 0, 0.2, .137, 0, 0);
         default -> new PIDGains(0.4, 0, 0, 0.2, .137, 0, 0);
       };
 
   public static final boolean OPPOSE_MOTOR = true;
 
-  // public static final double STATOR_CURRENT_LIMIT = 60;
-
   public static final int CURRENT_LIMIT_AMPS =
       switch (Constants.getRobotType()) {
         case COMP -> 60;
-        case SIM -> 30;
+          // Matches COMP.
+        case SIM -> 60;
         default -> 30;
       };
 

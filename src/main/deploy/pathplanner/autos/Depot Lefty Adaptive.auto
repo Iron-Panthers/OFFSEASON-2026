@@ -11,9 +11,22 @@
           }
         },
         {
-          "type": "path",
+          "type": "race",
           "data": {
-            "pathName": "xD"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "xD"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Check If Off"
+                }
+              }
+            ]
           }
         },
         {
@@ -25,13 +38,26 @@
         {
           "type": "named",
           "data": {
-            "name": "Align and auto shoot full hopper (no intake)"
+            "name": "ShootCommandFactory"
           }
         },
         {
-          "type": "path",
+          "type": "race",
           "data": {
-            "pathName": "2xTT 2 Left"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "2xTB 3 Left"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Check If Off"
+                }
+              }
+            ]
           }
         },
         {
@@ -43,7 +69,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Align and auto shoot full hopper (no intake)"
+            "name": "ShootCommandFactory"
           }
         },
         {

@@ -5,6 +5,8 @@ import frc.robot.subsystems.intake.IntakeController;
 import frc.robot.subsystems.intake.IntakeController.IntakeState;
 import frc.robot.subsystems.shooter.ShooterController;
 import frc.robot.subsystems.shooter.ShooterController.ShooterState;
+import frc.robot.subsystems.shooter.serializer.Serializer;
+import frc.robot.subsystems.shooter.serializer.Serializer.SerializerTarget;
 
 /**
  * Deploys the intake to pick up game pieces. Stows climb, sequences intake deploy then intake,
@@ -16,5 +18,16 @@ public class IntakeCommand extends SequentialCommandGroup {
         intakeController
             .setTargetStateCommand(IntakeState.INTAKE)
             .alongWith(shooterController.setTargetStateCommand(ShooterState.INTAKE)));
+  }
+
+  public IntakeCommand(
+      IntakeController intakeController,
+      ShooterController shooterController,
+      Serializer serializer) {
+    addCommands(
+        intakeController
+            .setTargetStateCommand(IntakeState.INTAKE)
+            .alongWith(shooterController.setTargetStateCommand(ShooterState.INTAKE)));
+    serializer.setVelocityTarget(SerializerTarget.SLOW);
   }
 }

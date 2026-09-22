@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.038,
-        "y": 2.8461091240450767
+        "x": 3.1303333333333336,
+        "y": 2.2328351126927632
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.672792408066429,
-        "y": 1.8993001086239625
+        "x": 3.7651257413997627,
+        "y": 1.286026097271649
       },
       "isLocked": false,
       "linkedName": "Shooting Pose Right"
@@ -67,7 +67,7 @@
   "folder": "Right Paths (make these)",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 55.0
+    "rotation": 50.54495239376823
   },
   "useDefaultConstraints": true
 }

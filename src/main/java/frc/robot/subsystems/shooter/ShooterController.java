@@ -33,18 +33,12 @@ public class ShooterController extends SubsystemBase {
         ShooterAcceleratorTarget.IDLE,
         ShooterOmniwheelTarget.IDLE,
         SerializerTarget.IDLE),
-    REVERSE(
-        ShooterHoodTarget.STOW,
-        ShooterFlywheelTarget.INTAKE,
-        ShooterAcceleratorTarget.IDLE,
-        ShooterOmniwheelTarget.IDLE,
-        SerializerTarget.REVERSE),
     /** spin just flywheels */
     FLYWHEEL_SPIN_UP(
         ShooterHoodTarget.STOW,
         ShooterFlywheelTarget.INTAKE,
         ShooterAcceleratorTarget.IDLE,
-        ShooterOmniwheelTarget.SLOW_REVERSE,
+        ShooterOmniwheelTarget.OFF,
         SerializerTarget.IDLE),
     /** hold: hold the balls in the hopper */
     HOLD(
@@ -84,13 +78,13 @@ public class ShooterController extends SubsystemBase {
         ShooterHoodTarget.SHOOT_TEMP,
         ShooterFlywheelTarget.SHOOT,
         ShooterAcceleratorTarget.SHOOT,
-        ShooterOmniwheelTarget.IDLE,
+        ShooterOmniwheelTarget.OFF,
         SerializerTarget.SPIN_UP),
     COMPACT_SPIN_UP(
         ShooterHoodTarget.STOW,
         ShooterFlywheelTarget.SHOOT,
         ShooterAcceleratorTarget.SHOOT,
-        ShooterOmniwheelTarget.IDLE,
+        ShooterOmniwheelTarget.OFF,
         SerializerTarget.SPIN_UP),
     ZEROING(
         ShooterHoodTarget.STOW,
@@ -208,7 +202,7 @@ public class ShooterController extends SubsystemBase {
 
       // Omniwheels
       if (targetState == ShooterState.SHOOT) {
-        if (shooterFlywheel.reachedVelocityTarget() && shooterHood.reachedTarget()) {
+        if (shooterFlywheel.reachedVelocityTarget() && shooterHood.reachedPositionTargetManual()) {
           shooterOmniwheel.setVelocityTarget(targetState.omniwheelTarget);
         } else {
           shooterOmniwheel.setVelocityTarget(ShooterOmniwheelTarget.IDLE);
@@ -245,6 +239,7 @@ public class ShooterController extends SubsystemBase {
         shooterFlywheel.setVelocityTarget(targetState.flywheelTarget);
       }
       shooterHood.setPositionTarget(targetState.hoodTarget);
+      shooterFlywheel.setVelocityTarget(targetState.flywheelTarget);
       shooterOmniwheel.setVelocityTarget(targetState.omniwheelTarget);
       shooterAccelerator.setVelocityTarget(targetState.acceleratorTarget);
       serializer.setVelocityTarget(targetState.serializerTarget);

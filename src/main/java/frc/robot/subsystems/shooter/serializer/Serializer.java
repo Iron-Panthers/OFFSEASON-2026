@@ -7,11 +7,11 @@ import org.littletonrobotics.junction.AutoLogOutput;
 public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
   public enum SerializerTarget implements GenericRollers.VelocityTarget {
     IDLE(0, SerializerConstants.CURRENT_LIMIT_AMPS),
-    SLOW(40, SerializerConstants.CURRENT_LIMIT_AMPS),
-    REVERSE(30, SerializerConstants.CURRENT_LIMIT_AMPS),
-    SPIN_UP(10, SerializerConstants.CURRENT_LIMIT_AMPS),
-    SHOOT(100, SerializerConstants.CURRENT_LIMIT_AMPS),
-    HOLD(1, SerializerConstants.CURRENT_LIMIT_AMPS);
+    SLOW(-20, SerializerConstants.CURRENT_LIMIT_AMPS),
+    REVERSE(40, SerializerConstants.CURRENT_LIMIT_AMPS),
+    SPIN_UP(-10, SerializerConstants.CURRENT_LIMIT_AMPS),
+    SHOOT(-40, SerializerConstants.CURRENT_LIMIT_AMPS),
+    HOLD(-1, SerializerConstants.CURRENT_LIMIT_AMPS);
 
     private double velocity;
     private double supplyCurrentLimit;
@@ -47,6 +47,6 @@ public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
    */
   @AutoLogOutput(key = "Serializer/Serializer Stalling")
   public boolean serializerStalling() {
-    return getFilteredCurrent() > 15d && getVelocityRadsPerSec() < 5d;
+    return getFilteredCurrent() > 15d && getVelocityRadsPerSec() < 3d;
   }
 }

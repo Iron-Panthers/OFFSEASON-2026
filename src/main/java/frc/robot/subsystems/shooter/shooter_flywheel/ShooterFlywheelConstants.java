@@ -12,7 +12,8 @@ public class ShooterFlywheelConstants {
             CAN.at(37, "Shooter Flywheel 2"),
             CAN.at(0, "Shooter Flywheel 3"),
             CAN.at(0, "Shooter Flywheel 4"),
-            0.71,
+            // Matches COMP.
+            1.411,
             false,
             false,
             true,
@@ -34,21 +35,23 @@ public class ShooterFlywheelConstants {
   // CONTROL LOOP GAINS AND MOTION MAGIC CONFIG
   public static final PIDGains GAINS =
       switch (Constants.getRobotType()) {
-        case SIM -> new PIDGains(3, 0, 0, 0, .1, 0, 0);
+        case SIM -> new PIDGains(0.5, 0, 0, 0.2, 0.35, 0, 0);
         default -> new PIDGains(0.5, 0, 0, 0.2, 0.35, 0, 0);
       };
 
-  public static final double VELOCITY_ADJUSTMENT = 0.98;
+  public static final double VELOCITY_ADJUSTMENT = 1;
   public static final int CURRENT_LIMIT_AMPS =
       switch (Constants.getRobotType()) {
+        case COMP -> 20;
         case SIM -> 40;
-        default -> 20;
+        default -> 40;
       };
 
   public static final ShooterFlywheelPhysicalConstants PHYSICAL_CONSTANTS = // TODO: update values
       switch (Constants.getRobotType()) {
         case SIM -> new ShooterFlywheelPhysicalConstants(0.01, 0.23938936);
-        default -> new ShooterFlywheelPhysicalConstants(0.1, 0.23938936);
+        case COMP -> new ShooterFlywheelPhysicalConstants(0.1, 0.23938936);
+        default -> new ShooterFlywheelPhysicalConstants(0.1, .1);
       };
 
   // RECORDS
