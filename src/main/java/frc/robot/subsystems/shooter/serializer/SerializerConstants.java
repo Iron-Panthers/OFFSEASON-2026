@@ -34,9 +34,6 @@ public class SerializerConstants {
 
   public static final int CURRENT_LIMIT_AMPS = 35;
 
-  /** Raised supply limit driverB can request on the fly to push through a stubborn game piece. */
-  public static final double BOOSTED_CURRENT_LIMIT_AMPS = 55;
-
   public static final double STATOR_CURRENT_LIMIT = 40;
 
   public static final SerializerPhysicalConstants PHYSICAL_CONSTANTS =

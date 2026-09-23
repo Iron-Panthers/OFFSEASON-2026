@@ -11,7 +11,6 @@ public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
     REVERSE(40, SerializerConstants.CURRENT_LIMIT_AMPS),
     SPIN_UP(-10, SerializerConstants.CURRENT_LIMIT_AMPS),
     SHOOT(-40, SerializerConstants.CURRENT_LIMIT_AMPS),
-    MAX_SPEED(-80, SerializerConstants.CURRENT_LIMIT_AMPS),
     HOLD(-1, SerializerConstants.CURRENT_LIMIT_AMPS);
 
     private double velocity;
@@ -39,37 +38,6 @@ public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
 
   public double getVelocityRadsPerSec() {
     return inputs.velocityRadsPerSec;
-  }
-
-  /**
-   * Overrides the supply current limit the serializer runs at, ignoring the limit carried by {@link
-   * SerializerTarget}. Stays in effect through target changes until {@link #setDefaultMaxAmps()} is
-   * called.
-   *
-   * @param amps supply current limit in amps
-   */
-  public void setMaxAmps(double amps) {
-    setSupplyCurrentLimitOverride(amps);
-  }
-
-  /** Returns the serializer to the supply current limit carried by its current target. */
-  public void setDefaultMaxAmps() {
-    clearSupplyCurrentLimitOverride();
-  }
-
-  /**
-   * The supply current limit the serializer is actually running at this loop.
-   *
-   * @return supply current limit in amps
-   */
-  @AutoLogOutput(key = "Serializer/Max Amps")
-  public double getMaxAmps() {
-    return getSupplyCurrentLimitAmps();
-  }
-
-  @AutoLogOutput(key = "Serializer/Max Amps Overridden")
-  public boolean isMaxAmpsOverridden() {
-    return isSupplyCurrentLimitOverridden();
   }
 
   /**

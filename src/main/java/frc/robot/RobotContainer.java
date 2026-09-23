@@ -662,14 +662,7 @@ public class RobotContainer {
 
     // to unstick the serializer: push harder rather than faster, then hand the limit back
     // driverB.povUp().whileTrue(new VibrateSerializerCommand(serializer).repeatedly());
-    driverB
-        .povUp()
-        .whileTrue(
-            new InstantCommand(() -> shooterController.setTargetState(ShooterState.UNJAM))
-                .repeatedly()
-                .beforeStarting(
-                    () -> serializer.setMaxAmps(SerializerConstants.BOOSTED_CURRENT_LIMIT_AMPS))
-                .finallyDo(() -> serializer.setDefaultMaxAmps()));
+    
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));

@@ -31,9 +31,6 @@ public abstract class GenericRollers<G extends GenericRollers.VelocityTarget> {
   protected double manualSupplyCurrentAmps = 0;
   protected boolean useManualVelocity = false;
 
-  private double supplyCurrentLimitOverrideAmps = 0;
-  private boolean useSupplyCurrentLimitOverride = false;
-
   public GenericRollers(String name, GenericRollersIO rollerIO) {
     this.name = name;
     this.rollerIO = rollerIO;
@@ -50,8 +47,6 @@ public abstract class GenericRollers<G extends GenericRollers.VelocityTarget> {
     Logger.recordOutput(name + "/Target", velocityTarget.toString());
     Logger.recordOutput(name + "/Target Velocity", velocityTarget.getVelocity());
     Logger.recordOutput(name + "/Max Current Amps", velocityTarget.getSupplyCurrentLimit());
-    Logger.recordOutput(name + "/Supply Current Limit Applied", getSupplyCurrentLimitAmps());
-    Logger.recordOutput(name + "/Supply Current Limit Overridden", useSupplyCurrentLimitOverride);
 
     filteredCurrent = this.filter.calculate(inputs.supplyCurrentAmps);
     Logger.recordOutput(name + "/Filtered Current", filteredCurrent);
@@ -62,7 +57,8 @@ public abstract class GenericRollers<G extends GenericRollers.VelocityTarget> {
     Logger.recordOutput(name + "/Control Mode", controlMode.toString());
     switch (controlMode) {
       case VELOCITY -> {
-        rollerIO.setSupplyCurrentLimit(getSupplyCurrentLimitAmps());
+        rollerIO.setSupplyCurrentLimit(
+            useManualVelocity ? manualSupplyCurrentAmps : velocityTarget.getSupplyCurrentLimit());
         rollerIO.runVelocity(useManualVelocity ? manualVelocityRPS : velocityTarget.getVelocity());
       }
       case STOP -> {
@@ -96,40 +92,6 @@ public abstract class GenericRollers<G extends GenericRollers.VelocityTarget> {
     this.manualVelocityRPS = velocityRPS;
     this.manualSupplyCurrentAmps = supplyCurrentAmps;
     this.useManualVelocity = true;
-  }
-
-  /**
-   * The supply current limit actually pushed to the motor this loop. An override, when set, wins
-   * over both the manual limit and the current target's limit.
-   *
-   * @return supply current limit in amps
-   */
-  public double getSupplyCurrentLimitAmps() {
-    if (useSupplyCurrentLimitOverride) {
-      return supplyCurrentLimitOverrideAmps;
-    }
-    return useManualVelocity ? manualSupplyCurrentAmps : velocityTarget.getSupplyCurrentLimit();
-  }
-
-  /**
-   * Overrides the supply current limit for every target until {@link
-   * #clearSupplyCurrentLimitOverride()} is called. Survives {@link #setVelocityTarget}, so callers
-   * that re-set their target every loop keep the override.
-   *
-   * @param amps supply current limit in amps
-   */
-  protected void setSupplyCurrentLimitOverride(double amps) {
-    this.supplyCurrentLimitOverrideAmps = amps;
-    this.useSupplyCurrentLimitOverride = true;
-  }
-
-  /** Drops the override and goes back to the limit carried by the target enum. */
-  protected void clearSupplyCurrentLimitOverride() {
-    this.useSupplyCurrentLimitOverride = false;
-  }
-
-  protected boolean isSupplyCurrentLimitOverridden() {
-    return useSupplyCurrentLimitOverride;
   }
 
   public ControlMode getControlMode() {
