@@ -48,6 +48,9 @@ class NtPublisher:
             "tz": table.getDoubleArrayTopic("tz").publish(),
             "confidence": table.getDoubleArrayTopic("confidence").publish(),
             "edge": table.getBooleanArrayTopic("edge").publish(),
+            "sizeDistance": table.getDoubleArrayTopic("sizeDistance").publish(),
+            "groundDistance": table.getDoubleArrayTopic("groundDistance").publish(),
+            "suspect": table.getBooleanArrayTopic("suspect").publish(),
             "captureTimestamp": table.getDoubleTopic("captureTimestamp").publish(),
             "latencyMs": table.getDoubleTopic("latencyMs").publish(),
             "fps": table.getDoubleTopic("fps").publish(),
@@ -78,6 +81,16 @@ class NtPublisher:
         p["tz"].set([d.z for d in detections])
         p["confidence"].set([d.confidence for d in detections])
         p["edge"].set([d.edge for d in detections])
+        p["sizeDistance"].set([d.size_distance_meters for d in detections])
+        # NaN rather than a sentinel distance: a consumer that forgets to check gets arithmetic
+        # that stays obviously broken instead of a plausible range it will happily drive to.
+        p["groundDistance"].set(
+            [
+                float("nan") if d.ground_distance_meters is None else d.ground_distance_meters
+                for d in detections
+            ]
+        )
+        p["suspect"].set([d.suspect for d in detections])
         p["captureTimestamp"].set(capture_timestamp)
         p["latencyMs"].set(latency_ms)
         p["fps"].set(fps)

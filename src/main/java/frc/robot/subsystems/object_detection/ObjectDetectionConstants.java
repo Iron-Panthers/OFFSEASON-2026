@@ -18,6 +18,21 @@ public class ObjectDetectionConstants {
   public static final double HORIZONTAL_FOV_RAD = Math.toRadians(63.3);
   public static final double VERTICAL_FOV_RAD = Math.toRadians(49.7);
 
+  /**
+   * The same field of view as a corner-to-corner angle, which is the one number the renderer and
+   * the coprocessor both take.
+   *
+   * <p>Derived rather than written down twice. The horizontal and vertical figures above are the
+   * calibrated ones; a third hand-entered constant would be a third thing to keep in step, and the
+   * failure when it drifts is a silent bias on every range the detector reports.
+   */
+  public static final double CAMERA_DIAGONAL_FOV_DEGREES =
+      Math.toDegrees(
+          2.0
+              * Math.atan(
+                  Math.hypot(
+                      Math.tan(HORIZONTAL_FOV_RAD / 2.0), Math.tan(VERTICAL_FOV_RAD / 2.0))));
+
   /** Range over which a ball on the floor is reported. */
   public static final double MIN_RANGE_M = 0.4;
 

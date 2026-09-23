@@ -47,6 +47,30 @@ class Detection:
     discovering the bias the hard way.
     """
 
+    size_distance_meters: float
+    """Range from the apparent size of the silhouette.
+
+    Depends on the box *extent*, so it inherits every box error directly: a box merged across two
+    balls halves it, a clipped or occluded box doubles it.
+    """
+
+    ground_distance_meters: Optional[float] = None
+    """Range from where the bearing meets the floor, or None when it could not be computed.
+
+    Depends only on the box *centre*, which is a far better conditioned quantity than its extent.
+    None when the camera's mounting was not supplied, or when the bearing is at or above the
+    horizon and so never meets the floor.
+    """
+
+    suspect: bool = False
+    """True when the two independent ranges disagree by more than the allowed fraction.
+
+    The two methods fail in uncorrelated ways, so disagreement is evidence that the box is wrong
+    -- merged across several balls, or clipped by something that is not the frame border. That is
+    the occlusion case :attr:`edge` cannot see. It also fires for a ball in flight, which is not
+    on the floor and so has no honest ground-plane range at all.
+    """
+
 
 @dataclass
 class ModuleContext:

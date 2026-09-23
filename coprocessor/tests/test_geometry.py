@@ -122,10 +122,13 @@ def test_clipped_box_reads_as_too_far(cam: Intrinsics):
 
 
 def test_occlusion_away_from_the_border_is_not_flagged(cam: Intrinsics):
-    """A documented blind spot, asserted so nobody mistakes the edge flag for occlusion cover.
+    """Asserted so nobody mistakes the edge flag for occlusion cover.
 
-    A ball half hidden behind another robot in the middle of the frame reads as too far away and
-    carries no warning. Only clipping against the frame border is detectable from a box alone.
+    A ball half hidden behind another robot in the middle of the frame touches no border, so the
+    edge flag stays silent about it: clipping against the frame is the only thing a box alone can
+    reveal. That is still true and still the limit of this flag. What covers the case now is the
+    range cross-check, which needs a second, independent estimate to see it at all --
+    ``test_occlusion_away_from_the_border_is_now_caught``.
     """
     x0, y0, x1, y1 = geometry.sphere_bbox(2.0, 0.0, 0.0, cam, RADIUS)
     half_hidden = (x0 + (x1 - x0) / 2, y0, x1, y1)
@@ -194,3 +197,127 @@ def test_bearing_is_accurate_off_axis(cam: Intrinsics):
     assert found.pitch_degrees == pytest.approx(
         math.degrees(math.atan2(z, math.hypot(x, y))), abs=0.15
     )
+
+
+# --- Ground-plane ranging -------------------------------------------------------------------
+#
+# The object-detection camera, from ObjectDetectionConstants.ROBOT_TO_CAMERA: 0.60 m up, tilted
+# 20 degrees down. Positive pitch is nose down, matching WPILib's Rotation3d.
+MOUNT = geometry.Mounting(height_meters=0.60, pitch_radians=math.radians(20.0))
+
+
+def ball_on_floor(distance_m: float, lateral_m: float = 0.0):
+    """A ball resting on the floor, in the camera frame of :data:`MOUNT`.
+
+    The camera looks down by its pitch, so a ball that is ``distance_m`` away along the floor
+    sits below and ahead of it, rotated into the camera's own axes.
+    """
+    drop = MOUNT.height_meters - RADIUS
+    pitch = MOUNT.pitch_radians
+    # Level frame: forward along the floor, down by the full drop. Rotate into the camera frame,
+    # which is the level frame pitched nose-down, i.e. rotate the point back up by the pitch.
+    forward, down = distance_m, -drop
+    x = forward * math.cos(pitch) - down * math.sin(pitch)
+    z = forward * math.sin(pitch) + down * math.cos(pitch)
+    return x, lateral_m, z
+
+
+@pytest.mark.parametrize("distance", [0.8, 1.5, 2.5, 4.0, 6.0])
+def test_ground_plane_recovers_a_ball_on_the_floor(cam: Intrinsics, distance):
+    """The whole point: range from the bearing, with no reference to the box's size."""
+    x, y, z = ball_on_floor(distance)
+    bbox = geometry.sphere_bbox(x, y, z, cam, RADIUS)
+    found = geometry.locate_sphere(bbox, cam, RADIUS, "fuel", 1.0, MOUNT)
+
+    truth = math.sqrt(x * x + y * y + z * z)
+    assert found.ground_distance_meters == pytest.approx(truth, rel=0.01)
+    assert found.distance_meters == pytest.approx(truth, rel=0.01)
+    assert not found.suspect, "the two estimates agree on a clean box"
+
+
+def test_ground_plane_is_the_reported_range_when_a_mounting_is_given(cam: Intrinsics):
+    x, y, z = ball_on_floor(2.0)
+    bbox = geometry.sphere_bbox(x, y, z, cam, RADIUS)
+    found = geometry.locate_sphere(bbox, cam, RADIUS, "fuel", 1.0, MOUNT)
+    assert found.distance_meters == found.ground_distance_meters
+    # and the position follows the reported range, not the discarded one
+    assert math.sqrt(found.x**2 + found.y**2 + found.z**2) == pytest.approx(
+        found.ground_distance_meters, rel=1e-9
+    )
+
+
+def test_without_a_mounting_nothing_changes(cam: Intrinsics):
+    """The old behaviour is still exactly the old behaviour."""
+    x, y, z = ball_on_floor(2.0)
+    bbox = geometry.sphere_bbox(x, y, z, cam, RADIUS)
+    found = geometry.locate_sphere(bbox, cam, RADIUS, "fuel", 1.0)
+
+    assert found.ground_distance_meters is None
+    assert not found.suspect
+    assert found.distance_meters == found.size_distance_meters
+
+
+def test_a_box_merged_across_two_balls_is_caught(cam: Intrinsics):
+    """The failure that carries no warning today.
+
+    Two balls side by side in one box: the silhouette is twice as wide, so the size-based range
+    halves. The centre barely moves, so the ground-plane range does not. That disagreement is the
+    only signal available that the box is wrong.
+    """
+    x, y, z = ball_on_floor(2.5)
+    x0, y0, x1, y1 = geometry.sphere_bbox(x, y, z, cam, RADIUS)
+    merged = (x0, y0, x1 + (x1 - x0), y1)  # a neighbouring ball swallowed into the same box
+
+    found = geometry.locate_sphere(merged, cam, RADIUS, "fuel", 1.0, MOUNT)
+
+    truth = math.sqrt(x * x + y * y + z * z)
+    assert found.size_distance_meters < 0.75 * truth, "size-based range should have collapsed"
+    assert found.ground_distance_meters == pytest.approx(truth, rel=0.15)
+    assert found.suspect
+
+
+def test_occlusion_away_from_the_border_is_now_caught(cam: Intrinsics):
+    """Counterpart to ``test_occlusion_away_from_the_border_is_not_flagged``.
+
+    A ball half hidden behind a robot mid-frame has a box too small and does not touch any edge,
+    so ``edge`` stays false. Size-based range pushes it into the distance; ground-plane range
+    does not follow, and the cross-check fires.
+    """
+    x, y, z = ball_on_floor(2.0)
+    x0, y0, x1, y1 = geometry.sphere_bbox(x, y, z, cam, RADIUS)
+    half = (x0, y0, x0 + (x1 - x0) / 2.0, y1)  # left half of the ball still visible
+
+    found = geometry.locate_sphere(half, cam, RADIUS, "fuel", 1.0, MOUNT)
+
+    assert not found.edge, "nothing here touches the frame border"
+    assert found.suspect
+
+
+def test_a_ball_above_the_horizon_has_no_ground_range(cam: Intrinsics):
+    """A ball in flight is not on the floor, and the estimator must not pretend otherwise."""
+    # Well above the optical axis, which is already tilted down: this ray climbs.
+    bbox = geometry.sphere_bbox(3.0, 0.0, 2.5, cam, RADIUS)
+    found = geometry.locate_sphere(bbox, cam, RADIUS, "fuel", 1.0, MOUNT)
+
+    assert found.ground_distance_meters is None
+    assert found.distance_meters == found.size_distance_meters
+    assert not found.suspect, "no second opinion exists, so there is nothing to disagree with"
+
+
+def test_yaw_cannot_affect_the_ground_range():
+    """Mounting carries no heading on purpose; rotating about the vertical must be a no-op.
+
+    Guards the derivation: the third row of the camera-to-level rotation drops yaw entirely. If
+    somebody reintroduces a heading term, a lateral ball's range starts moving with it.
+    """
+    ray = (0.90, 0.30, -0.32)
+    norm = math.sqrt(sum(c * c for c in ray))
+    ray = tuple(c / norm for c in ray)
+
+    expected = (MOUNT.height_meters - RADIUS) / -MOUNT.vertical_component(ray)
+    assert geometry.ground_plane_range(ray, MOUNT, RADIUS) == pytest.approx(expected)
+
+
+def test_a_camera_below_the_ball_centre_has_no_ground_range():
+    low = geometry.Mounting(height_meters=0.05, pitch_radians=math.radians(20.0))
+    assert geometry.ground_plane_range((0.9, 0.0, -0.4), low, RADIUS) is None

@@ -1,5 +1,7 @@
 package frc.robot.utility.coprocessor;
 
+import frc.robot.utility.rendering.RenderingEngine;
+
 /**
  * A coprocessor module the simulation knows how to launch.
  *
@@ -9,12 +11,15 @@ package frc.robot.utility.coprocessor;
  */
 public enum CoprocessorModule {
   /**
-   * YOLOv8 ball detection.
+   * YOLO ball detection.
    *
-   * <p>Defaults to camera 2, which is the right-hand camera in {@code CAMERA_TRANSFORM} and the one
-   * served on 1193.
+   * <p>Defaults to the object-detection camera, which is not one of the vision cameras: it is
+   * {@code ObjectDetectionConstants.ROBOT_TO_CAMERA}, mounted low and tilted down at the floor
+   * beside the intake. The vision cameras are pitched <em>up</em> to see tags on walls, which
+   * leaves them unable to see floor anywhere near the robot, so pointing the detector at one of
+   * them finds nothing at all.
    */
-  OBJDETECT("objdetect", 2);
+  OBJDETECT("objdetect", RenderingEngine.objectDetectionCameraIndex());
 
   /** First port for annotated output. Clear of the renderer at 1191+ and PhotonVision at 1181+. */
   public static final int OUTPUT_BASE_PORT = 1291;

@@ -1,6 +1,8 @@
 package frc.robot.utility.coprocessor;
 
+import edu.wpi.first.math.geometry.Transform3d;
 import frc.robot.Constants;
+import frc.robot.subsystems.object_detection.ObjectDetectionConstants;
 import frc.robot.utility.rendering.RenderingEngine;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -123,7 +125,12 @@ public final class CoprocessorManager {
       command.add(Integer.toString(rendering.frameWidth()));
       command.add("--height");
       command.add(Integer.toString(rendering.frameHeight()));
+      // Focal length follows from the frame size and this angle. The object-detection camera has
+      // its own optics, so taking the vision cameras' figure here would bias every range.
+      command.add("--fov");
+      command.add(Double.toString(rendering.cameraFovDegrees(camera)));
     }
+    command.addAll(mountingOptions(module, camera));
     command.addAll(moduleOptions(module));
 
     Process process =
@@ -179,7 +186,37 @@ public final class CoprocessorManager {
       addIfSet(options, "--classes", "coproc.objdetect.classes");
       addIfSet(options, "--radius", "coproc.objdetect.radius");
       addIfSet(options, "--device", "coproc.objdetect.device");
+      addIfSet(options, "--imgsz", "coproc.objdetect.imgsz");
+      addIfSet(options, "--disagreement", "coproc.objdetect.disagreement");
     }
+    return options;
+  }
+
+  /**
+   * How the camera sits above the floor, which is what turns a bearing into a range.
+   *
+   * <p>Only supplied for the object-detection camera, and only because a ball resting on the floor
+   * has a known centre height. Ranging off that rather than off the apparent size of the box is the
+   * difference between an error that stays inside ten percent and one that silently halves when two
+   * balls share a box. Yaw is deliberately not passed: it cannot affect where a ray meets the
+   * floor, and passing it would only create something else to keep in step.
+   *
+   * <p>Nothing is passed for any other camera, and the detector falls back to apparent size alone
+   * rather than ranging off a floor plane that means nothing to it.
+   */
+  private List<String> mountingOptions(CoprocessorModule module, int camera) {
+    List<String> options = new ArrayList<>();
+    if (module != CoprocessorModule.OBJDETECT
+        || camera != RenderingEngine.objectDetectionCameraIndex()) {
+      return options;
+    }
+    Transform3d mounting = ObjectDetectionConstants.ROBOT_TO_CAMERA;
+    options.add("--camera-height");
+    options.add(Double.toString(mounting.getZ()));
+    options.add("--camera-pitch");
+    options.add(Double.toString(Math.toDegrees(mounting.getRotation().getY())));
+    options.add("--camera-roll");
+    options.add(Double.toString(Math.toDegrees(mounting.getRotation().getX())));
     return options;
   }
 

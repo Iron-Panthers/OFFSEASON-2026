@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import frc.robot.subsystems.object_detection.ObjectDetectionConstants;
+import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.utility.rendering.RenderingEngine;
 import java.util.HashSet;
 import java.util.Set;
@@ -70,10 +72,47 @@ class CoprocessorModuleTest {
   }
 
   @Test
-  void objectDetectionWatchesTheCameraServedOn1193() {
-    // The third camera in CAMERA_TRANSFORM, which the renderer serves on 1191 + 2.
-    assertEquals(2, CoprocessorModule.OBJDETECT.defaultCamera());
-    assertEquals(1193, RenderingEngine.BASE_PORT + CoprocessorModule.OBJDETECT.defaultCamera());
+  void objectDetectionWatchesItsOwnCameraAndNotAVisionCamera() {
+    // Not one of the vision cameras, and this is the point rather than an accident. Those are
+    // pitched up to put AprilTags on walls in frame, which leaves them unable to see floor
+    // anywhere near the robot; aimed at one of them the detector measurably finds nothing. The
+    // object-detection camera is ObjectDetectionConstants.ROBOT_TO_CAMERA, tilted down at the
+    // floor, and the renderer serves it immediately after the vision cameras.
+    int expected = VisionConstants.CAMERA_TRANSFORM.length;
+    assertEquals(expected, CoprocessorModule.OBJDETECT.defaultCamera());
+    assertEquals(expected, RenderingEngine.objectDetectionCameraIndex());
+
+    for (int vision = 0; vision < VisionConstants.CAMERA_TRANSFORM.length; vision++) {
+      assertNotEquals(
+          vision,
+          CoprocessorModule.OBJDETECT.defaultCamera(),
+          "the detector must not default to a vision camera");
+    }
+  }
+
+  @Test
+  void theObjectDetectionCameraActuallyLooksDown() {
+    // The failure this guards is silent: flip the sign and every frame still renders, still
+    // looks like a field, and simply contains no fuel. Positive pitch is nose down in WPILib's
+    // Rotation3d, so this must stay positive.
+    assertTrue(
+        ObjectDetectionConstants.ROBOT_TO_CAMERA.getRotation().getY() > 0.0,
+        "the object-detection camera must be pitched down to see fuel on the floor");
+    assertTrue(
+        ObjectDetectionConstants.ROBOT_TO_CAMERA.getZ() > ObjectDetectionConstants.BALL_RADIUS_M,
+        "the camera must sit above a ball, or ground-plane ranging has no intersection");
+  }
+
+  @Test
+  void theRenderedFieldOfViewMatchesTheCalibratedOne() {
+    // The coprocessor derives its focal length from the diagonal figure, so it drifting away
+    // from the horizontal and vertical ones biases every range the detector reports.
+    double halfDiagonal = Math.toRadians(ObjectDetectionConstants.CAMERA_DIAGONAL_FOV_DEGREES) / 2;
+    double expected =
+        Math.hypot(
+            Math.tan(ObjectDetectionConstants.HORIZONTAL_FOV_RAD / 2),
+            Math.tan(ObjectDetectionConstants.VERTICAL_FOV_RAD / 2));
+    assertEquals(expected, Math.tan(halfDiagonal), 1e-9);
   }
 
   @Test

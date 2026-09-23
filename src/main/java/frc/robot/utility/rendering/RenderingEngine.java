@@ -5,6 +5,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import frc.robot.Constants;
+import frc.robot.subsystems.object_detection.ObjectDetectionConstants;
 import frc.robot.subsystems.vision.VisionConstants;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -93,6 +94,14 @@ public final class RenderingEngine {
   private volatile boolean running;
   private volatile double lastFrameSeconds;
   private volatile long framesRendered;
+
+  /**
+   * Stream index of the object-detection camera.
+   *
+   * <p>It sits immediately after the vision cameras, so it moves if one is added or removed there.
+   * Nothing should hardcode the number: ask {@link #objectDetectionCameraIndex()}.
+   */
+  private static final int OBJECT_DETECTION_CAMERA_INDEX = VisionConstants.CAMERA_TRANSFORM.length;
 
   /** One camera: its mounting on the robot, its ray generator and its HTTP endpoint. */
   private record CameraStream(
@@ -209,6 +218,25 @@ public final class RenderingEngine {
               new Film()));
     }
 
+    // The object-detection camera, which is not one of the vision cameras and is not in their
+    // table. It belongs to the object detection subsystem: mounted low, tilted down and facing
+    // the intake, because its job is to see fuel on the floor rather than tags on a wall. The
+    // vision cameras are pitched *up* for tags, which leaves them blind to anything on the floor
+    // nearer than a couple of metres -- pointing the detector at one of them finds nothing.
+    MjpegServer objectServer =
+        startOnFirstFreePort(
+            "Camera " + OBJECT_DETECTION_CAMERA_INDEX + " (object detection)", nextPort);
+    cameras.add(
+        new CameraStream(
+            OBJECT_DETECTION_CAMERA_INDEX,
+            ObjectDetectionConstants.ROBOT_TO_CAMERA,
+            new RenderCamera(
+                settings.width(),
+                settings.height(),
+                ObjectDetectionConstants.CAMERA_DIAGONAL_FOV_DEGREES),
+            objectServer,
+            new Film()));
+
     running = true;
     renderLoop = new Thread(this::renderForever, "RenderLoop");
     renderLoop.setDaemon(true);
@@ -286,6 +314,28 @@ public final class RenderingEngine {
    */
   public int cameraCount() {
     return cameras.size();
+  }
+
+  /**
+   * @return the stream index of the object-detection camera, which follows the vision cameras
+   */
+  public static int objectDetectionCameraIndex() {
+    return OBJECT_DETECTION_CAMERA_INDEX;
+  }
+
+  /**
+   * The diagonal field of view a camera is being rendered at.
+   *
+   * <p>The object-detection camera does not share the vision cameras' optics, and the coprocessor
+   * derives its focal length from this number, so handing it the wrong one biases every range.
+   *
+   * @param cameraIndex which camera
+   * @return degrees corner to corner
+   */
+  public double cameraFovDegrees(int cameraIndex) {
+    return cameraIndex == OBJECT_DETECTION_CAMERA_INDEX
+        ? ObjectDetectionConstants.CAMERA_DIAGONAL_FOV_DEGREES
+        : VisionConstants.SIM_CAMERA_FOV_DIAGONAL_DEGREES;
   }
 
   /**

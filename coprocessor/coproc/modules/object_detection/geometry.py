@@ -8,6 +8,8 @@ mirrored.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
+from typing import Optional
 
 from ...runtime.intrinsics import Intrinsics, angle_between
 from ...runtime.module import Detection
@@ -15,6 +17,75 @@ from ...runtime.module import Detection
 # How close to the border counts as clipped. A box genuinely touching the edge usually lands a
 # pixel or two inside it, so an exact comparison misses most real clipping.
 _EDGE_TOLERANCE_PX = 2.0
+
+# Fractional gap between the two range estimates that means the box is wrong.
+#
+# Not a guess. A box wrong along one axis -- merged across a neighbour, or clipped down one side
+# by something in front -- moves the size-based range by a factor of exactly 3/2 or 2/3, because
+# the angular radius averages the two half-extents and only one of them changed. That is a 0.33
+# gap, and it is 0.33 at every range, so the threshold only has to sit below it with enough room
+# left for the honest error: box jitter on the size estimate, and the ground plane's own bias,
+# which reaches about 0.10 at the far end of useful range. 0.20 separates the two cleanly.
+DISAGREEMENT_TOLERANCE = 0.20
+
+
+@dataclass(frozen=True)
+class Mounting:
+    """Where the camera sits above the floor, and how it is tilted relative to gravity.
+
+    The only piece of robot state the coprocessor carries, and it is carried for one reason: a
+    ball on the floor has a known centre height, which turns the bearing to it into a range
+    without reference to how big its box is. Yaw is deliberately absent -- rotating the camera
+    about the vertical changes nothing about where its rays meet the floor, so asking for it
+    would only invite someone to supply a stale one.
+
+    Angles follow the convention in ``ObjectDetectionConstants``: **positive pitch is nose
+    down**, matching WPILib's ``Rotation3d``.
+    """
+
+    height_meters: float
+    """Camera origin above the floor."""
+
+    pitch_radians: float
+    """Downward tilt, positive nose down."""
+
+    roll_radians: float = 0.0
+    """Rotation about the optical axis. Zero for anything mounted square."""
+
+    def vertical_component(self, ray: tuple[float, float, float]) -> float:
+        """How fast a camera-frame ray descends, per unit length, in the gravity-aligned frame.
+
+        The third row of the camera-to-level rotation, applied to the ray. Negative means the ray
+        is heading towards the floor. Yaw drops out of that row entirely, which is why this needs
+        no heading.
+        """
+        sp, cp = math.sin(self.pitch_radians), math.cos(self.pitch_radians)
+        sr, cr = math.sin(self.roll_radians), math.cos(self.roll_radians)
+        return -sp * ray[0] + cp * sr * ray[1] + cp * cr * ray[2]
+
+
+def ground_plane_range(
+    ray: tuple[float, float, float], mounting: Mounting, target_height_meters: float
+) -> Optional[float]:
+    """Distance along ``ray`` to where it meets the plane the target's centre lives on.
+
+    A ball resting on the floor has its centre at exactly its own radius, so that plane is known
+    without measuring anything. Because this reads the bearing rather than the silhouette, a box
+    that is twice too wide does not move it at all -- which is the entire point, since a box
+    merged across neighbouring balls is the common failure in a dense pile.
+
+    Returns None when the ray never reaches the plane: at or above the horizon, or from a camera
+    mounted below the target's centre.
+    """
+    drop = mounting.height_meters - target_height_meters
+    if drop <= 0.0:
+        return None  # the camera is at or below the ball; there is no downward intersection
+
+    descent = mounting.vertical_component(ray)
+    if descent >= -1e-9:
+        return None  # at or above the horizon, so it never meets the floor
+
+    return drop / -descent
 
 
 def angular_radius(
@@ -58,13 +129,28 @@ def locate_sphere(
     radius_meters: float,
     label: str,
     confidence: float,
+    mounting: Optional[Mounting] = None,
+    disagreement_tolerance: float = DISAGREEMENT_TOLERANCE,
 ) -> Detection:
     """Locate a sphere of known radius from its bounding box.
 
-    A sphere at distance ``d`` presents a silhouette of half-angle ``theta`` where
-    ``sin(theta) = r / d``, so ``d = r / sin(theta)``. This is exact for a sphere viewed from any
-    angle, which is why the renderer drawing fuel as analytic spheres rather than as a faceted
-    mesh matters: the silhouette it produces is the one this inverts.
+    Two independent ranges are computed where the mounting allows it.
+
+    *From apparent size*: a sphere at distance ``d`` presents a silhouette of half-angle
+    ``theta`` where ``sin(theta) = r / d``. Exact for a sphere viewed from any angle, which is
+    why the renderer drawing fuel as analytic spheres rather than as a faceted mesh matters: the
+    silhouette it produces is the one this inverts. It reads the box *extent*, so every error in
+    the box lands on it undiluted -- a box merged across two balls halves the range, a clipped
+    one doubles it, and neither failure announces itself.
+
+    *From the ground plane*: the bearing through the box centre, intersected with the plane the
+    ball's centre sits on. It reads the box *centre*, which the same failures barely move.
+
+    The ground-plane range becomes the reported one when it is available, because a ball on the
+    floor is the case this module exists for and its error stays bounded where the size-based
+    error does not. The size-based range is kept alongside it, and the two disagreeing by more
+    than ``disagreement_tolerance`` sets :attr:`Detection.suspect`. That catches occlusion away
+    from the frame border, which no single method can see.
 
     The bearing comes from the box centre. For an off-axis sphere the silhouette is very slightly
     elliptical and its centre is not exactly the projection of the sphere's centre; the error is
@@ -78,11 +164,23 @@ def locate_sphere(
     if theta <= 0.0:
         raise ValueError("bounding box subtends no angle")
 
-    distance = radius_meters / math.sin(theta)
+    size_distance = radius_meters / math.sin(theta)
 
     u_c = (x0 + x1) / 2.0
     v_c = (y0 + y1) / 2.0
-    dx, dy, dz = intrinsics.unit_ray(u_c, v_c)
+    ray = intrinsics.unit_ray(u_c, v_c)
+    dx, dy, dz = ray
+
+    ground_distance = (
+        None if mounting is None else ground_plane_range(ray, mounting, radius_meters)
+    )
+
+    distance = size_distance if ground_distance is None else ground_distance
+
+    suspect = False
+    if ground_distance is not None:
+        # Relative to the ground-plane estimate, since that is the one being trusted.
+        suspect = abs(size_distance - ground_distance) / ground_distance > disagreement_tolerance
 
     return Detection(
         label=label,
@@ -95,6 +193,9 @@ def locate_sphere(
         z=dz * distance,
         bbox=(x0, y0, x1, y1),
         edge=touches_edge(bbox, intrinsics),
+        size_distance_meters=size_distance,
+        ground_distance_meters=ground_distance,
+        suspect=suspect,
     )
 
 
