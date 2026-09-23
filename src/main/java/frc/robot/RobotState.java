@@ -666,7 +666,7 @@ public class RobotState {
     return new AlignToPoseCommand(drive, this::getScoringPose, true, true)
         .alongWith(
             shooter.setTargetStateCommand(ShooterState.TOTAL_SPIN_UP),
-            intake.setTargetStateCommand(IntakeState.SHOOTING_STOW))
+            intake.setTargetStateCommand(IntakeState.STOW))
         .andThen(new WaitCommand(FullMatchAutoConstants.SPIN_UP_SEC))
         .andThen(shooter.setTargetStateCommand(ShooterState.SHOOT))
         .andThen(new WaitCommand(FullMatchAutoConstants.FULL_HOPPER_SHOOT_SEC))
