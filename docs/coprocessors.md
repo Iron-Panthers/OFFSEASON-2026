@@ -104,9 +104,11 @@ against a different frame size biases every range, silently.
 
 ## Things worth knowing
 
-**Stock COCO weights are a stand-in.** Class 32 is `sports ball`, trained on soccer and tennis
-balls, not on Fuel under arena lighting. Recall is usable, not good. What this milestone buys is a
-pipeline that is real end to end; swapping in trained weights is a flag change. The simulation
+**Stock COCO weights are a stand-in, but they do work.** Class 32 is `sports ball`, trained on
+soccer and tennis balls rather than on Fuel under arena lighting. Measured against rendered frames
+it does fire on Fuel, at confidences around **0.3 to 0.6** -- useful, and well short of what
+trained weights would give. Expect misses on distant or partly occluded balls. Swapping in real
+weights is a `-Pcoproc.objdetect.model` change and nothing else. The simulation
 knows where every ball actually is, so auto-labelled training data is cheap to generate later —
 `geometry.sphere_bbox` is the forward model that turns a known position into a labelled box.
 
@@ -116,8 +118,10 @@ in amber. **Occlusion away from the border is undetectable** — a ball half hid
 robot mid-frame reads as too far and carries no warning. `test_occlusion_away_from_the_border_is_not_flagged`
 records that limit so the flag is not mistaken for more than it is.
 
-**The renderer is the bottleneck, not the detector.** At ~1.5 FPS for 640x400, YOLOv8n idles
-waiting for frames. The reader therefore blocks rather than polls and keeps only the newest frame
+**The renderer is the bottleneck, not the detector.** Measured end to end at 480x300 with one
+camera watched, the whole pipeline runs at about **16 FPS**, and that ceiling belongs to the
+renderer rather than to YOLOv8n; at 640x400 the renderer alone manages ~1.5 FPS. The detector
+spends most of its time waiting for frames. The reader therefore blocks rather than polls and keeps only the newest frame
 rather than queueing — otherwise the detector would be working on images that are already seconds
 old. On the Pi against a 30 FPS camera the same code hits the opposite regime and drops frames
 correctly. The renderer also re-sends its current frame every two seconds to keep browsers

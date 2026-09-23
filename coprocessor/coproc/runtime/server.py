@@ -7,6 +7,7 @@ at a camera stream works against the detector's output with only the port change
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -62,8 +63,20 @@ class AnnotatedStream:
                 else:
                     stream._serve_index(self)
 
+        class Server(ThreadingHTTPServer):
+            def handle_error(self, request, client_address):
+                # A viewer closing a tab surfaces here as a reset on the keep-alive read, after
+                # the handler has already returned. The default prints a full traceback, which
+                # in simulation lands in the robot console and reads like a crash.
+                kind = sys.exc_info()[0]
+                if kind is not None and issubclass(
+                    kind, (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)
+                ):
+                    return
+                super().handle_error(request, client_address)
+
         # Loopback only. This is development output, not something to put on a field network.
-        self._server = ThreadingHTTPServer(("127.0.0.1", self.port), Handler)
+        self._server = Server(("127.0.0.1", self.port), Handler)
         self._server.daemon_threads = True
         threading.Thread(target=self._server.serve_forever, name="AnnotatedStream", daemon=True).start()
         return self
