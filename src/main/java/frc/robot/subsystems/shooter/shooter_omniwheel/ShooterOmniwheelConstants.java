@@ -22,13 +22,15 @@ public class ShooterOmniwheelConstants {
 
   public static final boolean OPPOSE_MOTOR = true;
 
-  public static final int CURRENT_LIMIT_AMPS =
+  public static final int SUPPLY_CURRENT_LIMIT_AMPS =
       switch (Constants.getRobotType()) {
-        case COMP -> 60;
+        case COMP -> 45;
           // Matches COMP.
         case SIM -> 60;
         default -> 30;
       };
+
+  public static final int STATOR_CURRENT_LIMIT_AMPS = 80;
 
   public static final ShooterOmniwheelPhysicalConstants PHYSICAL_CONSTANTS =
       switch (Constants.getRobotType()) {

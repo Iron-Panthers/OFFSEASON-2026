@@ -137,6 +137,11 @@ public abstract class GenericRollersIOTalonFX implements GenericRollersIO {
       config.CurrentLimits.SupplyCurrentLimit = amps;
       config.withSlot0(gainsConfig);
       talon.getConfigurator().apply(config);
+      // Followers hold their own limits, so they need the new config too or the mechanism keeps
+      // drawing at the old limit.
+      for (TalonFX followerTalon : followerMotors) {
+        followerTalon.getConfigurator().apply(config);
+      }
     }
   }
 
@@ -147,6 +152,9 @@ public abstract class GenericRollersIOTalonFX implements GenericRollersIO {
       config.CurrentLimits.StatorCurrentLimit = amps;
       config.withSlot0(gainsConfig);
       talon.getConfigurator().apply(config);
+      for (TalonFX followerTalon : followerMotors) {
+        followerTalon.getConfigurator().apply(config);
+      }
     }
   }
 }

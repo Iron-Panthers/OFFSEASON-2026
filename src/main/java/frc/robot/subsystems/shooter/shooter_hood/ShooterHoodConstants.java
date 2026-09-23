@@ -50,7 +50,7 @@ public class ShooterHoodConstants {
 
   public static final InvertedValue MOTOR_DIRECTION = InvertedValue.CounterClockwise_Positive;
 
-  public static final double POSITION_TARGET_EPSILON = 0.005;
+  public static final double POSITION_TARGET_EPSILON = 0.006;
 
   /** Distance from center of hood rotation to hood end */
   public static final double SHOOTER_HOOD_LENGTH = 10; // in inches

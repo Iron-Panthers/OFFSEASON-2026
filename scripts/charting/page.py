@@ -110,11 +110,19 @@ button.theme:hover {{ color: var(--text-primary); }}
   border-radius: 12px; padding: 20px 22px; margin: 16px 0;
 }}
 .verdict {{ font-size: 17px; line-height: 1.5; margin: 0; }}
-.verdict-label {{
+.block-label {{
   font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
   color: var(--text-muted); margin: 0 0 8px;
 }}
 .confidence {{ color: var(--text-secondary); font-size: 13px; margin: 12px 0 0; }}
+
+/* Prose blocks: a lead paragraph, then bullets that expand it. The bullets
+   hang outside the text column so the lead and the points share a left edge. */
+.prose p {{ margin: 0; }}
+.prose ul {{ margin: 8px 0 0; padding-left: 20px; }}
+.prose li {{ margin: 0 0 5px; }}
+.prose li:last-child {{ margin-bottom: 0; }}
+.prose.verdict ul li {{ font-size: 15px; }}
 
 .question {{ color: var(--text-secondary); font-size: 14px; font-style: italic; margin: 0 0 14px; }}
 
@@ -141,9 +149,23 @@ button.theme:hover {{ color: var(--text-primary); }}
 
 h2 {{ font-size: 18px; margin: 34px 0 4px; font-weight: 600; }}
 h3 {{ font-size: 16px; margin: 0; font-weight: 600; }}
-.finding-head {{ display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }}
-.detail {{ color: var(--text-secondary); margin: 0 0 4px; }}
+.finding-head {{ display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 12px; }}
+.detail {{ color: var(--text-primary); }}
 .section-note {{ color: var(--text-secondary); font-size: 13px; margin: 4px 0 0; }}
+
+/* The evidence label separates the conclusion from the charts that back it, so
+   the three parts of a finding stay visibly three parts however long the
+   conclusion runs. */
+.evidence-label {{ margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--hairline); }}
+
+/* The reading of a chart sits under the chart, indented against a rule: it is
+   a claim about the picture above it, not a second caption. */
+.reads-as {{
+  margin: 12px 0 0; padding: 2px 0 2px 14px;
+  border-left: 2px solid var(--hairline);
+  color: var(--text-secondary); font-size: 13.5px;
+}}
+.reads-as .block-label {{ margin-bottom: 5px; }}
 
 figure.chart {{ margin: 20px 0 0; }}
 figure.chart + figure.chart {{ border-top: 1px solid var(--hairline); padding-top: 18px; }}
@@ -378,6 +400,29 @@ _SCRIPT = r"""
 """.strip()
 
 
+def _prose(prose, *, css_class: str = "", label: str = "") -> str:
+    """
+    Render a lead paragraph plus its bullets.
+
+    Empty prose renders nothing at all rather than an empty label: a heading
+    with no text under it reads as an omission the reader has to wonder about.
+    """
+    if not prose:
+        return ""
+    parts = []
+    if label:
+        parts.append(f'<p class="block-label">{esc(label)}</p>')
+    classes = f"prose {css_class}".strip()
+    parts.append(f'<div class="{classes}">')
+    if prose.lead:
+        parts.append(f"<p>{esc(prose.lead)}</p>")
+    if prose.bullets:
+        items = "".join(f"<li>{esc(bullet)}</li>" for bullet in prose.bullets)
+        parts.append(f"<ul>{items}</ul>")
+    parts.append("</div>")
+    return "".join(parts)
+
+
 def _legend(entries) -> str:
     """A legend is always present for two or more series, never for exactly one."""
     if len(entries) < 2:
@@ -413,10 +458,13 @@ def render_chart(chart) -> str:
     data_attr = ""
     if chart.hover:
         data_attr = f" data-chart='{esc(json.dumps(chart.hover, separators=(',', ':')))}'"
+    reading = _prose(chart.reads_as, label="Why this supports the conclusion")
+    reads_as = f'<div class="reads-as">{reading}</div>' if reading else ""
     return (
         f'<figure class="chart"><figcaption>{caption}</figcaption>'
         f"{_legend(chart.legend)}"
         f'<div class="plot"{data_attr}>{chart.svg}</div>'
+        f"{reads_as}"
         f'<details class="tv"><summary>Table view</summary>'
         f'<div class="tv-scroll">{chart.table_html}</div></details>'
         f"</figure>"
@@ -451,8 +499,7 @@ def render_page(*, title, subtitle_bits, report, findings, baseline, generated) 
         if report.question:
             parts.append(f'<p class="question">{esc(report.question)}</p>')
         if report.verdict:
-            parts.append('<p class="verdict-label">Verdict</p>')
-            parts.append(f'<p class="verdict">{esc(report.verdict)}</p>')
+            parts.append(_prose(report.verdict, css_class="verdict", label="Verdict"))
         if report.confidence:
             parts.append(f'<p class="confidence">Confidence: {esc(report.confidence)}</p>')
         parts.append("</section>")
@@ -478,8 +525,12 @@ def render_page(*, title, subtitle_bits, report, findings, baseline, generated) 
                 f'<div class="finding-head"><h3>{esc(finding.title)}</h3>'
                 f"{_chip(finding.severity)}</div>"
             )
-            if finding.detail:
-                parts.append(f'<p class="detail">{esc(finding.detail)}</p>')
+            # Conclusion, then evidence, then -- inside each figure -- the
+            # reading of that evidence. The labels are always in that order so a
+            # reader who has seen one finding knows where to look in the next.
+            parts.append(_prose(finding.detail, css_class="detail", label="Conclusion"))
+            if charts:
+                parts.append('<p class="block-label evidence-label">Evidence</p>')
             for chart in charts:
                 parts.append(render_chart(chart))
             parts.append("</section>")

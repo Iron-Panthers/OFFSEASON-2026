@@ -175,21 +175,26 @@ def test_sample_series_thins_to_the_interval_and_keeps_the_last_sample():
 
 # --- spec validation ------------------------------------------------------
 
-from charting.bundles import BUNDLES, BUNDLE_NAMES, bundle_keys  # noqa: E402
+from charting.bundles import BUNDLES, BUNDLE_NAMES, bundle_charts, bundle_keys  # noqa: E402
 from charting.spec import SpecError, parse_report  # noqa: E402
 
 
+# A finding owes a conclusion and every chart in it owes a reading, so the
+# minimal *valid* document is not the minimal document: these two fields are
+# required and the fixture carries them.
 def _report(**overrides):
     document = {
         "log": "x.wpilog",
         "findings": [
             {
                 "title": "t",
+                "detail": "d",
                 "charts": [
                     {
                         "form": "timeseries",
                         "title": "c",
                         "series": [{"key": "A"}, {"key": "B"}],
+                        "reads_as": "r",
                     }
                 ],
             }
@@ -288,9 +293,77 @@ def test_missing_log_is_rejected():
 def test_keys_used_collects_every_key_including_error_keys():
     document = _report()
     document["findings"][0]["charts"].append(
-        {"form": "path", "title": "p", "series": [{"key": "P"}], "error_key": "E"}
+        {"form": "path", "title": "p", "series": [{"key": "P"}], "error_key": "E", "reads_as": "r"}
     )
     assert parse_report(document).keys_used() == {"A", "B", "P", "E"}
+
+
+# --- the conclusion / evidence / reading contract -------------------------
+
+
+def test_a_finding_without_a_conclusion_is_rejected():
+    document = _report()
+    del document["findings"][0]["detail"]
+    with pytest.raises(SpecError, match=r"findings\[0\]\.detail: required"):
+        parse_report(document)
+
+
+def test_a_chart_without_a_reading_is_rejected():
+    # The failure this format exists to prevent: a picture dropped beside a
+    # sentence, with nothing saying which line in it was the point.
+    document = _report()
+    del document["findings"][0]["charts"][0]["reads_as"]
+    with pytest.raises(SpecError, match=r"charts\[0\]\.reads_as: required"):
+        parse_report(document)
+
+
+def test_the_missing_reading_error_says_what_to_write():
+    document = _report()
+    document["findings"][0]["charts"][0]["reads_as"] = ""
+    with pytest.raises(SpecError, match="the signal, the moment, and the number"):
+        parse_report(document)
+
+
+def test_a_bundle_chart_needs_no_reading():
+    # Bundles are context nobody made a claim about, so nothing has to be said
+    # about them -- unlike a chart the analyst chose by name.
+    for chart in bundle_charts("shooter"):
+        assert not chart.reads_as
+
+
+def test_prose_from_a_string_is_one_paragraph():
+    document = _report()
+    document["findings"][0]["detail"] = "One sentence."
+    detail = parse_report(document).findings[0].detail
+    assert detail.lead == "One sentence."
+    assert detail.bullets == ()
+
+
+def test_prose_from_an_array_leads_then_bullets():
+    document = _report()
+    document["findings"][0]["detail"] = ["Lead.", "First point.", "Second point."]
+    detail = parse_report(document).findings[0].detail
+    assert detail.lead == "Lead."
+    assert detail.bullets == ("First point.", "Second point.")
+
+
+def test_a_one_entry_array_is_just_a_paragraph():
+    document = _report()
+    document["findings"][0]["detail"] = ["Only this."]
+    assert parse_report(document).findings[0].detail.bullets == ()
+
+
+def test_prose_rejects_a_non_string_entry_by_index():
+    document = _report()
+    document["findings"][0]["detail"] = ["Lead.", 12]
+    with pytest.raises(SpecError, match=r"findings\[0\]\.detail\[1\]"):
+        parse_report(document)
+
+
+def test_a_verdict_may_be_bulleted_and_stays_optional():
+    assert not parse_report(_report()).verdict
+    verdict = parse_report(_report(verdict=["Lead.", "A.", "B."])).verdict
+    assert verdict.lead == "Lead." and verdict.bullets == ("A.", "B.")
 
 
 # --- bundles --------------------------------------------------------------
@@ -398,7 +471,13 @@ def test_path_error_key_expands_into_its_own_chart():
     # already using both axes for position -- the dual-axis mistake.
     document = _report()
     document["findings"][0]["charts"] = [
-        {"form": "path", "title": "Driven path", "series": [{"key": "P"}], "error_key": "E"}
+        {
+            "form": "path",
+            "title": "Driven path",
+            "series": [{"key": "P"}],
+            "error_key": "E",
+            "reads_as": "r",
+        }
     ]
     charts = expand_charts(parse_report(document).findings[0].charts)
     assert [chart.form for chart in charts] == ["path", "timeseries"]
@@ -409,7 +488,7 @@ def test_path_error_key_expands_into_its_own_chart():
 def test_expansion_leaves_a_path_without_an_error_key_alone():
     document = _report()
     document["findings"][0]["charts"] = [
-        {"form": "path", "title": "p", "series": [{"key": "P"}]}
+        {"form": "path", "title": "p", "series": [{"key": "P"}], "reads_as": "r"}
     ]
     assert len(expand_charts(parse_report(document).findings[0].charts)) == 1
 
@@ -540,11 +619,16 @@ def test_end_to_end_page_is_standalone(tmp_path):
                 "findings": [
                     {
                         "title": "Match state",
+                        "detail": "The robot enabled once and stayed enabled.",
                         "charts": [
                             {
                                 "form": "timeline",
                                 "title": "State",
                                 "series": [{"key": "DriverStation/Enabled", "label": "Enabled"}],
+                                "reads_as": [
+                                    "One unbroken enabled block, no dropouts.",
+                                    "The lane never returns to false mid-match.",
+                                ],
                             }
                         ],
                     }
@@ -580,11 +664,13 @@ def test_end_to_end_rejects_a_key_that_is_not_in_the_log(tmp_path):
                 "findings": [
                     {
                         "title": "Typo",
+                        "detail": "d",
                         "charts": [
                             {
                                 "form": "timeline",
                                 "title": "State",
                                 "series": [{"key": "DriverStation/Enable"}],
+                                "reads_as": "r",
                             }
                         ],
                     }
@@ -595,3 +681,75 @@ def test_end_to_end_rejects_a_key_that_is_not_in_the_log(tmp_path):
     )
     with pytest.raises(SpecError, match="closest key in this log"):
         build(findings, tmp_path / "out", tmp_path)
+
+
+# --- page structure -------------------------------------------------------
+
+
+def _prose_of(value):
+    from charting.spec import _prose
+
+    return _prose(value, "<test>")
+
+
+def _page(finding_detail, chart_reads_as, verdict=""):
+    """Render one finding with one stub chart, bypassing the log entirely."""
+    from charting.marks import Rendered
+    from charting.page import render_page
+    from charting.spec import Finding
+
+    finding = Finding(
+        title="Flywheel never recovered",
+        detail=_prose_of(finding_detail),
+        severity="critical",
+    )
+    rendered = Rendered(
+        title="Flywheel velocity",
+        svg="<svg></svg>",
+        table_html="<table></table>",
+        reads_as=_prose_of(chart_reads_as),
+    )
+    return render_page(
+        title="run",
+        subtitle_bits=["x.wpilog"],
+        report=parse_report(_report(verdict=verdict)) if verdict else parse_report(_report()),
+        findings=[(finding, [rendered])],
+        baseline=[],
+        generated="now",
+    )
+
+
+def test_a_finding_reads_conclusion_then_evidence_then_reading():
+    html = _page("It plateaued low.", "The actual line sits below the target line.")
+    order = [
+        html.index(">Conclusion<"),
+        html.index(">Evidence<"),
+        html.index(">Why this supports the conclusion<"),
+    ]
+    assert order == sorted(order)
+    # The reading follows the picture it is about, not the caption above it.
+    assert html.index("<svg>") < html.index(">Why this supports the conclusion<")
+
+
+def test_bulleted_prose_becomes_a_list_in_the_page():
+    html = _page(["Lead.", "First.", "Second."], "Reading.")
+    assert "<p>Lead.</p>" in html
+    assert "<li>First.</li><li>Second.</li>" in html
+
+
+def test_a_chart_with_no_reading_prints_no_empty_label():
+    # Bundle charts land here. A label with nothing under it reads as an
+    # omission the reader has to wonder about.
+    html = _page("Conclusion text.", "")
+    assert "Why this supports the conclusion" not in html
+
+
+def test_a_bulleted_verdict_renders_as_a_list():
+    html = _page("d", "r", verdict=["Lead.", "Point one."])
+    assert ">Verdict<" in html and "<li>Point one.</li>" in html
+
+
+def test_prose_is_escaped_in_the_page():
+    html = _page("<b>not markup</b>", "Reading.")
+    assert "<b>not markup</b>" not in html
+    assert "&lt;b&gt;not markup&lt;/b&gt;" in html
