@@ -66,7 +66,6 @@ import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
 import frc.robot.subsystems.shooter.ShooterController.ShooterState;
 import frc.robot.subsystems.shooter.serializer.Serializer;
-import frc.robot.subsystems.shooter.serializer.SerializerConstants;
 import frc.robot.subsystems.shooter.serializer.SerializerIO;
 import frc.robot.subsystems.shooter.serializer.SerializerIOTalonFX;
 import frc.robot.subsystems.shooter.serializer.SerializerSim;
@@ -662,7 +661,6 @@ public class RobotContainer {
 
     // to unstick the serializer: push harder rather than faster, then hand the limit back
     // driverB.povUp().whileTrue(new VibrateSerializerCommand(serializer).repeatedly());
-    
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));
@@ -748,21 +746,43 @@ public class RobotContainer {
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
   }
 
+//   public void testInit() {
+//     Commands.sequence(
+//             Commands.runOnce(
+//                 new IntakeCommand(intakeController, shooterController, serializer)),
+//             new WaitCommand(5.0),
+//             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+//             Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
+//             new WaitCommand(5.0),
+//             Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+//             new WaitCommand(5.0),
+//             Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
+//             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+//             new WaitCommand(5.0))
+//         .schedule();
+
+//   }
+
   public void testInit() {
-    Commands.sequence(
-            Commands.runOnce(
-                () -> new IntakeCommand(intakeController, shooterController, serializer)),
-            new WaitCommand(5.0),
-            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
-            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
-            new WaitCommand(5.0),
-            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
-            new WaitCommand(5.0),
-            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
-            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
-            new WaitCommand(5.0))
-        .schedule();
-  }
+  Commands.sequence(
+          new IntakeCommand(intakeController, shooterController, serializer),
+          new WaitCommand(5.0),
+          Commands.runOnce(
+              () -> intakeController.setTargetState(IntakeState.IDLE)),
+          Commands.runOnce(
+              () -> shooterController.setTargetState(ShooterState.SHOOT)),
+          new WaitCommand(5.0),
+          Commands.runOnce(
+              () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+          new WaitCommand(5.0),
+          Commands.runOnce(
+              () -> shooterController.setTargetState(ShooterState.IDLE)),
+          Commands.runOnce(
+              () -> intakeController.setTargetState(IntakeState.IDLE)),
+          new WaitCommand(5.0))
+      .schedule();
+}
+
 
   public void testPeriodic() {}
 
