@@ -27,6 +27,8 @@ public class ShootCommandFactory {
   private final IntakeController intakeController;
   private final ElasticUpdater matchTimerUpdater;
   private final Supplier<Rotation2d> getHeadingError;
+
+  private boolean justShoot = false;
   double time = Timer.getFPGATimestamp();
   private boolean justShoot = false;
 
@@ -44,37 +46,42 @@ public class ShootCommandFactory {
 
   /** Command to bind to whileTrue – repeats while the button is held. */
   public Command whileHeld() {
-    return setJustShootCommand(false)
-        .alongWith(
-            new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW))
-                .andThen(
-                    new WaitCommand(1)
-                        .andThen(
-                            new InstantCommand(
-                                () -> intakeController.setTargetState(IntakeState.STOW)))
-                        .andThen(new WaitCommand(0.1))
-                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW)))
-                .andThen(
-                    new WaitCommand(0.2)
-                        .andThen(
-                            new InstantCommand(
-                                () -> intakeController.setTargetState(IntakeState.STOW)))
-                        .andThen(new WaitCommand(0.1))
-                        .andThen(() -> intakeController.setTargetState(IntakeState.INTAKE_SLOW)))
-                .andThen(
-                    new WaitCommand(0.1)
-                        .andThen(
-                            new InstantCommand(
-                                () -> intakeController.setTargetState(IntakeState.STOW)))
-                        .andThen(new WaitCommand(0.1))
-                        .andThen(
+    return Commands.sequence(
+        Commands.parallel(
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.SHOOT)),
+            setJustShootCommand(false)),
+        Commands.parallel(
+            Commands.waitUntil(() -> shooterController.getTargetState() == ShooterState.SHOOT),
+            // Double check later
+            Commands.sequence(
+                    Commands.runOnce(
                             () ->
-                                intakeController.setTargetState(
-                                    IntakeState
-                                        .INTAKE_SLOW)))) // we want to really make sure the balls
-        // are out
-        .alongWith(
-            new InstantCommand(
+                                intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_ONE))
+                        .andThen(
+                            Commands.waitUntil(
+                                    () -> intakeController.getRackStatorCurrentAmps() > 5)
+                                .withTimeout(1.0))
+                        .andThen(
+                            Commands.either(
+                                Commands.runOnce(
+                                    () -> intakeController.setTargetState(IntakeState.INTAKE)),
+                                Commands.none(),
+                                () -> intakeController.getRackStatorCurrentAmps() > 5)),
+                    new WaitCommand(1),
+                    Commands.runOnce(
+                            () ->
+                                intakeController.setTargetState(IntakeState.SHOOTING_CHUNKIER_TWO))
+                        .andThen(
+                            Commands.either(
+                                Commands.runOnce(
+                                    () -> intakeController.setTargetState(IntakeState.INTAKE)),
+                                Commands.none(),
+                                () -> intakeController.getRackStatorCurrentAmps() > 5)),
+                    new WaitCommand(1),
+                    Commands.runOnce(
+                        () -> intakeController.setTargetState(IntakeState.SHOOTING_STOW)))
+                .until(() -> intakeController.getTargetState() == IntakeState.SHOOTING_STOW),
+            Commands.runOnce(
                     () -> {
                       shooterController.setTargetState(
                           (shooterController.getTargetState() == ShooterState.TOTAL_SPIN_UP
@@ -106,7 +113,7 @@ public class ShootCommandFactory {
                                     () ->
                                         (shooterController.getTargetState()
                                             == ShooterState.TOTAL_SPIN_UP))))
-                        .repeatedly()));
+                        .repeatedly())));
   }
 
   /** Command to bind to onFalse – runs when the button is released. */
@@ -133,6 +140,10 @@ public class ShootCommandFactory {
         .repeatedly()
         .alongWith(
             new WaitCommand(1.5).andThen(intakeController.setTargetStateCommand(IntakeState.STOW)));
+  }
+
+  public Command setJustShootCommand(boolean justShoot) {
+    return Commands.runOnce(() -> this.justShoot = justShoot);
   }
 
   public Command chunkShootGoBrrr(boolean justShoot) {
