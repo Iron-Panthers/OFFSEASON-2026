@@ -746,23 +746,6 @@ public class RobotContainer {
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
   }
 
-//   public void testInit() {
-//     Commands.sequence(
-//             Commands.runOnce(
-//                 new IntakeCommand(intakeController, shooterController, serializer)),
-//             new WaitCommand(5.0),
-//             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
-//             Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
-//             new WaitCommand(5.0),
-//             Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
-//             new WaitCommand(5.0),
-//             Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
-//             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
-//             new WaitCommand(5.0))
-//         .schedule();
-
-//   }
-
   public void testInit() {
     Commands.sequence(
     new IntakeCommand(intakeController, shooterController, serializer),
