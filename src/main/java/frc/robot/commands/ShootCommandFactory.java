@@ -27,8 +27,6 @@ public class ShootCommandFactory {
   private final IntakeController intakeController;
   private final ElasticUpdater matchTimerUpdater;
   private final Supplier<Rotation2d> getHeadingError;
-
-  private boolean justShoot = false;
   double time = Timer.getFPGATimestamp();
   private boolean justShoot = false;
 
@@ -151,9 +149,5 @@ public class ShootCommandFactory {
         () -> {
           intakeController.setTargetState(IntakeState.SHOOTING_CHUNKY);
         });
-  }
-
-  public Command setJustShootCommand(boolean justShoot) {
-    return new InstantCommand(() -> this.justShoot = justShoot);
   }
 }
