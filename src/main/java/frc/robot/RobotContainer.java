@@ -80,6 +80,7 @@ import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheel;
 import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheelIO;
 import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheelIOSim;
 import frc.robot.subsystems.shooter.shooter_omniwheel.ShooterOmniwheelIOTalonFX;
+import frc.robot.RobotSimState;
 import frc.robot.subsystems.swerve.Drive;
 import frc.robot.subsystems.swerve.DriveConstants;
 import frc.robot.subsystems.swerve.GyroIO;
@@ -548,7 +549,8 @@ public class RobotContainer {
     // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
     SmartIntakeCommand smartIntakeCommand =
         new SmartIntakeCommand(
-            () -> 10.0, intakeController, shooterController, matchTimerUpdater, swerve::getShootingError);
+            () ->(double) RobotSimState.getInstance().getFuelCount(), intakeController, shooterController, matchTimerUpdater, swerve::getShootingError);
+            
     driverA
         .y()
         .onTrue(
