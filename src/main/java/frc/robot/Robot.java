@@ -31,6 +31,7 @@ import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.MatchInputs;
 import frc.robot.utility.replay.MatchLogReader;
 import frc.robot.utility.replay.PoseAnchor;
+import frc.robot.commands.WinSingCommand;
 import java.io.File;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -501,7 +502,7 @@ public class Robot extends LoggedRobot {
   @Override
   public void testExit() {
     robotContainer.testExit();
-    new HappyBirthdayCommand().schedule(); // Play Happy Birthday when exiting test mode
+    new WinSingCommand().schedule(); // Play Happy Birthday when exiting test mode
   }
 
   /** This function is called once when the robot is first started up. */
