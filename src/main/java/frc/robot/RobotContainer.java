@@ -750,21 +750,26 @@ public class RobotContainer {
 
   public void testInit() {
     Commands.sequence(
-            Commands.runOnce(
-                () -> new IntakeCommand(intakeController, shooterController, serializer)),
-            new WaitCommand(5.0),
-            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
-            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
-            new WaitCommand(5.0),
-            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
-            new WaitCommand(5.0),
-            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
-            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
-            new WaitCommand(5.0))
-        .schedule();
+    new IntakeCommand(intakeController, shooterController, serializer),
+    new WaitCommand(5.0),
+    Commands.runOnce(
+            () -> intakeController.setTargetState(IntakeState.IDLE)),
+    Commands.runOnce(
+            () -> shooterController.setTargetState(ShooterState.SHOOT)),
+    new WaitCommand(5.0),
+    Commands.runOnce(
+        () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+    new WaitCommand(5.0),
+    Commands.runOnce(
+        () -> shooterController.setTargetState(ShooterState.IDLE)),
+    Commands.runOnce(
+        () -> intakeController.setTargetState(IntakeState.IDLE)),
+    new WaitCommand(5.0))
+      .schedule();
   }
 
   public void testPeriodic() {}
+
 
   public void testExit() {
     shooterController.setTargetState(ShooterState.IDLE);
