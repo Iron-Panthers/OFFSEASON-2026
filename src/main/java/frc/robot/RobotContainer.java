@@ -41,6 +41,7 @@ import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.IntakeCommandFactory;
 import frc.robot.commands.PassToPoseCommand;
 import frc.robot.commands.ShootCommandFactory;
+import frc.robot.commands.SmartIntakeCommand;
 import frc.robot.commands.VibrateHIDCommand;
 import frc.robot.commands.VisionTuningCommands;
 import frc.robot.commands.WaitUnitlRobotStuckCommand;
@@ -66,7 +67,6 @@ import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
 import frc.robot.subsystems.shooter.ShooterController.ShooterState;
 import frc.robot.subsystems.shooter.serializer.Serializer;
-import frc.robot.subsystems.shooter.serializer.SerializerConstants;
 import frc.robot.subsystems.shooter.serializer.SerializerIO;
 import frc.robot.subsystems.shooter.serializer.SerializerIOTalonFX;
 import frc.robot.subsystems.shooter.serializer.SerializerSim;
@@ -546,11 +546,15 @@ public class RobotContainer {
     driverA.b().onTrue(intakeCommandFactory.whileHeld()).onFalse(intakeCommandFactory.onRelease());
     // STOW ROBOT
     // driverA.y().onTrue(new StowCommand(intakeController, shooterController));
+    SmartIntakeCommand smartIntakeCommand =
+        new SmartIntakeCommand(
+            () -> 10.0, intakeController, shooterController, matchTimerUpdater, swerve::getShootingError);
     driverA
         .y()
         .onTrue(
-            new AlignToPoseCommand(
-                swerve, new Pose2d(3.8, 0.8, new Rotation2d()), true, true, true));
+            // new AlignToPoseCommand(
+            //     swerve, new Pose2d(3.8, 0.8, new Rotation2d()), true, true, true));
+            smartIntakeCommand.whileHeld());
 
     // SHOOTING COMMAND
     driverA.leftBumper().whileTrue(shootCommand.whileHeld());
@@ -662,7 +666,6 @@ public class RobotContainer {
 
     // to unstick the serializer: push harder rather than faster, then hand the limit back
     // driverB.povUp().whileTrue(new VibrateSerializerCommand(serializer).repeatedly());
-    
 
     driverB.rightTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(true)));
     driverB.leftTrigger().onTrue(new InstantCommand(() -> swerve.setIsBeingDefended(false)));

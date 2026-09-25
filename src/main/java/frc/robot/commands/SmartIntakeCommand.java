@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 
 public class SmartIntakeCommand {
 
-  Supplier<Double> pressure = () -> 0.0;
+  Supplier<Double> pressure;
   private final IntakeController intakeController;
   private final ShooterController shooterController;
   private final ElasticUpdater matchTimerUpdater;
@@ -24,10 +24,12 @@ public class SmartIntakeCommand {
   private boolean justShoot = false;
 
   public SmartIntakeCommand(
+      Supplier<Double> pressure,
       IntakeController intakeController,
       ShooterController shooterController,
       ElasticUpdater matchTimerUpdater,
       Supplier<Rotation2d> getHeadingError) {
+    this.pressure = pressure;
     this.intakeController = intakeController;
     this.shooterController = shooterController;
     this.matchTimerUpdater = matchTimerUpdater;
@@ -39,9 +41,11 @@ public class SmartIntakeCommand {
 
     return (pressure.get() > 60.0)
         ? new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW))
-        : (pressure.get() < 40.0)
-            ? new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW))
-            : new InstantCommand(() -> intakeController.setTargetState(IntakeState.STOW))
+        : (pressure.get() > 40.0)
+            ? new InstantCommand(() -> intakeController.setTargetState(IntakeState.SHOOTING_STOW))
+        : (pressure.get() > 20.0)
+            ? new InstantCommand(() -> intakeController.setTargetState(IntakeState.INTAKE))
+        : new InstantCommand(() -> intakeController.setTargetState(IntakeState.MID))
                 .alongWith(
                     new InstantCommand(
                             () -> {
