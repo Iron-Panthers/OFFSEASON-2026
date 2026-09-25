@@ -1,5 +1,6 @@
 package frc.robot.subsystems.shooter.shooter_flywheel;
 
+import static frc.robot.subsystems.intake.intake_rollers.IntakeRollersConstants.STATOR_CURRENT_LIMIT;
 import static frc.robot.subsystems.shooter.shooter_flywheel.ShooterFlywheelConstants.*;
 
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -17,6 +18,7 @@ public class ShooterFlywheelIOTalonFX extends GenericRollersIOTalonFX implements
         new GenericRollersConfiguration()
             .withID(SHOOTER_FLYWHEEL_CONFIG.motorID1())
             .withSupplyCurrentLimit(CURRENT_LIMIT_AMPS)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT)
             .withMotorDirection(
                 SHOOTER_FLYWHEEL_CONFIG.inverted()
                     ? InvertedValue.CounterClockwise_Positive

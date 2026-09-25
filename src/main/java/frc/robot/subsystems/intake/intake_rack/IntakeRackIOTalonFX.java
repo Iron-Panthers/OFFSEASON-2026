@@ -13,6 +13,7 @@ public class IntakeRackIOTalonFX extends GenericSuperstructureIOTalonFX implemen
             .withID(INTAKE_RACK_CONFIG.motorID())
             .withMotorDirection(INTAKE_RACK_CONFIG.motorDirection())
             .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT)
             .withReduction(INTAKE_RACK_CONFIG.reduction())
             .withUpperVoltageLimit(UPPER_VOLT_LIMIT)
             .withLowerVoltageLimit(LOWER_VOLT_LIMIT)

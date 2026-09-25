@@ -3,6 +3,7 @@ package frc.robot.lib.generic_subsystems.superstructure;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import frc.robot.lib.generic_subsystems.mechanism.GenericMechanismConfiguration;
+import frc.robot.lib.generic_subsystems.rollers.GenericRollersConfiguration;
 
 public class GenericSuperstructureConfiguration extends GenericMechanismConfiguration {
   /**
@@ -182,6 +183,12 @@ public class GenericSuperstructureConfiguration extends GenericMechanismConfigur
   @Override
   public GenericSuperstructureConfiguration withLowerVoltageLimit(double lowerVoltLimit) {
     super.withLowerVoltageLimit(lowerVoltLimit);
+    return this;
+  }
+
+   @Override
+  public GenericSuperstructureConfiguration withStatorCurrentLimit(double statorCurrentLimit) {
+    super.withStatorCurrentLimit(statorCurrentLimit);
     return this;
   }
 }

@@ -13,6 +13,7 @@ public class ShooterOmniwheelIOTalonFX extends GenericRollersIOTalonFX
         new GenericRollersConfiguration()
             .withID(SHOOTER_OMNIWHEEL_CONFIG.motorID())
             .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS)
             .withMotorDirection(
                 SHOOTER_OMNIWHEEL_CONFIG.inverted()
                     ? InvertedValue.CounterClockwise_Positive

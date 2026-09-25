@@ -19,6 +19,7 @@ public class SerializerIOTalonFX extends GenericRollersIOTalonFX {
                     ? InvertedValue.CounterClockwise_Positive
                     : InvertedValue.Clockwise_Positive)
             .withSupplyCurrentLimit(CURRENT_LIMIT_AMPS)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT)
             .withReduction(SERIALIZER_CONFIG.reduction())
             .withNeutralMode(SERIALIZER_CONFIG.brake())
             .withAdditionalFollowerMotor(

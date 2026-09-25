@@ -12,6 +12,8 @@ public class ShooterAcceleratorIOTalonFX extends GenericRollersIOTalonFX
         new GenericRollersConfiguration()
             .withID(SHOOTER_ACCELERATOR_CONFIG.motorID1())
             .withSupplyCurrentLimit(CURRENT_LIMIT_AMPS)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT)
+
             .withMotorDirection(
                 SHOOTER_ACCELERATOR_CONFIG.inverted()
                     ? InvertedValue.CounterClockwise_Positive

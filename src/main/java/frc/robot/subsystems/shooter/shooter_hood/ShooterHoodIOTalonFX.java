@@ -13,6 +13,7 @@ public class ShooterHoodIOTalonFX extends GenericSuperstructureIOTalonFX impleme
             .withID(SHOOTER_HOOD_CONFIG.motorID())
             .withMotorDirection(MOTOR_DIRECTION)
             .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT)
             .withReduction(SHOOTER_HOOD_CONFIG.reduction())
             .withUpperVoltageLimit(UPPER_VOLT_LIMIT)
             .withLowerVoltageLimit(LOWER_VOLT_LIMIT)

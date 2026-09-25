@@ -46,6 +46,15 @@ public class ShooterFlywheelConstants {
         case SIM -> 40;
         default -> 40;
       };
+      public static final int STATOR_LIMIT_AMPS =
+      switch (Constants.getRobotType()) {
+        case COMP -> 70;
+        case SIM -> 40;
+        default -> 70;
+      };
+
+
+
 
   public static final ShooterFlywheelPhysicalConstants PHYSICAL_CONSTANTS = // TODO: update values
       switch (Constants.getRobotType()) {
