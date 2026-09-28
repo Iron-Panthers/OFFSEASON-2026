@@ -37,7 +37,7 @@ def reader() -> MjpegReader:
 
 def collect(reader: MjpegReader, buffer: bytearray) -> list[bytes]:
     seen: list[bytes] = []
-    reader._publish = lambda data: seen.append(data)  # type: ignore[method-assign]
+    reader._publish = lambda data, *_: seen.append(data)  # type: ignore[method-assign]
     reader._drain(buffer)
     return seen
 
@@ -59,7 +59,7 @@ def test_frame_split_across_reads(reader: MjpegReader):
     framed = part(payload)
     buffer = bytearray()
     seen: list[bytes] = []
-    reader._publish = lambda data: seen.append(data)  # type: ignore[method-assign]
+    reader._publish = lambda data, *_: seen.append(data)  # type: ignore[method-assign]
 
     for start in range(0, len(framed), 37):  # deliberately awkward chunk size
         buffer.extend(framed[start : start + 37])
@@ -82,10 +82,69 @@ def test_leading_garbage_is_discarded(reader: MjpegReader):
 
 
 def test_buffer_does_not_grow_without_a_frame(reader: MjpegReader):
-    """A stream carrying no JPEG at all must not be buffered forever."""
+    """A stream carrying no JPEG at all must not be buffered forever.
+
+    A short tail is kept, because a part's headers can arrive in a different read from its image,
+    but it is bounded no matter how much image-free data comes in.
+    """
     buffer = bytearray(b"n" * 100_000)
     collect(reader, buffer)
-    assert len(buffer) <= 1
+    assert len(buffer) <= 512
+
+
+def stamped_part(payload: bytes, timestamp: float) -> bytes:
+    """A part carrying the capture-time header, exactly as the renderer's MjpegServer writes it."""
+    return (
+        b"--frameboundary\r\n"
+        b"Content-Type: image/jpeg\r\n"
+        + f"X-Timestamp: {timestamp:.6f}\r\n".encode("ascii")
+        + f"Content-Length: {len(payload)}\r\n\r\n".encode("ascii")
+        + payload
+        + b"\r\n"
+    )
+
+
+def collect_stamped(reader: MjpegReader, buffer: bytearray) -> list[tuple[bytes, object]]:
+    seen: list[tuple[bytes, object]] = []
+    reader._publish = lambda data, ts=None: seen.append((data, ts))  # type: ignore[method-assign]
+    reader._drain(buffer)
+    return seen
+
+
+def test_capture_timestamp_travels_with_its_frame(reader: MjpegReader):
+    """The robot places detections using its pose at this instant, so it must stay attached."""
+    a, b = jpeg(b"a"), jpeg(b"b")
+    buffer = bytearray(stamped_part(a, 12.34) + stamped_part(b, 12.44))
+    assert collect_stamped(reader, buffer) == [(a, 12.34), (b, 12.44)]
+
+
+def test_capture_timestamp_survives_headers_and_image_in_different_reads(reader: MjpegReader):
+    """Chunked so the header line itself is cut in two, and the image lands in a later read."""
+    payload = jpeg(b"x" * 300)
+    framed = stamped_part(payload, 101.5)
+    buffer = bytearray()
+    seen: list[tuple[bytes, object]] = []
+    reader._publish = lambda data, ts=None: seen.append((data, ts))  # type: ignore[method-assign]
+
+    for start in range(0, len(framed), 11):
+        buffer.extend(framed[start : start + 11])
+        reader._drain(buffer)
+
+    assert seen == [(payload, 101.5)]
+
+
+def test_unstamped_source_reports_no_timestamp(reader: MjpegReader):
+    """A real camera that sends no header must not inherit the previous frame's timestamp."""
+    a, b = jpeg(b"a"), jpeg(b"b")
+    buffer = bytearray(stamped_part(a, 5.0) + part(b))
+    assert collect_stamped(reader, buffer) == [(a, 5.0), (b, None)]
+
+
+def test_frame_carries_the_timestamp_to_the_consumer(reader: MjpegReader):
+    reader._drain(bytearray(stamped_part(jpeg(b"z"), 7.25)))
+    got = reader.next_frame(after_sequence=-1, timeout=0.1)
+    assert got is not None
+    assert got[0].source_timestamp == 7.25
 
 
 def test_identical_frames_are_suppressed(reader: MjpegReader):
@@ -117,6 +176,19 @@ def test_newest_frame_wins(reader: MjpegReader):
 
 def test_next_frame_times_out_when_nothing_arrives(reader: MjpegReader):
     assert reader.next_frame(after_sequence=0, timeout=0.05) is None
+
+
+def test_next_frame_waits_before_the_first_frame(reader: MjpegReader):
+    """The runner asks from -1. With no frame yet that must block, not return at once.
+
+    Returning at once made the runner spin, publishing "waiting" tens of thousands of times a
+    second until the source came up, and burning a CPU core the renderer needed.
+    """
+    import time
+
+    started = time.monotonic()
+    assert reader.next_frame(after_sequence=-1, timeout=0.2) is None
+    assert time.monotonic() - started >= 0.15
 
 
 def test_next_frame_returns_immediately_when_already_newer(reader: MjpegReader):

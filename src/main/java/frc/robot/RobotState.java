@@ -55,6 +55,7 @@ import frc.robot.subsystems.vision.VisionConstants;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -146,6 +147,21 @@ public class RobotState {
   @AutoLogOutput(key = "Robot State/Estimated Pose")
   public Pose2d getEstimatedPose() {
     return estimatedPose;
+  }
+
+  /**
+   * Where the robot believed it was at an earlier instant, from the estimator's pose history.
+   *
+   * <p>For placing camera observations that arrive late. A detection is only as good as the pose it
+   * is placed with, and the pose at arrival is off by however far the robot drove in the meantime.
+   *
+   * @param timestampSeconds robot time, in the same clock as the odometry
+   * @return the interpolated pose, or empty when there is no history yet. The estimator clamps
+   *     timestamps outside its roughly 1.5 s buffer to the nearest end, so callers should not ask
+   *     about anything older than that.
+   */
+  public Optional<Pose2d> getEstimatedPoseAt(double timestampSeconds) {
+    return poseEstimator.sampleAt(timestampSeconds);
   }
 
   @AutoLogOutput(key = "Robot State/Velocity")

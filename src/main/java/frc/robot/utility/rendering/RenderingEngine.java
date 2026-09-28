@@ -103,9 +103,18 @@ public final class RenderingEngine {
    */
   private static final int OBJECT_DETECTION_CAMERA_INDEX = VisionConstants.CAMERA_TRANSFORM.length;
 
-  /** One camera: its mounting on the robot, its ray generator and its HTTP endpoint. */
+  /**
+   * One camera: its mounting on the robot, its ray generator, the settings it renders at and its
+   * HTTP endpoint. Settings are per camera because the object-detection camera has its own sensor
+   * resolution.
+   */
   private record CameraStream(
-      int index, Transform3d mounting, RenderCamera camera, MjpegServer server, Film film) {}
+      int index,
+      Transform3d mounting,
+      RenderCamera camera,
+      RenderSettings settings,
+      MjpegServer server,
+      Film film) {}
 
   private RenderingEngine(RenderSettings settings) {
     this.settings = settings;
@@ -214,6 +223,7 @@ public final class RenderingEngine {
                   settings.width(),
                   settings.height(),
                   VisionConstants.SIM_CAMERA_FOV_DIAGONAL_DEGREES),
+              settings,
               server,
               new Film()));
     }
@@ -223,6 +233,11 @@ public final class RenderingEngine {
     // the intake, because its job is to see fuel on the floor rather than tags on a wall. The
     // vision cameras are pitched *up* for tags, which leaves them blind to anything on the floor
     // nearer than a couple of metres -- pointing the detector at one of them finds nothing.
+    //
+    // Its lens comes from ObjectDetectionConstants.CAMERA_INTRINSICS, warp and all, and it renders
+    // at the resolution those were calibrated at. The robot turns detections back into field
+    // positions through the same intrinsics, so the two cannot disagree about where a pixel looks.
+    RenderCamera objectCamera = new RenderCamera(ObjectDetectionConstants.CAMERA_INTRINSICS);
     MjpegServer objectServer =
         startOnFirstFreePort(
             "Camera " + OBJECT_DETECTION_CAMERA_INDEX + " (object detection)", nextPort);
@@ -230,10 +245,8 @@ public final class RenderingEngine {
         new CameraStream(
             OBJECT_DETECTION_CAMERA_INDEX,
             ObjectDetectionConstants.ROBOT_TO_CAMERA,
-            new RenderCamera(
-                settings.width(),
-                settings.height(),
-                ObjectDetectionConstants.CAMERA_DIAGONAL_FOV_DEGREES),
+            objectCamera,
+            settings.withResolution(objectCamera.width(), objectCamera.height()),
             objectServer,
             new Film()));
 
@@ -254,10 +267,10 @@ public final class RenderingEngine {
           "[Rendering] %s -> http://localhost:%d/  (%dx%d, %d spp, %s)%n",
           camera.server().name(),
           camera.server().port(),
-          settings.width(),
-          settings.height(),
-          settings.samplesPerPixel(),
-          settings.quality());
+          camera.settings().width(),
+          camera.settings().height(),
+          camera.settings().samplesPerPixel(),
+          camera.settings().quality());
     }
   }
 
@@ -267,6 +280,8 @@ public final class RenderingEngine {
    * <p>Call once per loop from {@code simulationPeriodic}. Copies a few hundred ball positions and
    * returns; it does no rendering work itself.
    *
+   * @param timestampSeconds robot time this state corresponds to, in the same clock as the pose
+   *     estimator's odometry; it travels with every frame rendered from it
    * @param robotPose ego robot pose in field coordinates
    * @param obstacles other robots on the field
    * @param fuel ball centres, straight from {@code FuelSim.getFuelPositions()}
@@ -339,17 +354,29 @@ public final class RenderingEngine {
   }
 
   /**
-   * @return width of the frames being rendered, in pixels
+   * @param cameraIndex which camera
+   * @return width of the frames that camera is rendered at, in pixels, or 0 if it is not served
    */
-  public int frameWidth() {
-    return settings.width();
+  public int frameWidth(int cameraIndex) {
+    for (CameraStream camera : cameras) {
+      if (camera.index() == cameraIndex) {
+        return camera.settings().width();
+      }
+    }
+    return 0;
   }
 
   /**
-   * @return height of the frames being rendered, in pixels
+   * @param cameraIndex which camera
+   * @return height of the frames that camera is rendered at, in pixels, or 0 if it is not served
    */
-  public int frameHeight() {
-    return settings.height();
+  public int frameHeight(int cameraIndex) {
+    for (CameraStream camera : cameras) {
+      if (camera.index() == cameraIndex) {
+        return camera.settings().height();
+      }
+    }
+    return 0;
   }
 
   /** Shuts down the streams and the render threads. */
@@ -404,12 +431,17 @@ public final class RenderingEngine {
         long began = System.nanoTime();
         try {
           camera.camera().place(snapshot.robotPose(), camera.mounting());
-          Renderer.Frame frame = renderer.render(camera.camera(), settings, dynamic, frameIndex++);
-          if (settings.denoise()) {
+          RenderSettings cameraSettings = camera.settings();
+          Renderer.Frame frame =
+              renderer.render(camera.camera(), cameraSettings, dynamic, frameIndex++);
+          if (cameraSettings.denoise()) {
             Denoiser.apply(frame, 3);
           }
-          BufferedImage image = camera.film().develop(frame, settings.sensorGain());
-          camera.server().publish(image, settings.jpegQuality());
+          BufferedImage image = camera.film().develop(frame, cameraSettings.sensorGain());
+          // Stamped with the instant the scene was captured, not when the frame finished. The
+          // robot places each detection using its pose at this timestamp; stamping the finish
+          // instead would place every ball as though the robot had already driven on by a render.
+          camera.server().publish(image, cameraSettings.jpegQuality(), snapshot.timestampSeconds());
 
           lastFrameSeconds = (System.nanoTime() - began) / 1e9;
           framesRendered++;

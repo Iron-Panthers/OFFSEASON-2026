@@ -7,12 +7,14 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ public class ObjectDetection extends SubsystemBase {
 
   private final Map<Long, PooledCell> pool = new HashMap<>();
   private List<Cluster> clusters = List.of();
+  private double lastFrameTimestamp = Double.NEGATIVE_INFINITY;
 
   public ObjectDetection(ObjectDetectionIO io) {
     this.io = io;
@@ -44,12 +47,31 @@ public class ObjectDetection extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("ObjectDetection", inputs);
 
-    updatePool(inputs.ballPositions);
+    double now = Timer.getTimestamp();
+    pool.values()
+        .removeIf(cell -> now - cell.timestamp() > ObjectDetectionConstants.POOL_MEMORY_SEC);
+
+    // A camera slower than the loop reports the same frame for several loops running. Folding it
+    // in again changes nothing, and folding in nothing when it goes quiet would forget what it saw.
+    boolean newFrame = inputs.frameTimestamp > lastFrameTimestamp;
+    if (newFrame) {
+      updatePool(inputs.ballPositions, inputs.cameraPose.toPose2d(), inputs.frameTimestamp);
+      lastFrameTimestamp = inputs.frameTimestamp;
+    }
     clusters = pool.values().stream().map(c -> new Cluster(c.center(), c.ballCount())).toList();
 
     Logger.recordOutput("ObjectDetection/Camera Pose", getCameraPose());
+    Logger.recordOutput("ObjectDetection/New Frame", newFrame);
     Logger.recordOutput("ObjectDetection/Cluster Count", clusters.size());
     Logger.recordOutput("ObjectDetection/Visible Ball Count", inputs.ballPositions.length);
+    Logger.recordOutput(
+        "ObjectDetection/Visible Balls 3d",
+        Arrays.stream(inputs.ballPositions)
+            .map(
+                ball ->
+                    new Translation3d(
+                        ball.getX(), ball.getY(), ObjectDetectionConstants.BALL_RADIUS_M))
+            .toArray(Translation3d[]::new));
     Logger.recordOutput(
         "ObjectDetection/Cluster Centers",
         clusters.stream().map(Cluster::center).toArray(Translation2d[]::new));
@@ -81,19 +103,32 @@ public class ObjectDetection extends SubsystemBase {
     pool.clear();
   }
 
-  /**
-   * Folds this frame's detections into the pool. Cells currently in view are replaced with fresh
-   * data (so a cluster the robot just ate stops being a target), cells outside the view keep their
-   * last known value, and anything not seen for a while expires. This is what lets clusters spotted
-   * on the drive to the observing pose — including the back corners it cannot see from there —
-   * still count when the pickup path is generated.
-   */
-  private void updatePool(Translation2d[] balls) {
-    double now = Timer.getFPGATimestamp();
-    Pose2d camera = getCameraPose().toPose2d();
+  /** Balls in the latest frame, field relative. */
+  public Translation2d[] getVisibleBalls() {
+    return inputs.ballPositions;
+  }
 
-    pool.values()
-        .removeIf(cell -> now - cell.timestamp() > ObjectDetectionConstants.POOL_MEMORY_SEC);
+  /** Where the camera was when it took the latest frame. */
+  public Pose3d getLatestFrameCameraPose() {
+    return inputs.cameraPose;
+  }
+
+  /** Robot time the latest frame was captured at. */
+  public double getLatestFrameTimestamp() {
+    return inputs.frameTimestamp;
+  }
+
+  /**
+   * Folds one frame's detections into the pool. Cells in that frame's view are replaced with fresh
+   * data (so a cluster the robot just ate stops being a target), cells outside it keep their last
+   * known value, and anything not seen for a while expires. This is what lets clusters spotted on
+   * the drive to the observing pose — including the back corners it cannot see from there — still
+   * count when the pickup path is generated.
+   *
+   * @param camera where the camera was when it took the frame. Where it is now would clear cells
+   *     the frame never looked at, and keep ones it looked at and found empty.
+   */
+  private void updatePool(Translation2d[] balls, Pose2d camera, double frameTimestamp) {
     pool.values().removeIf(cell -> inView(cell.center(), camera));
 
     for (List<Translation2d> cellBalls : binByCell(balls).values()) {
@@ -103,7 +138,7 @@ public class ObjectDetection extends SubsystemBase {
         sum = sum.plus(ball);
       }
       Translation2d center = sum.div(cellBalls.size());
-      pool.put(cellKey(center), new PooledCell(center, cellBalls.size(), now));
+      pool.put(cellKey(center), new PooledCell(center, cellBalls.size(), frameTimestamp));
     }
   }
 

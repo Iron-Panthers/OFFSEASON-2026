@@ -1,6 +1,7 @@
 package frc.robot.utility.coprocessor;
 
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import frc.robot.Constants;
 import frc.robot.subsystems.object_detection.ObjectDetectionConstants;
 import frc.robot.utility.rendering.RenderingEngine;
@@ -40,7 +41,7 @@ public final class CoprocessorManager {
 
   private final List<Running> processes = new ArrayList<>();
 
-  private record Running(CoprocessorModule module, Process process) {}
+  private record Running(CoprocessorModule module, int camera, Process process) {}
 
   private CoprocessorManager() {}
 
@@ -92,7 +93,7 @@ public final class CoprocessorManager {
   }
 
   private void launch(CoprocessorModule module) throws IOException {
-    int camera = Integer.getInteger("coproc." + module.id() + ".camera", module.defaultCamera());
+    int camera = module.camera();
     String source = resolveSource(module, camera);
 
     Path root = PACKAGE_ROOT.toAbsolutePath();
@@ -122,9 +123,9 @@ public final class CoprocessorManager {
       // The detector derives its focal length from the frame size, so a mismatch here biases
       // every range it reports. Take the resolution from the renderer rather than assuming.
       command.add("--width");
-      command.add(Integer.toString(rendering.frameWidth()));
+      command.add(Integer.toString(rendering.frameWidth(camera)));
       command.add("--height");
-      command.add(Integer.toString(rendering.frameHeight()));
+      command.add(Integer.toString(rendering.frameHeight(camera)));
       // Focal length follows from the frame size and this angle. The object-detection camera has
       // its own optics, so taking the vision cameras' figure here would bias every range.
       command.add("--fov");
@@ -136,7 +137,7 @@ public final class CoprocessorManager {
     Process process =
         new ProcessBuilder(command).directory(root.toFile()).redirectErrorStream(true).start();
 
-    processes.add(new Running(module, process));
+    processes.add(new Running(module, camera, process));
     pump(module, process);
 
     System.out.printf(
@@ -294,6 +295,50 @@ public final class CoprocessorManager {
     if (instance == this) {
       instance = null;
     }
+  }
+
+  /**
+   * Blocks until every requested module has published a frame from its camera, or the timeout
+   * passes.
+   *
+   * <p>For headless runs that enable the robot themselves. The renderer and the model both take
+   * seconds to load, and enabling before they are ready runs the start of auto blind, which is not
+   * what a match with a warmed-up coprocessor looks like. Returns immediately when no module was
+   * requested.
+   *
+   * @return true once every module has published, false on timeout or interruption
+   */
+  public static boolean awaitFirstFrames(double timeoutSeconds) {
+    if (System.getProperty("coproc.modules", "").isBlank()) {
+      return true;
+    }
+    long deadline = System.nanoTime() + (long) (timeoutSeconds * 1e9);
+    while (System.nanoTime() < deadline) {
+      CoprocessorManager manager = getInstance();
+      if (manager != null && manager.allPublishing()) {
+        return true;
+      }
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException interrupted) {
+        Thread.currentThread().interrupt();
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /** Whether every running module has published at least one frame with its source connected. */
+  private synchronized boolean allPublishing() {
+    NetworkTableInstance nt = NetworkTableInstance.getDefault();
+    for (Running running : processes) {
+      var table = nt.getTable(running.module().tablePath(running.camera()));
+      if (table.getEntry("sequence").getInteger(0) <= 0
+          || !table.getEntry("connected").getBoolean(false)) {
+        return false;
+      }
+    }
+    return !processes.isEmpty();
   }
 
   /**

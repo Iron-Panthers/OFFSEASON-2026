@@ -60,8 +60,10 @@ import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOSim;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOTalonFX;
 import frc.robot.subsystems.object_detection.ObjectDetection;
 import frc.robot.subsystems.object_detection.ObjectDetectionIO;
+import frc.robot.subsystems.object_detection.ObjectDetectionIOCoprocessor;
 import frc.robot.subsystems.object_detection.ObjectDetectionIOLimelight;
 import frc.robot.subsystems.object_detection.ObjectDetectionIOSim;
+import frc.robot.subsystems.object_detection.ObjectDetectionSimAccuracy;
 import frc.robot.subsystems.rgb.RGB;
 import frc.robot.subsystems.rgb.RGBIO;
 import frc.robot.subsystems.shooter.ShooterController;
@@ -96,6 +98,7 @@ import frc.robot.subsystems.vision.VisionIOPhotonvisionSim;
 import frc.robot.utility.ElasticSetpoints;
 import frc.robot.utility.FuelSim;
 import frc.robot.utility.SimBattery;
+import frc.robot.utility.coprocessor.CoprocessorModule;
 import frc.robot.utility.rendering.RenderingEngine;
 import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.PoseAnchor;
@@ -144,6 +147,8 @@ public class RobotContainer {
   private IntakeRollers intakeRollers;
   private IntakeController intakeController;
   private ObjectDetection objectDetection;
+  private final ObjectDetectionSimAccuracy objectDetectionAccuracy =
+      new ObjectDetectionSimAccuracy();
   private Serializer serializer;
   private ShooterFlywheel shooterFlywheels;
   private ShooterHood shooterHood;
@@ -235,7 +240,14 @@ public class RobotContainer {
           shooterFlywheels = new ShooterFlywheel(new ShooterFlywheelIOSim());
           shooterHood = new ShooterHood(new ShooterHoodIOSim());
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOSim());
-          objectDetection = new ObjectDetection(new ObjectDetectionIOSim());
+          // With -Pcoproc=objdetect the real detector runs against the rendered camera and the
+          // robot places what it finds. Otherwise the camera is a perfect ground-truth frustum,
+          // which is cheap and deterministic enough for A/B runs.
+          objectDetection =
+              new ObjectDetection(
+                  CoprocessorModule.OBJDETECT.isRequested()
+                      ? new ObjectDetectionIOCoprocessor(CoprocessorModule.OBJDETECT.camera())
+                      : new ObjectDetectionIOSim());
           shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOSim());
         }
       }
@@ -838,6 +850,7 @@ public class RobotContainer {
     RobotSimState.getInstance().periodicShooter();
 
     updateCameraRendering();
+    objectDetectionAccuracy.update(objectDetection);
   }
 
   /**
@@ -851,9 +864,13 @@ public class RobotContainer {
     if (rendering == null) {
       return;
     }
+    // Stamped in the odometry's clock, one loop ahead. This runs after the physics step, so the
+    // pose here is the state the next loop's odometry sample will read. That sample is recorded at
+    // the next loop's timestamp, and it is the one detections get placed with.
+    // The floor-origin robot frame, since that is what the camera mountings are measured from.
     rendering.update(
-        Timer.getFPGATimestamp(),
-        RobotSimState.getInstance().getRobotPose3d(),
+        Timer.getTimestamp() + Constants.PERIODIC_LOOP_SEC,
+        RobotSimState.getInstance().getRobotFramePose3d(),
         RobotSimState.getInstance().getObstaclePositions(),
         RobotSimState.getInstance().getFuelSim().getFuelPositions());
     Logger.recordOutput("Rendering/Frames", rendering.framesRendered());

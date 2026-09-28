@@ -104,15 +104,16 @@ class CoprocessorModuleTest {
   }
 
   @Test
-  void theRenderedFieldOfViewMatchesTheCalibratedOne() {
-    // The coprocessor derives its focal length from the diagonal figure, so it drifting away
-    // from the horizontal and vertical ones biases every range the detector reports.
+  void theCoprocessorArrivesAtTheCalibratedFocalLength() {
+    // The coprocessor derives its focal length from the frame diagonal and the diagonal figure it
+    // is handed, as Intrinsics.from_diagonal_fov does. That has to land on the calibrated focal
+    // length, or its range estimates are biased against the frames the renderer draws.
+    int width = ObjectDetectionConstants.CAMERA_WIDTH_PX;
+    int height = ObjectDetectionConstants.CAMERA_HEIGHT_PX;
     double halfDiagonal = Math.toRadians(ObjectDetectionConstants.CAMERA_DIAGONAL_FOV_DEGREES) / 2;
-    double expected =
-        Math.hypot(
-            Math.tan(ObjectDetectionConstants.HORIZONTAL_FOV_RAD / 2),
-            Math.tan(ObjectDetectionConstants.VERTICAL_FOV_RAD / 2));
-    assertEquals(expected, Math.tan(halfDiagonal), 1e-9);
+    double coprocessorFocal = (Math.hypot(width, height) / 2.0) / Math.tan(halfDiagonal);
+    assertEquals(ObjectDetectionConstants.CAMERA_FX_PX, coprocessorFocal, 1e-9);
+    assertEquals(ObjectDetectionConstants.CAMERA_FY_PX, coprocessorFocal, 1e-9);
   }
 
   @Test

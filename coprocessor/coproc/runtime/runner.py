@@ -130,6 +130,8 @@ def run(
                     latency_ms=latency_ms,
                     fps=fps,
                     source_connected=reader.connected,
+                    frame_timestamp=frame.source_timestamp,
+                    frame_size=(width, height),
                 )
 
             if stream is not None and stream.wanted:

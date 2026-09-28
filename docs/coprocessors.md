@@ -19,7 +19,7 @@ Simulation only. `CoprocessorManager` refuses to start outside `Mode.SIM`.
 `-Prender` is required: without it there is no camera to read. You will see
 
 ```
-[Rendering] Camera 3 (object detection) -> http://localhost:1194/  (480x300, 2 spp, FAST)
+[Rendering] Camera 3 (object detection) -> http://localhost:1194/  (480x360, 2 spp, FAST)
 [Coprocessor] objdetect -> http://localhost:1194/stream.mjpg, annotated on http://localhost:1294/
 [objdetect] rebuilt-fuel-v1.pt, keeping all classes, radius 0.075 m, ranging by ground plane from 0.600 m, +20.0 deg
 ```
@@ -82,6 +82,10 @@ first:
 | Key | Type | Meaning |
 | --- | --- | --- |
 | `count` | int | Detections this frame |
+| `u` / `v` | double[] | Box centre in pixels, `u` right and `v` down. **This is what the robot uses** |
+| `frameWidth` / `frameHeight` | int | Size of the image the boxes are in |
+| `frameTimestamp` | double | When the scene was captured, in the source's clock. Robot time in simulation; NaN from a camera that does not say |
+| `sequenceBegin` / `sequence` | int | The same number, written first and last. See below |
 | `yaw` / `pitch` | double[] | Degrees. Yaw counter-clockwise positive, pitch up positive |
 | `distance` | double[] | Metres to the ball centre |
 | `tx` / `ty` / `tz` | double[] | Camera frame: X forward, Y left, Z up |
@@ -95,12 +99,116 @@ first:
 | `fps` | double | Smoothed |
 | `connected` | boolean | Whether the source stream is up |
 
-Positions are camera-relative, so the coprocessor holds no robot state. Robot code applies
-`VisionConstants.CAMERA_TRANSFORM[N]` to get robot- or field-relative positions.
+Everything is camera-relative, so the coprocessor holds no robot state. The ranges and `tx`/`ty`/`tz`
+are its own pinhole estimates and know nothing about lens warp. They are for the annotated stream
+and for debugging. The robot does not read them (see the next section).
 
 Everything for a frame is published and then flushed once, which puts it in a single NT4 packet in
-practice. NT gives no cross-topic atomicity, so a consumer should check the arrays are the same
-length before zipping them. `count` is written last, so it never exceeds what is actually there.
+practice. That is not a guarantee, because NT also sends on its own timer and that can land in the
+middle of a frame. So `sequenceBegin` is written first and `sequence` last, both holding the same
+number. A consumer reads `sequence`, then the arrays, then `sequenceBegin`. If the two match, no
+newer frame started arriving while it read, and every array belongs to the same frame. If they do
+not, it tries again on the next loop.
+
+## How the robot uses it
+
+`ObjectDetectionIOCoprocessor` turns each box centre into a ball on the field. In simulation it
+replaces the ground-truth `ObjectDetectionIOSim` whenever `-Pcoproc=objdetect` is given. Without the
+flag nothing changes, which keeps A/B runs cheap and deterministic.
+
+For each frame it
+
+1. **Looks up where the robot was when the frame was captured**, from the pose estimator's history
+   (`RobotState.getEstimatedPoseAt`). The renderer stamps every MJPEG part with an `X-Timestamp`
+   header holding the robot time of the snapshot it rendered, and the coprocessor passes that
+   through as `frameTimestamp`. The render takes a tenth of a second or more, and the robot can
+   drive 30 cm in that time, so placing balls with the pose at arrival would smear every one of
+   them along the robot's path. Against a real camera with no stamp, the capture time is estimated
+   as arrival minus `latencyMs`. Frames older than `MAX_FRAME_AGE_SEC` are dropped, since the
+   estimator only keeps about 1.5 s of history and quietly clamps anything older.
+2. **Turns the pixel into a ray** through `ObjectDetectionConstants.CAMERA_INTRINSICS`, lens warp
+   included. These are the same intrinsics the renderer bends its rays through (see below), so the
+   ray is exactly the one the renderer drew that pixel along.
+3. **Follows the ray down to the plane a resting ball's centre sits on**, one ball radius above the
+   floor. Anything above the horizon, outside `MIN_RANGE_M`..`MAX_RANGE_M`, or off the field is
+   dropped.
+
+The subsystem then folds the frame into its pool only if it is newer than the last one, and judges
+which pooled cells were in view from the camera pose *at capture*. A camera slower than the robot
+loop reports the same frame for several loops, and re-reading it changes nothing.
+
+### Camera intrinsics and warp
+
+`ObjectDetectionConstants` holds the object-detection camera the way a calibration reports one.
+It has a resolution (480x360), focal lengths and principal point in pixels, and two radial warp
+terms. `HORIZONTAL_FOV_RAD`, `VERTICAL_FOV_RAD` and the diagonal figure handed to the coprocessor
+are all derived from those. Nothing about the lens is written down twice.
+
+The renderer draws this camera from `CAMERA_INTRINSICS` at its own resolution, independent of
+`-Prender.width`, since it is a different sensor from the vision cameras. The warp is applied the
+way `RenderCamera` always applied it, as a polynomial from the distorted pixel to the undistorted
+ray. That is the inverse of OpenCV's convention, so a real calibration from OpenCV or PhotonVision
+would need its k1 and k2 refit before it could go in here.
+
+Ignoring the warp is not a small error. `ObjectDetectionIOCoprocessorTest` checks that a pinhole
+reading of a ball out towards the side of the frame lands more than 10 cm from where it is.
+
+### The robot frame starts on the floor
+
+`ROBOT_TO_CAMERA`, like every camera transform in the project, is measured from the WPILib robot
+origin on the floor. `RobotSimState.getRobotPose3d()` is not that frame. It sits at axle height, a
+wheel radius (5 cm) above the carpet, because that is where the terrain sim puts the chassis. The
+renderer used to place its cameras from it, so the object-detection camera rendered at 0.65 m while
+everything else believed 0.60 m. On a camera looking down at the floor that makes every range about
+8% long, which in the first full match run was the largest single error in ball placement (a 10 cm
+median). The renderer and the ground-truth IO now use `getRobotFramePose3d()`, which is the same
+pose with the wheel radius taken off and the terrain's rise and tilt kept.
+
+### Checking it in simulation
+
+`ObjectDetectionSimAccuracy` scores every new frame against where `FuelSim` says the fuel is, under
+`ObjectDetection/Sim Accuracy/`.
+
+| Key | Meaning |
+| --- | --- |
+| `Matched Fraction` | Detections within 0.25 m of a real resting ball |
+| `Median Error (m)` | Distance from each detection to the nearest real ball |
+| `Matched Mean Error (m)` | The same, over matched detections only. This is where a wrong lens model or a wrong capture pose shows up |
+| `Recall` | Resting balls inside the frustum that were found. Counts balls hidden behind other balls, so it reads low in a dense pile by design |
+
+Against the ground-truth IO every number is perfect by construction, so these only mean something
+with `-Pcoproc=objdetect`.
+
+A headless full match auto with everything running looks like this.
+
+```bash
+./gradlew simulateJava --no-daemon -Pheadless -Pai.logging -Prender -Pcoproc=objdetect "-Pauto.name=Full Match Auto"
+```
+
+The robot is not enabled until the coprocessor has published its first frame (up to two minutes),
+so the start of auto is not run blind while the model loads.
+
+### Measured in a full match
+
+One 150 s full match auto on a 16-thread desktop (2026-09-27), with the renderer, the detector and the
+robot simulation all on the same machine, gave these numbers.
+
+| | |
+| --- | --- |
+| Frames placed | 382, about 2.5 a second; 29 more arrived too old to place |
+| Capture to robot | 0.88 s mean, 1.2 s at the 90th percentile |
+| Detections within 0.25 m of a real ball | 98.9% |
+| Median placement error | 5.0 cm with the robot's own pose estimate, 3.3 cm with the true pose |
+| Robot loop | healthy, median about 9 ms |
+
+The difference between those last two placement figures is pose estimate error (about 2 cm and half
+a degree), not the camera. Re-running the placement offline with the capture timestamp shifted by one
+loop either way roughly doubles the median error, and the smallest error sits at exactly the stamped
+time, which is the evidence that frames and poses are lined up.
+
+Most of the latency is the detector, which runs about three times slower than on an idle machine
+because the renderer is using every other core. The robot compensates by placing each frame with
+its pose at capture, so the latency costs freshness but not accuracy.
 
 ## How range works
 
@@ -144,11 +252,13 @@ which no single estimate can. It also fires for a ball in flight, which is not o
 no honest ground-plane range — there the disagreement is telling the truth about a real assumption
 being violated. `suspect` boxes are drawn red, `edge` boxes amber.
 
-The focal length is derived from the frame size and the camera's own diagonal FOV, which for the
-object-detection camera is computed from `ObjectDetectionConstants.HORIZONTAL_FOV_RAD` and
-`VERTICAL_FOV_RAD` rather than written down a third time. If the stream arrives at a different
-resolution than declared, the intrinsics are rescaled and a line is printed — using the declared
-focal length against a different frame size biases every range, silently.
+The focal length is derived from the frame size and the camera's own diagonal FOV. For the
+object-detection camera that is the pinhole diagonal of `ObjectDetectionConstants.CAMERA_INTRINSICS`,
+which lands the coprocessor on exactly the calibrated focal length. It does not model the lens warp,
+which is why the robot redoes the geometry from `u`/`v` instead of reading these ranges. If the
+stream arrives at a different resolution than declared, the intrinsics are rescaled and a line is
+printed — using the declared focal length against a different frame size biases every range,
+silently.
 
 ## Things worth knowing
 
@@ -197,9 +307,12 @@ Anything that hardcodes a port number is one busy port away from silently readin
 | Test | What it protects |
 | --- | --- |
 | `tests/test_geometry.py` | Round trip against an exact silhouette projection; WPILib sign conventions; the off-axis error bound; rescaled intrinsics recovering the same distance. Ground-plane ranging recovering a ball on the floor; a merged box and a mid-frame occlusion both flagged `suspect`; a ball above the horizon getting no ground range; yaw not affecting it. |
-| `tests/test_mjpeg.py` | Frames split across reads, leading garbage, duplicate suppression, newest-frame-wins, buffer growth on a desynchronised stream. |
+| `tests/test_mjpeg.py` | Frames split across reads, leading garbage, duplicate suppression, newest-frame-wins, buffer growth on a desynchronised stream. The `X-Timestamp` header staying with its own frame, surviving a header line cut across two reads, and not carrying over to an unstamped frame. Blocking before the first frame rather than returning at once, which used to make the runner spin publishing "waiting" tens of thousands of times a second. |
 | `tests/test_runtime_end_to_end.py` | The whole loop against a live local MJPEG server and a stub module: frames reach `process`, detections come back, the annotated stream serves decodable JPEG, annotation is skipped when nobody is watching, intrinsics rescale, a dead source does not kill the loop. |
-| `CoprocessorModuleTest` | Registry lookup, typos naming the valid options, output ports staying clear of the render range. That the detector defaults to its own camera and never a vision camera, that that camera is pitched *down*, and that its rendered FOV matches the calibrated one. |
+| `CoprocessorModuleTest` | Registry lookup, typos naming the valid options, output ports staying clear of the render range. That the detector defaults to its own camera and never a vision camera, that that camera is pitched *down*, and that the diagonal FOV it is handed lands it on the calibrated focal length. |
+| `CameraIntrinsicsTest` | Pixel to ray to pixel exact across the whole frame, warp included; WPILib camera-frame signs; the warp actually bending edge rays; rescaling to another resolution looking the same way. |
+| `RenderCameraTest` | The renderer's ray through a pixel being the one robot code reconstructs from it, at an arbitrary robot pose. The vision cameras rendering exactly as they did before the shared lens model. |
+| `ObjectDetectionIOCoprocessorTest` | A sweep of known balls projected into the image and recovered to within a micrometre. A pinhole reading of the same frame misplacing an edge ball by more than 10 cm. Rays above the horizon and beyond range dropped. |
 
 ```bash
 cd coprocessor && python -m pytest tests/ -q

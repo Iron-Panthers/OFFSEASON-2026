@@ -9,6 +9,7 @@ the renderer has finished loading the field.
 from __future__ import annotations
 
 import hashlib
+import re
 import socket
 import threading
 import time
@@ -25,6 +26,16 @@ _EOI = b"\xff\xd9"  # JPEG end of image
 # memory leak rather than a reconnect.
 _MAX_BUFFER_BYTES = 16 * 1024 * 1024
 
+# How much of a stream with no image in it is kept for the next read. Enough to hold one part's
+# headers, which may arrive in a different read from the image they describe; nothing like enough to
+# grow without bound on a stream that carries no JPEG at all.
+_HEADER_TAIL_BYTES = 512
+
+# The capture time of the scene in the image, in the source's own clock. The simulated renderer
+# stamps the robot time its snapshot was taken at; mjpg-streamer uses the same header. Only a
+# complete line counts, so a value cut off at the end of a read is not parsed half-written.
+_TIMESTAMP_HEADER = re.compile(rb"X-Timestamp:\s*([-+0-9.eE]+)\r?\n", re.IGNORECASE)
+
 
 @dataclass(frozen=True)
 class Frame:
@@ -32,6 +43,13 @@ class Frame:
 
     jpeg: bytes
     received_at: float
+
+    source_timestamp: Optional[float] = None
+    """When the source says the scene was captured, in the source's clock, if it said at all.
+
+    For the simulated renderer this is robot time, which is what lets the robot place a detection
+    using where it was when the frame was taken rather than when the frame arrived.
+    """
 
 
 class MjpegReader:
@@ -56,6 +74,8 @@ class MjpegReader:
         self._thread: Optional[threading.Thread] = None
         self._connected = False
         self._last_error: Optional[str] = None
+        # A timestamp header that has arrived ahead of the image it belongs to.
+        self._pending_timestamp: Optional[float] = None
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -88,7 +108,12 @@ class MjpegReader:
         """
         deadline = time.monotonic() + timeout
         with self._lock:
-            while self._running and self._sequence <= after_sequence:
+            # Also wait while nothing has arrived at all. The runner starts from -1, which the
+            # sequence (0 before the first frame) already exceeds, so without this the first call
+            # returned at once and the runner spun publishing "waiting" as fast as it could:
+            # tens of thousands of NetworkTables updates a second, and a CPU core, until the
+            # source came up.
+            while self._running and (self._frame is None or self._sequence <= after_sequence):
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     return None
@@ -99,7 +124,7 @@ class MjpegReader:
 
     # -- internals ---------------------------------------------------------
 
-    def _publish(self, jpeg: bytes) -> None:
+    def _publish(self, jpeg: bytes, source_timestamp: Optional[float] = None) -> None:
         # The renderer resends its current frame on a timer so browsers do not drop the
         # connection. Re-running a detector over bytes we have already seen would waste the
         # little CPU headroom there is and report an FPS the pipeline is not really achieving.
@@ -108,7 +133,9 @@ class MjpegReader:
             return
         self._last_digest = digest
         with self._lock:
-            self._frame = Frame(jpeg=jpeg, received_at=time.time())
+            self._frame = Frame(
+                jpeg=jpeg, received_at=time.time(), source_timestamp=source_timestamp
+            )
             self._sequence += 1
             self._lock.notify_all()
 
@@ -150,15 +177,33 @@ class MjpegReader:
         while True:
             start = buffer.find(_SOI)
             if start < 0:
-                # No image has begun. Keep only a byte in case SOI straddles two chunks.
-                if len(buffer) > 1:
-                    del buffer[: len(buffer) - 1]
+                # No image has begun. Note any header that has, then keep only a short tail: enough
+                # for SOI or a header line straddling two chunks, never an unbounded backlog.
+                self._note_headers(buffer)
+                if len(buffer) > _HEADER_TAIL_BYTES:
+                    del buffer[: len(buffer) - _HEADER_TAIL_BYTES]
                 return
+            if start > 0:
+                # Part headers precede the image. Read them before they are discarded.
+                self._note_headers(buffer[:start])
+                del buffer[:start]
+                start = 0
             end = buffer.find(_EOI, start + 2)
             if end < 0:
-                if start > 0:
-                    del buffer[:start]  # discard part headers preceding the image
                 return
             jpeg = bytes(buffer[start : end + 2])
             del buffer[: end + 2]
-            self._publish(jpeg)
+            timestamp, self._pending_timestamp = self._pending_timestamp, None
+            self._publish(jpeg, timestamp)
+
+    def _note_headers(self, region: bytearray | bytes) -> None:
+        """Remember the capture timestamp in a run of part headers, for the image that follows."""
+        match = None
+        for match in _TIMESTAMP_HEADER.finditer(region):
+            pass  # the last one wins; there is only ever one per part
+        if match is None:
+            return
+        try:
+            self._pending_timestamp = float(match.group(1))
+        except ValueError:
+            self._pending_timestamp = None

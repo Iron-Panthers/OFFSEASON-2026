@@ -47,6 +47,37 @@ public enum CoprocessorModule {
   }
 
   /**
+   * @return the camera this module watches this run: {@code -Pcoproc.<id>.camera} if given, else
+   *     {@link #defaultCamera()}
+   */
+  public int camera() {
+    return Integer.getInteger("coproc." + id + ".camera", defaultCamera);
+  }
+
+  /**
+   * Whether this run asked for the module with {@code -Pcoproc}.
+   *
+   * <p>Asked for, not running: robot code is constructed before the simulation starts any module,
+   * and a module that then fails to start should look like a coprocessor reporting nothing rather
+   * than silently fall back to something else.
+   */
+  public boolean isRequested() {
+    for (String name : System.getProperty("coproc.modules", "").split(",")) {
+      if (name.trim().equalsIgnoreCase(id)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * @return the NetworkTables table this module publishes a camera's detections under
+   */
+  public String tablePath(int cameraIndex) {
+    return "/coprocessor/" + id + "/cam" + cameraIndex;
+  }
+
+  /**
    * @return the port this module serves its annotated stream on
    */
   public int outputPort(int cameraIndex) {

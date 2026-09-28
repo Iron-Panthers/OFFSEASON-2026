@@ -3,7 +3,12 @@
 Parallel arrays rather than a struct: they are readable in Glass and AdvantageScope with no
 schema, and trivial to consume from Java. The cost is that NT gives no cross-topic atomicity, so
 everything for a frame is published and then flushed once, which puts it in a single NT4 packet in
-practice. A consumer should still check that the arrays are the same length before zipping them.
+practice.
+
+"In practice" is not a guarantee: NT also sends on its own timer, which can land mid-frame. So each
+frame is bracketed by a sequence number, ``sequenceBegin`` written first and ``sequence`` written
+last. A consumer reads ``sequence``, then the arrays, then ``sequenceBegin``; if the two numbers
+match, no newer frame had started arriving while it read, and the arrays all belong to that frame.
 """
 
 from __future__ import annotations
@@ -28,6 +33,7 @@ class NtPublisher:
         self.identity = identity or f"{module}-{camera}"
         self._nt = None
         self._pubs: dict = {}
+        self._sequence = 0
 
     def start(self) -> "NtPublisher":
         import ntcore  # deferred: see class docstring
@@ -39,6 +45,13 @@ class NtPublisher:
 
         self._nt = instance
         self._pubs = {
+            "sequenceBegin": table.getIntegerTopic("sequenceBegin").publish(),
+            "sequence": table.getIntegerTopic("sequence").publish(),
+            "u": table.getDoubleArrayTopic("u").publish(),
+            "v": table.getDoubleArrayTopic("v").publish(),
+            "frameWidth": table.getIntegerTopic("frameWidth").publish(),
+            "frameHeight": table.getIntegerTopic("frameHeight").publish(),
+            "frameTimestamp": table.getDoubleTopic("frameTimestamp").publish(),
             "count": table.getIntegerTopic("count").publish(),
             "yaw": table.getDoubleArrayTopic("yaw").publish(),
             "pitch": table.getDoubleArrayTopic("pitch").publish(),
@@ -69,10 +82,28 @@ class NtPublisher:
         latency_ms: float,
         fps: float,
         source_connected: bool,
+        frame_timestamp: Optional[float] = None,
+        frame_size: tuple[int, int] = (0, 0),
     ) -> None:
+        """Publish one frame's detections.
+
+        :param frame_timestamp: when the source says the scene was captured, in the source's clock
+            (robot time, in simulation); NaN is published when the source gave none
+        :param frame_size: ``(width, height)`` of the image the boxes are in, so a consumer
+            rescales its intrinsics rather than assuming the declared resolution
+        """
         if not self._pubs:
             return
         p = self._pubs
+        self._sequence += 1
+        p["sequenceBegin"].set(self._sequence)
+        # Box centres, in pixels. Everything a consumer needs to redo the geometry with its own
+        # calibrated lens model and its own pose at the capture instant; the ranges below are this
+        # module's pinhole estimates, which know nothing about lens warp.
+        p["u"].set([(d.bbox[0] + d.bbox[2]) / 2.0 for d in detections])
+        p["v"].set([(d.bbox[1] + d.bbox[3]) / 2.0 for d in detections])
+        p["frameWidth"].set(int(frame_size[0]))
+        p["frameHeight"].set(int(frame_size[1]))
         p["yaw"].set([d.yaw_degrees for d in detections])
         p["pitch"].set([d.pitch_degrees for d in detections])
         p["distance"].set([d.distance_meters for d in detections])
@@ -95,9 +126,13 @@ class NtPublisher:
         p["latencyMs"].set(latency_ms)
         p["fps"].set(fps)
         p["connected"].set(source_connected)
-        # Count last: a consumer that reads count first and then the arrays sees a length that
-        # is never longer than what is actually there.
+        p["frameTimestamp"].set(float("nan") if frame_timestamp is None else frame_timestamp)
+        # Count after the arrays: a consumer that reads count first and then the arrays sees a
+        # length that is never longer than what is actually there.
         p["count"].set(len(detections))
+        # And the closing sequence number after everything, so it only ever names a frame whose
+        # every value has already been written.
+        p["sequence"].set(self._sequence)
         if self._nt is not None:
             self._nt.flush()
 

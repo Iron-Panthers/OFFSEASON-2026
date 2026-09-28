@@ -48,6 +48,9 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * project.
  */
 public class Robot extends LoggedRobot {
+  /** How long a headless run waits for coprocessor modules to publish before enabling anyway. */
+  private static final double COPROCESSOR_WARMUP_TIMEOUT_SEC = 120.0;
+
   private RobotContainer robotContainer;
 
   private Command autoCommand;
@@ -228,6 +231,15 @@ public class Robot extends LoggedRobot {
               } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
+              }
+              // With -Pcoproc, hold the enable until the detector has published a frame. The
+              // renderer and the model take tens of seconds to load between them, and a match
+              // does not start with its coprocessor still booting.
+              if (!CoprocessorManager.awaitFirstFrames(COPROCESSOR_WARMUP_TIMEOUT_SEC)) {
+                System.err.println(
+                    "[AI] Coprocessor published nothing in "
+                        + COPROCESSOR_WARMUP_TIMEOUT_SEC
+                        + " s; enabling anyway");
               }
               DriverStationSim.setAutonomous(autonomous);
               DriverStationSim.setEnabled(true);

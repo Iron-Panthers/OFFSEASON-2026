@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,6 +40,14 @@ import javax.imageio.stream.MemoryCacheImageOutputStream;
 final class MjpegServer {
 
   private static final String BOUNDARY = "frameboundary";
+
+  /**
+   * Part header carrying the robot time the frame's scene was captured at, in seconds.
+   *
+   * <p>The same header mjpg-streamer uses for its capture time. Without it a consumer only knows
+   * when a frame arrived, which trails the scene it shows by however long the render took.
+   */
+  static final String TIMESTAMP_HEADER = "X-Timestamp";
 
   /** Long enough that an idle stream still sends something before a proxy gives up on it. */
   private static final long FRAME_WAIT_MILLIS = 2000;
@@ -71,6 +80,10 @@ final class MjpegServer {
 
   private final Object frameLock = new Object();
   private byte[] latestFrame;
+
+  /** Robot time the latest frame's scene was captured at, sent with it as a part header. */
+  private double latestCaptureTimestamp = Double.NaN;
+
   private long frameCounter;
   private volatile int width;
   private volatile int height;
@@ -126,13 +139,19 @@ final class MjpegServer {
         || System.currentTimeMillis() - lastSnapshotRequest.get() < SNAPSHOT_DEMAND_MILLIS;
   }
 
-  /** Publishes a frame, waking every connected client. */
-  void publish(BufferedImage image, float quality) throws IOException {
+  /**
+   * Publishes a frame, waking every connected client.
+   *
+   * @param captureTimestampSeconds robot time the scene in this frame was captured at
+   */
+  void publish(BufferedImage image, float quality, double captureTimestampSeconds)
+      throws IOException {
     byte[] encoded = encodeJpeg(image, quality);
     width = image.getWidth();
     height = image.getHeight();
     synchronized (frameLock) {
       latestFrame = encoded;
+      latestCaptureTimestamp = captureTimestampSeconds;
       frameCounter++;
       frameLock.notifyAll();
     }
@@ -162,6 +181,7 @@ final class MjpegServer {
     try (OutputStream out = exchange.getResponseBody()) {
       while (true) {
         byte[] frame;
+        double captureTimestamp;
         synchronized (frameLock) {
           // Wait for something newer, but give up waiting periodically and resend the current
           // frame: a browser drops a multipart stream that goes completely silent, and the
@@ -178,11 +198,17 @@ final class MjpegServer {
             }
           }
           frame = latestFrame;
+          captureTimestamp = latestCaptureTimestamp;
           sent = frameCounter;
         }
 
         out.write(("--" + BOUNDARY + "\r\n").getBytes(StandardCharsets.US_ASCII));
         out.write("Content-Type: image/jpeg\r\n".getBytes(StandardCharsets.US_ASCII));
+        if (Double.isFinite(captureTimestamp)) {
+          out.write(
+              String.format(Locale.ROOT, "%s: %.6f\r\n", TIMESTAMP_HEADER, captureTimestamp)
+                  .getBytes(StandardCharsets.US_ASCII));
+        }
         out.write(
             ("Content-Length: " + frame.length + "\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
         out.write(frame);
