@@ -98,7 +98,7 @@ public abstract class GenericMechanismConfiguration {
    *   <li><b>Units:</b> A
    * </ul>
    */
-  public double statorCurrentLimit = 140;
+  public double statorCurrentLimit = 70;
 
   /**
    * The absolute maximum amount of supply current allowed.
