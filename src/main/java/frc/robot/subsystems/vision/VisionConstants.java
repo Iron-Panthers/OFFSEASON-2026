@@ -149,12 +149,17 @@ public class VisionConstants {
         default -> List.of(
             // 1 tag
             new TagCountDeviation(
+                new UnitDeviationParams(0.0086168, 0, 0),
                 new UnitDeviationParams(0.0157183, 0, 0),
-                new UnitDeviationParams(0.0157183, 0, 0),
-                new UnitDeviationParams(0.1, 0, 0)),
+                new UnitDeviationParams(0.00966208, 0, 0)),
             // 2 tag
             new TagCountDeviation(
-                new UnitDeviationParams(0.00540876, 0, 0), new UnitDeviationParams(0.1, 0, 0)));
+                new UnitDeviationParams(0.00261961, 0, 0),
+                new UnitDeviationParams(0.00540876, 0, 0),
+                new UnitDeviationParams(0.00179625, 0, 0)),
+            // 3+ tag
+            new TagCountDeviation(
+                new UnitDeviationParams(0, 0.0, 0.001), new UnitDeviationParams(0, 0, 0.0001)));
       };
 
   public static final int[] IGNORE_TAGS = {};
