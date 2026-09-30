@@ -153,11 +153,9 @@ public class RobotState {
             .getRotation()
             .plus(cameraAngleRelativeToTheRobotButItIsARotation2dNow);
     double fieldXVariance =
-        (Math.cos(cameraAngle.getRotations()) * robotXVariance
-            + Math.sin(cameraAngle.getRotations()) * robotXVariance);
+        (Math.cos(cameraAngle.getRotations()) * robotXVariance + Math.sin(cameraAngle.getRotations()) * robotXVariance);
     double fieldYVariance =
-        (-Math.sin(cameraAngle.getRotations()) * robotYVariance
-            + Math.cos(cameraAngle.getRotations()) * robotYVariance);
+        (-Math.sin(cameraAngle.getRotations()) * robotYVariance + Math.cos(cameraAngle.getRotations()) * robotYVariance);
 
     // Convert variances back to std devs
     double fieldXStdDev = Math.sqrt(fieldXVariance);
