@@ -762,7 +762,9 @@ public class RobotContainer {
         .schedule();
   }
 
-  public void testPeriodic() {}
+  public void testPeriodic() {
+    
+  }
 
   public void testExit() {
     shooterController.setTargetState(ShooterState.IDLE);

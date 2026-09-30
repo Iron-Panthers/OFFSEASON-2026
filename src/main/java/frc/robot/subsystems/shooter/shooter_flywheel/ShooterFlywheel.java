@@ -11,11 +11,13 @@ import frc.robot.lib.generic_subsystems.rollers.GenericRollers;
 
 public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywheelTarget> {
 
-  // for logging the VelocityRadsPerSec
-  private final java.util.ArrayList<String> loggedVelocityRadPerSec = new java.util.ArrayList<>();
+  // for logging the VelocityRadsPerSec and SupplyCurrentAmps every 5 seconds in test mode
+  private final java.util.ArrayList<String> loggedVelocitySupplyCurrent = new java.util.ArrayList<>();
   private double lastPrintTime = 0;
   private double testStartTime = -1; // -1 means test mode hasn't started yet
-  private final java.util.ArrayList<Double> intervalReadings = new java.util.ArrayList<>();
+  private final java.util.ArrayList<Double> speedIntervalReadings = new java.util.ArrayList<>();
+  private final java.util.ArrayList<Double> supplyCurrentIntervalReadings = new java.util.ArrayList<>();
+
 
   public enum ShooterFlywheelTarget implements GenericRollers.VelocityTarget {
     IDLE(0, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
@@ -66,18 +68,26 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
         return; // Exits the method
       }
       double currentSpeed = inputs.velocityRadsPerSec;
-      intervalReadings.add(currentSpeed);
+      double currentSupplyCurrent = inputs.supplyCurrentAmps;
+      speedIntervalReadings.add(currentSpeed);
+      supplyCurrentIntervalReadings.add(currentSupplyCurrent);
 
       if (currentTime - lastPrintTime >= 5.0) {
-        double sum = 0;
-        for (double val : intervalReadings) {
-          sum += val;
+        double sumSpeed = 0;
+        double sumSupplyCurrent = 0;
+        for (double val : speedIntervalReadings) {
+          sumSpeed += val;
         }
-        double avgSpeed = intervalReadings.isEmpty() ? 0 : sum / intervalReadings.size();
+        for (double val : supplyCurrentIntervalReadings) {
+          sumSupplyCurrent += val;
+        }
 
-        loggedVelocityRadPerSec.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed));
+        double avgSpeed = speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
+        double avgSupplyCurrent = supplyCurrentIntervalReadings.isEmpty() ? 0 : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
 
-        intervalReadings.clear();
+        loggedVelocitySupplyCurrent.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed) + "," + String.format("%.2f", avgSupplyCurrent));
+        speedIntervalReadings.clear();
+        supplyCurrentIntervalReadings.clear();
         lastPrintTime = currentTime;
       }
     } else {
@@ -87,15 +97,16 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
   }
 
   public java.util.ArrayList<String> getLoggedData() {
-    return loggedVelocityRadPerSec;
+    return loggedVelocitySupplyCurrent;
   }
 
   public double getTestModeStartTime(){
     return testStartTime;
   }
   public void clearLoggedData() {
-    loggedVelocityRadPerSec.clear();
-    intervalReadings.clear();
+    loggedVelocitySupplyCurrent.clear();
+    speedIntervalReadings.clear();
+    supplyCurrentIntervalReadings.clear();
   }
 
   @AutoLogOutput(key = "Shooter/Shooter Flywheels/Current Velocity")
