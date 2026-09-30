@@ -150,6 +150,11 @@ public class RobotContainer {
 
   private ShootCommandFactory shootCommand;
 
+  // For logging flywheel velo
+  private double m_lastPrintTime = 0;
+  private final java.util.ArrayList<String> loggedVelocityRadPerSec = new java.util.ArrayList<>();
+  private final java.util.ArrayList<Double> intervalReadings = new java.util.ArrayList<>();
+
   public RobotContainer() {
 
     if (Constants.getRobotMode() != Mode.REPLAY) {
@@ -748,31 +753,25 @@ public class RobotContainer {
 
   public void testInit() {
     Commands.sequence(
-    new IntakeCommand(intakeController, shooterController, serializer),
-    new WaitCommand(5.0),
-    Commands.runOnce(
-            () -> intakeController.setTargetState(IntakeState.IDLE)),
-    Commands.runOnce(
-            () -> shooterController.setTargetState(ShooterState.SHOOT)),
-    new WaitCommand(5.0),
-    Commands.runOnce(
-        () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
-    new WaitCommand(5.0),
-    Commands.runOnce(
-        () -> shooterController.setTargetState(ShooterState.IDLE)),
-    Commands.runOnce(
-        () -> intakeController.setTargetState(IntakeState.IDLE)),
-    new WaitCommand(5.0))
-      .schedule();
+            new IntakeCommand(intakeController, shooterController, serializer),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            new WaitCommand(5.0))
+        .schedule();
   }
 
-
   public void testPeriodic() {}
-
 
   public void testExit() {
     shooterController.setTargetState(ShooterState.IDLE);
     intakeController.setTargetState(IntakeState.IDLE);
+    printAndClearStoredData();
   }
 
   /** Ran when periodic disabled */
@@ -832,4 +831,21 @@ public class RobotContainer {
     // Handle automatic shooter firing
     RobotSimState.getInstance().periodicShooter();
   }
-}
+
+    public void printAndClearStoredData() {
+        // Grab the list directly from your active shooterFlywheels instance
+        java.util.ArrayList<String> dataRows = shooterFlywheels.getLoggedData();
+
+        if (!dataRows.isEmpty()) {
+            System.out.println("Test Mode VelocityPerRadians Data");
+        for (String row : dataRows) {
+            System.out.println(row);
+        }
+        } else {
+        System.out.println("No flywheel gathered during this test run.");
+        }
+
+        // Tell the flywheel to clear everything so the next session starts fresh
+        shooterFlywheels.clearLoggedData();
+    }
+  }
