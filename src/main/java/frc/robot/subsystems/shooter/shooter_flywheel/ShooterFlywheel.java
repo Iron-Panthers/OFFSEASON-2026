@@ -2,19 +2,20 @@ package frc.robot.subsystems.shooter.shooter_flywheel;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
+import org.littletonrobotics.junction.AutoLogOutput;
+
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.lib.generic_subsystems.rollers.GenericRollers;
-import org.littletonrobotics.junction.AutoLogOutput;
 
 public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywheelTarget> {
 
   // for logging the VelocityRadsPerSec
   private final java.util.ArrayList<String> loggedVelocityRadPerSec = new java.util.ArrayList<>();
   private double lastPrintTime = 0;
+  private double testStartTime = -1; // -1 means test mode hasn't started yet
   private final java.util.ArrayList<Double> intervalReadings = new java.util.ArrayList<>();
-  private boolean wasEnabledLastFrame = false;
 
   public enum ShooterFlywheelTarget implements GenericRollers.VelocityTarget {
     IDLE(0, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
@@ -47,16 +48,26 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
   }
 
   // Making a periodic to log flywheel VelocityRadsPerSec
-@Override
+  @Override
   public void periodic() {
     super.periodic();
 
-    // Only gather data if the robot is actually in Test Mode
     if (edu.wpi.first.wpilibj.RobotState.isTest()) {
+      double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+
+      if (testStartTime == -1) {
+        testStartTime = currentTime;
+      }
+
+      double relativeTime = currentTime - testStartTime;
+
+      // If it's been more than 25 seconds
+      if (relativeTime >= 25.0) {
+        return; // Exits the method
+      }
       double currentSpeed = inputs.velocityRadsPerSec;
       intervalReadings.add(currentSpeed);
 
-      double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
       if (currentTime - lastPrintTime >= 5.0) {
         double sum = 0;
         for (double val : intervalReadings) {
@@ -64,12 +75,13 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
         }
         double avgSpeed = intervalReadings.isEmpty() ? 0 : sum / intervalReadings.size();
 
-        loggedVelocityRadPerSec.add(String.format("%.1f", currentTime) + "," + String.format("%.2f", avgSpeed));
+        loggedVelocityRadPerSec.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed));
 
         intervalReadings.clear();
         lastPrintTime = currentTime;
       }
     } else {
+      testStartTime = -1; 
       lastPrintTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
     }
   }
@@ -78,6 +90,9 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
     return loggedVelocityRadPerSec;
   }
 
+  public double getTestModeStartTime(){
+    return testStartTime;
+  }
   public void clearLoggedData() {
     loggedVelocityRadPerSec.clear();
     intervalReadings.clear();

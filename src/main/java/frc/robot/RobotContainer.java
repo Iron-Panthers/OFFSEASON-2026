@@ -150,10 +150,6 @@ public class RobotContainer {
 
   private ShootCommandFactory shootCommand;
 
-  // For logging flywheel velo
-  private double m_lastPrintTime = 0;
-  private final java.util.ArrayList<String> loggedVelocityRadPerSec = new java.util.ArrayList<>();
-  private final java.util.ArrayList<Double> intervalReadings = new java.util.ArrayList<>();
 
   public RobotContainer() {
 
@@ -842,10 +838,12 @@ public class RobotContainer {
             System.out.println(row);
         }
         } else {
-        System.out.println("No flywheel gathered during this test run.");
+        System.out.println("No flywheel data gathered during this test run.");
         }
 
         // Tell the flywheel to clear everything so the next session starts fresh
         shooterFlywheels.clearLoggedData();
     }
   }
+
+  
