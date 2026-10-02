@@ -746,7 +746,7 @@ public class RobotContainer {
     swerve.setNeutralMode(NeutralModeValue.Brake);
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
   }
-
+  private double testModeStartTime = -1; 
   public void testInit() {
     Commands.sequence(
             new IntakeCommand(intakeController, shooterController, serializer),
@@ -760,9 +760,17 @@ public class RobotContainer {
             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
             new WaitCommand(5.0))
         .schedule();
+    
+    testModeStartTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
   }
-
+  private double timeOfLastTransition = 0;
   public void testPeriodic() {
+    double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+    boolean isNextTransition = false;
+    if(currentTime - timeOfLastTransition >= 5){
+        isNextTransition = true;
+    }
+    shooterFlywheels.runTestLogger(testModeStartTime, currentTime, isNextTransition);
     
   }
 

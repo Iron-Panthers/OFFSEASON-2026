@@ -13,8 +13,6 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
 
   // for logging the VelocityRadsPerSec and SupplyCurrentAmps every 5 seconds in test mode
   private final java.util.ArrayList<String> loggedVelocitySupplyCurrent = new java.util.ArrayList<>();
-  private double lastPrintTime = 0;
-  private double testStartTime = -1; // -1 means test mode hasn't started yet
   private final java.util.ArrayList<Double> speedIntervalReadings = new java.util.ArrayList<>();
   private final java.util.ArrayList<Double> supplyCurrentIntervalReadings = new java.util.ArrayList<>();
 
@@ -54,20 +52,11 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
   public void periodic() {
     super.periodic();
 
-    if (edu.wpi.first.wpilibj.RobotState.isTest()) {
-      runTestLogger();
-    } else {
-      testStartTime = -1; 
-      lastPrintTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
-    }
+    
   }
 
   public java.util.ArrayList<String> getLoggedData() {
     return loggedVelocitySupplyCurrent;
-  }
-
-  public double getTestModeStartTime(){
-    return testStartTime;
   }
   public void clearLoggedData() {
     loggedVelocitySupplyCurrent.clear();
@@ -103,8 +92,8 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
     }
   }
 
-  public void runTestLogger(){
-    double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+  public void runTestLogger(double testStartTime, double currentTime, boolean isNextTransition){
+    
 
       if (testStartTime == -1) {
         testStartTime = currentTime;
@@ -112,16 +101,13 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
 
       double relativeTime = currentTime - testStartTime;
 
-      // If it's been more than 25 seconds
-      if (relativeTime >= 25.0) {
-        return; // Exits the method
-      }
+      
       double currentSpeed = inputs.velocityRadsPerSec;
       double currentSupplyCurrent = inputs.supplyCurrentAmps;
       speedIntervalReadings.add(currentSpeed);
       supplyCurrentIntervalReadings.add(currentSupplyCurrent);
 
-      if (currentTime - lastPrintTime >= 5.0) {
+      if (isNextTransition) {
         double sumSpeed = 0;
         double sumSupplyCurrent = 0;
         for (double val : speedIntervalReadings) {
@@ -137,7 +123,7 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
         loggedVelocitySupplyCurrent.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed) + "," + String.format("%.2f", avgSupplyCurrent));
         speedIntervalReadings.clear();
         supplyCurrentIntervalReadings.clear();
-        lastPrintTime = currentTime;
+       
       }
   }
 }
