@@ -55,41 +55,7 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
     super.periodic();
 
     if (edu.wpi.first.wpilibj.RobotState.isTest()) {
-      double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
-
-      if (testStartTime == -1) {
-        testStartTime = currentTime;
-      }
-
-      double relativeTime = currentTime - testStartTime;
-
-      // If it's been more than 25 seconds
-      if (relativeTime >= 25.0) {
-        return; // Exits the method
-      }
-      double currentSpeed = inputs.velocityRadsPerSec;
-      double currentSupplyCurrent = inputs.supplyCurrentAmps;
-      speedIntervalReadings.add(currentSpeed);
-      supplyCurrentIntervalReadings.add(currentSupplyCurrent);
-
-      if (currentTime - lastPrintTime >= 5.0) {
-        double sumSpeed = 0;
-        double sumSupplyCurrent = 0;
-        for (double val : speedIntervalReadings) {
-          sumSpeed += val;
-        }
-        for (double val : supplyCurrentIntervalReadings) {
-          sumSupplyCurrent += val;
-        }
-
-        double avgSpeed = speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
-        double avgSupplyCurrent = supplyCurrentIntervalReadings.isEmpty() ? 0 : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
-
-        loggedVelocitySupplyCurrent.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed) + "," + String.format("%.2f", avgSupplyCurrent));
-        speedIntervalReadings.clear();
-        supplyCurrentIntervalReadings.clear();
-        lastPrintTime = currentTime;
-      }
+      runTestLogger();
     } else {
       testStartTime = -1; 
       lastPrintTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
@@ -135,5 +101,43 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
               super.inputs.velocityRadsPerSec - Units.rotationsToRadians(velocityTarget.velocity))
           < 40;
     }
+  }
+
+  public void runTestLogger(){
+    double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+
+      if (testStartTime == -1) {
+        testStartTime = currentTime;
+      }
+
+      double relativeTime = currentTime - testStartTime;
+
+      // If it's been more than 25 seconds
+      if (relativeTime >= 25.0) {
+        return; // Exits the method
+      }
+      double currentSpeed = inputs.velocityRadsPerSec;
+      double currentSupplyCurrent = inputs.supplyCurrentAmps;
+      speedIntervalReadings.add(currentSpeed);
+      supplyCurrentIntervalReadings.add(currentSupplyCurrent);
+
+      if (currentTime - lastPrintTime >= 5.0) {
+        double sumSpeed = 0;
+        double sumSupplyCurrent = 0;
+        for (double val : speedIntervalReadings) {
+          sumSpeed += val;
+        }
+        for (double val : supplyCurrentIntervalReadings) {
+          sumSupplyCurrent += val;
+        }
+
+        double avgSpeed = speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
+        double avgSupplyCurrent = supplyCurrentIntervalReadings.isEmpty() ? 0 : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
+
+        loggedVelocitySupplyCurrent.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed) + "," + String.format("%.2f", avgSupplyCurrent));
+        speedIntervalReadings.clear();
+        supplyCurrentIntervalReadings.clear();
+        lastPrintTime = currentTime;
+      }
   }
 }
