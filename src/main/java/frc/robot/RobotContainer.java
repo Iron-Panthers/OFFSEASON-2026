@@ -762,13 +762,15 @@ public class RobotContainer {
         .schedule();
     
     testModeStartTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+    timeOfLastTransition = testModeStartTime;
   }
   private double timeOfLastTransition = 0;
   public void testPeriodic() {
     double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
     boolean isNextTransition = false;
-    if(currentTime - timeOfLastTransition >= 5){
-        isNextTransition = true;
+    if (currentTime - timeOfLastTransition >= 5) {
+      isNextTransition = true;
+      timeOfLastTransition = currentTime;
     }
     shooterFlywheels.runTestLogger(testModeStartTime, currentTime, isNextTransition);
     
