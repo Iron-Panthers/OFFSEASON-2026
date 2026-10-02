@@ -773,6 +773,7 @@ public class RobotContainer {
       timeOfLastTransition = currentTime;
     }
     shooterFlywheels.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    serializer.runTestLogger(testModeStartTime, currentTime, isNextTransition);
     
   }
 
@@ -845,7 +846,7 @@ public class RobotContainer {
         java.util.ArrayList<String> dataRows = shooterFlywheels.getLoggedData();
 
         if (!dataRows.isEmpty()) {
-            System.out.println("Test Mode VelocityPerRadians Data");
+            System.out.println("Test Mode Shooter Flywheel VelocityPerRadians Data");
         for (String row : dataRows) {
             System.out.println(row);
         }
@@ -855,6 +856,21 @@ public class RobotContainer {
 
         // Tell the flywheel to clear everything so the next session starts fresh
         shooterFlywheels.clearLoggedData();
+
+        // Grab the list directly from your active serializer instance
+        dataRows = serializer.getLoggedData();
+
+        if (!dataRows.isEmpty()) {
+            System.out.println("Test Mode Serializer VelocityPerRadians Data");
+        for (String row : dataRows) {
+            System.out.println(row);
+        }
+        } else {
+        System.out.println("No serializer data gathered during this test run.");
+        }
+
+        // Tell the serializer to clear everything so the next session starts fresh
+        serializer.clearLoggedData();
     }
   }
 
