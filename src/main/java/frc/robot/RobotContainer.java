@@ -768,6 +768,9 @@ public class RobotContainer {
   public void testPeriodic() {
     double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
     boolean isNextTransition = false;
+    if (currentTime - testModeStartTime >= 25) {
+        return;
+    }
     if (currentTime - timeOfLastTransition >= 5) {
       isNextTransition = true;
       timeOfLastTransition = currentTime;

@@ -15,6 +15,8 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
   private final java.util.ArrayList<String> loggedVelocitySupplyCurrent = new java.util.ArrayList<>();
   private final java.util.ArrayList<Double> speedIntervalReadings = new java.util.ArrayList<>();
   private final java.util.ArrayList<Double> supplyCurrentIntervalReadings = new java.util.ArrayList<>();
+  private boolean isSpunUp = false;
+  private double totalSpinUpTime = -1;
 
 
   public enum ShooterFlywheelTarget implements GenericRollers.VelocityTarget {
@@ -62,6 +64,8 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
     loggedVelocitySupplyCurrent.clear();
     speedIntervalReadings.clear();
     supplyCurrentIntervalReadings.clear();
+    isSpunUp = false;
+    totalSpinUpTime = -1;
   }
 
   @AutoLogOutput(key = "Shooter/Shooter Flywheels/Current Velocity")
@@ -92,8 +96,7 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
     }
   }
 
-  public void runTestLogger(double testStartTime, double currentTime, boolean isNextTransition){
-    
+  public void runTestLogger(double testStartTime, double currentTime, boolean isNextTransition) {
 
       if (testStartTime == -1) {
         testStartTime = currentTime;
@@ -101,15 +104,20 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
 
       double relativeTime = currentTime - testStartTime;
 
-      
       double currentSpeed = inputs.velocityRadsPerSec;
       double currentSupplyCurrent = inputs.supplyCurrentAmps;
       speedIntervalReadings.add(currentSpeed);
       supplyCurrentIntervalReadings.add(currentSupplyCurrent);
 
+      if (!isSpunUp && reachedVelocityTarget()) {
+        totalSpinUpTime = relativeTime;
+        isSpunUp = true;
+      }
+
       if (isNextTransition) {
         double sumSpeed = 0;
         double sumSupplyCurrent = 0;
+        
         for (double val : speedIntervalReadings) {
           sumSpeed += val;
         }
@@ -120,7 +128,7 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
         double avgSpeed = speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
         double avgSupplyCurrent = supplyCurrentIntervalReadings.isEmpty() ? 0 : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
 
-        loggedVelocitySupplyCurrent.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed) + "," + String.format("%.2f", avgSupplyCurrent));
+        loggedVelocitySupplyCurrent.add(String.format("%.1f", relativeTime) + "," + String.format("%.2f", avgSpeed) + "," + String.format("%.2f", avgSupplyCurrent) + "," + String.format("%.2f", totalSpinUpTime));
         speedIntervalReadings.clear();
         supplyCurrentIntervalReadings.clear();
        
