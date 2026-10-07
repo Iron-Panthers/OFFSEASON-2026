@@ -746,7 +746,8 @@ public class RobotContainer {
     swerve.setNeutralMode(NeutralModeValue.Brake);
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
   }
-  private double testModeStartTime = -1; 
+  private double testModeStartTime = -1;
+  private final java.util.ArrayList<String> combinedTestData = new java.util.ArrayList<>();
   public void testInit() {
     Commands.sequence(
             new IntakeCommand(intakeController, shooterController, serializer),
@@ -775,8 +776,17 @@ public class RobotContainer {
       isNextTransition = true;
       timeOfLastTransition = currentTime;
     }
-    shooterFlywheels.runTestLogger(testModeStartTime, currentTime, isNextTransition);
-    serializer.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    String fwData = shooterFlywheels.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    String serData = serializer.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    String accData = shooterAccelerator.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    String rackData = intakeRack.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    String rolData = intakeRollers.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+
+    if (isNextTransition) {
+      double relativeTime = currentTime - testModeStartTime;
+      combinedTestData.add(
+          String.format("%.1f", relativeTime) + "," + fwData + "," + serData + "," + accData + "," + rackData + "," + rolData);
+    }
     
   }
 
@@ -845,35 +855,17 @@ public class RobotContainer {
   }
 
     public void printAndClearStoredData() {
-        // Grab the list directly from your active shooterFlywheels instance
-        java.util.ArrayList<String> dataRows = shooterFlywheels.getLoggedData();
-
-        if (!dataRows.isEmpty()) {
-            System.out.println("Test Mode Shooter Flywheel VelocityPerRadians Data");
-        for (String row : dataRows) {
+        System.out.println("=== Test Mode Combined Data ===");
+        System.out.println("Timestamp(s),FW AvgRad/s,FW AvgCurrent(A),FW SpinUpTime(s),Ser AvgRad/s,Ser AvgCurrent(A),Acc AvgRad/s,Acc AvgCurrent(A),Rack AvgRot/s,Rack AvgCurrent(A),Rollers AvgRad/s,Rollers AvgCurrent(A)");
+        for (String row : combinedTestData) {
             System.out.println(row);
         }
-        } else {
-        System.out.println("No flywheel data gathered during this test run.");
-        }
-
-        // Tell the flywheel to clear everything so the next session starts fresh
-        shooterFlywheels.clearLoggedData();
-
-        // Grab the list directly from your active serializer instance
-        dataRows = serializer.getLoggedData();
-
-        if (!dataRows.isEmpty()) {
-            System.out.println("Test Mode Serializer VelocityPerRadians Data");
-        for (String row : dataRows) {
-            System.out.println(row);
-        }
-        } else {
-        System.out.println("No serializer data gathered during this test run.");
-        }
-
-        // Tell the serializer to clear everything so the next session starts fresh
-        serializer.clearLoggedData();
+        combinedTestData.clear();
+        shooterFlywheels.resetTestState();
+        serializer.resetTestState();
+        shooterAccelerator.resetTestState();
+        intakeRack.resetTestState();
+        intakeRollers.resetTestState();
     }
   }
 
