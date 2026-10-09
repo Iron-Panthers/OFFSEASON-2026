@@ -9,6 +9,8 @@ import frc.robot.RobotState;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.littletonrobotics.junction.Logger;
+
 public class ObjectDetectionIOLimelight implements ObjectDetectionIO {
   private final NetworkTable table;
 

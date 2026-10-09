@@ -474,6 +474,40 @@ public class RobotContainer {
                       new InstantCommand(() -> RobotState.getInstance().setIsAutoAdaptive(false)));
             },
             Set.of(swerve)));
+    NamedCommands.registerCommand(
+        "Go to Shoot Pose",
+        Commands.defer(
+            () -> {
+              boolean isRight =
+                  autoChooser != null && autoChooser.get().getName().contains("Right");
+              return ((new AlignToPoseCommand(swerve, shootingPoseSupplier, true, isRight, 67)
+                          .raceWith(new WaitUnitlRobotStuckCommand(swerve, shootingPoseSupplier)))
+                      .repeatedly())
+                  .until(
+                      () ->
+                          flippedShootingPoseSupplier
+                                  .get()
+                                  .getTranslation()
+                                  .getDistance(
+                                      RobotState.getInstance().getEstimatedPose().getTranslation())
+                              < .04)
+                  .andThen(
+                      new InstantCommand(() -> RobotState.getInstance().resetDynamicObstacles()))
+                  .andThen(
+                      new InstantCommand(() -> RobotState.getInstance().setIsAutoAdaptive(false)));
+            },
+            Set.of(swerve)));
+    NamedCommands.registerCommand(
+        "Reset ball pool", new InstantCommand(objectDetection::resetPool));
+
+    NamedCommands.registerCommand(
+        "Pickup Balls",
+        Commands.defer(
+                () ->
+                    objectDetection.getScanOrPickupCommand(
+                        RobotState.getInstance().getEstimatedPose(), 40, swerve),
+                Set.of(swerve))
+            .repeatedly());
   }
 
   private void configureBindings() {
@@ -495,18 +529,6 @@ public class RobotContainer {
                 })
             .withName("Drive Teleop"));
     // adjust this for x swerve
-
-    NamedCommands.registerCommand(
-        "Reset ball pool", new InstantCommand(objectDetection::resetPool));
-
-    NamedCommands.registerCommand(
-        "Pickup Balls",
-        Commands.defer(
-                () ->
-                    objectDetection.getPickupCommand(
-                        RobotState.getInstance().getEstimatedPose(), 40),
-                Set.of(swerve))
-            .repeatedly());
 
     configureDriverAButtons();
     configureDriverBButtons();

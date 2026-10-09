@@ -41,7 +41,7 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "Translate To Shoot"
+          "name" : "Go to Shoot Pose"
         }
       }, {
         "type" : "named",
@@ -81,7 +81,7 @@
       }, {
         "type" : "named",
         "data" : {
-          "name" : "Translate To Shoot"
+          "name" : "Go to Shoot Pose"
         }
       }, {
         "type" : "named",

@@ -38,7 +38,7 @@ public class ObjectDetectionConstants {
   public static final double POOL_MEMORY_SEC = 20.0;
 
   /** Clusters smaller than this are noise and are ignored. */
-  public static final int MIN_CLUSTER_SIZE = 2;
+  public static final int MIN_CLUSTER_SIZE = 1;
 
   /**
    * Bias for the greedy cluster tour. Larger values make the robot willing to drive further for a
@@ -65,7 +65,7 @@ public class ObjectDetectionConstants {
    * Keeps planned waypoints inside the field. Balls roll into the perimeter, so without this the
    * tour aims the robot at points it cannot physically occupy and it grinds along the wall.
    */
-  public static final double FIELD_MARGIN_M = 0.6;
+  public static final double FIELD_MARGIN_M = -0.127;
 
   /**
    * Stops chained into one generated path. Balls scatter when the robot drives through them, so a
