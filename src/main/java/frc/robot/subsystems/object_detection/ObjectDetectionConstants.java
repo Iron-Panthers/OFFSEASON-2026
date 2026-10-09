@@ -18,6 +18,11 @@ public class ObjectDetectionConstants {
   public static final double HORIZONTAL_FOV_RAD = Math.toRadians(63.3);
   public static final double VERTICAL_FOV_RAD = Math.toRadians(49.7);
 
+  /** Limelight Python pipeline output resolution (pixels). */
+  public static final int IMAGE_WIDTH_PX = 960;
+
+  public static final int IMAGE_HEIGHT_PX = 720;
+
   /** Range over which a ball on the floor is reported. */
   public static final double MIN_RANGE_M = 0.4;
 

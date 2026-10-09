@@ -1,0 +1,97 @@
+{
+  "version" : "2025.0",
+  "command" : {
+    "type" : "sequential",
+    "data" : {
+      "commands" : [ {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "path",
+        "data" : {
+          "pathName" : "T Vision Left"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "race",
+        "data" : {
+          "commands" : [ {
+            "type" : "named",
+            "data" : {
+              "name" : "Pickup Balls"
+            }
+          }, {
+            "type" : "wait",
+            "data" : {
+              "waitTime" : 5.0
+            }
+          } ]
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Translate To Shoot"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "ShootCommandFactory"
+        }
+      }, {
+        "type" : "path",
+        "data" : {
+          "pathName" : "T Vision Left"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "race",
+        "data" : {
+          "commands" : [ {
+            "type" : "named",
+            "data" : {
+              "name" : "Pickup Balls"
+            }
+          }, {
+            "type" : "wait",
+            "data" : {
+              "waitTime" : 5.0
+            }
+          } ]
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Smart zero"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "Translate To Shoot"
+        }
+      }, {
+        "type" : "named",
+        "data" : {
+          "name" : "ShootCommandFactory"
+        }
+      } ]
+    }
+  },
+  "resetOdom" : true,
+  "folder" : "Left Autos (auto generated)",
+  "choreoAuto" : false
+}

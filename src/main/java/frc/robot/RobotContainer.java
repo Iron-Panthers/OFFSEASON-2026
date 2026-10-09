@@ -496,6 +496,18 @@ public class RobotContainer {
             .withName("Drive Teleop"));
     // adjust this for x swerve
 
+    NamedCommands.registerCommand(
+        "Reset ball pool", new InstantCommand(objectDetection::resetPool));
+
+    NamedCommands.registerCommand(
+        "Pickup Balls",
+        Commands.defer(
+                () ->
+                    objectDetection.getPickupCommand(
+                        RobotState.getInstance().getEstimatedPose(), 40),
+                Set.of(swerve))
+            .repeatedly());
+
     configureDriverAButtons();
     configureDriverBButtons();
     new Trigger(() -> (int) matchTimerUpdater.getTimeUntilOurHubShifts() == 7)
@@ -748,27 +760,20 @@ public class RobotContainer {
 
   public void testInit() {
     Commands.sequence(
-    new IntakeCommand(intakeController, shooterController, serializer),
-    new WaitCommand(5.0),
-    Commands.runOnce(
-            () -> intakeController.setTargetState(IntakeState.IDLE)),
-    Commands.runOnce(
-            () -> shooterController.setTargetState(ShooterState.SHOOT)),
-    new WaitCommand(5.0),
-    Commands.runOnce(
-        () -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
-    new WaitCommand(5.0),
-    Commands.runOnce(
-        () -> shooterController.setTargetState(ShooterState.IDLE)),
-    Commands.runOnce(
-        () -> intakeController.setTargetState(IntakeState.IDLE)),
-    new WaitCommand(5.0))
-      .schedule();
+            new IntakeCommand(intakeController, shooterController, serializer),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.SHOOT)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.TOTAL_SPIN_UP)),
+            new WaitCommand(5.0),
+            Commands.runOnce(() -> shooterController.setTargetState(ShooterState.IDLE)),
+            Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
+            new WaitCommand(5.0))
+        .schedule();
   }
 
-
   public void testPeriodic() {}
-
 
   public void testExit() {
     shooterController.setTargetState(ShooterState.IDLE);
