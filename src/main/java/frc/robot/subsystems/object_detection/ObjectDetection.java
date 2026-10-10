@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
+import frc.robot.subsystems.swerve.Drive;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -153,7 +154,24 @@ public class ObjectDetection extends SubsystemBase {
    * where cost charges for distance and for how far the robot has to turn.
    */
   private List<Translation2d> chooseStops(Pose2d startPose, int ballGoal) {
-    List<Cluster> remaining = new ArrayList<>(clusters);
+    double halfX = FlippingUtil.fieldSizeX / 2.0;
+    double halfY = FlippingUtil.fieldSizeY / 2.0;
+    boolean startRightHalf = startPose.getX() >= halfX;
+    boolean startTopHalf = startPose.getY() >= halfY;
+
+    List<Cluster> remaining = new ArrayList<>();
+    for (Cluster c : clusters) {
+      if ((c.center().getX() >= halfX) == startRightHalf
+          && (c.center().getY() >= halfY) == startTopHalf) {
+        remaining.add(c);
+      }
+    }
+
+    Logger.recordOutput("ObjectDetection/Quadrant HalfX", halfX);
+    Logger.recordOutput("ObjectDetection/Quadrant HalfY", halfY);
+    Logger.recordOutput("ObjectDetection/Quadrant StartRightHalf", startRightHalf);
+    Logger.recordOutput("ObjectDetection/Quadrant StartTopHalf", startTopHalf);
+
     List<Translation2d> stops = new ArrayList<>();
     Translation2d position = startPose.getTranslation();
     int ballsCovered = 0;
@@ -193,6 +211,44 @@ public class ObjectDetection extends SubsystemBase {
     Logger.recordOutput("ObjectDetection/Pickup Stops", stops.toArray(Translation2d[]::new));
     Logger.recordOutput("ObjectDetection/Pickup Balls Covered", ballsCovered);
     return stops;
+  }
+
+  /** True if any pooled cluster falls inside the same field quadrant as {@code pose}. */
+  private boolean hasClustersInQuadrant(Pose2d pose) {
+    double halfX = FlippingUtil.fieldSizeX / 2.0;
+    double halfY = FlippingUtil.fieldSizeY / 2.0;
+    boolean rightHalf = pose.getX() >= halfX;
+    boolean topHalf = pose.getY() >= halfY;
+    return clusters.stream()
+        .anyMatch(
+            c ->
+                (c.center().getX() >= halfX) == rightHalf
+                    && (c.center().getY() >= halfY) == topHalf);
+  }
+
+  /**
+   * Like {@link #getPickupCommand} but, when no balls are known in the robot's quadrant, rotates
+   * the intake/camera toward the field center until a ball in the same quadrant is detected.
+   */
+  public Command getScanOrPickupCommand(Pose2d startPose, int ballGoal, Drive drive) {
+    if (hasClustersInQuadrant(startPose)) {
+      return getPickupCommand(startPose, ballGoal);
+    }
+
+    double halfX = FlippingUtil.fieldSizeX / 2.0;
+    double halfY = FlippingUtil.fieldSizeY / 2.0;
+    Translation2d fieldCenter = new Translation2d(halfX, halfY);
+    // Camera and intake are on the back; point the back toward field center so it sweeps inward.
+    Rotation2d scanHeading =
+        fieldCenter.minus(startPose.getTranslation()).getAngle().rotateBy(Rotation2d.kPi);
+
+    return Commands.run(
+            () -> {
+              drive.setTeleopMode();
+              drive.setTargetHeading(scanHeading);
+            },
+            drive)
+        .until(() -> hasClustersInQuadrant(RobotState.getInstance().getEstimatedPose()));
   }
 
   /**
