@@ -2,21 +2,20 @@ package frc.robot.subsystems.shooter.shooter_flywheel;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
-import org.littletonrobotics.junction.AutoLogOutput;
-
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.lib.generic_subsystems.rollers.GenericRollers;
+import org.littletonrobotics.junction.AutoLogOutput;
 
 public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywheelTarget> {
 
   // for logging the VelocityRadsPerSec and SupplyCurrentAmps every 5 seconds in test mode
   private final java.util.ArrayList<Double> speedIntervalReadings = new java.util.ArrayList<>();
-  private final java.util.ArrayList<Double> supplyCurrentIntervalReadings = new java.util.ArrayList<>();
+  private final java.util.ArrayList<Double> supplyCurrentIntervalReadings =
+      new java.util.ArrayList<>();
   private boolean isSpunUp = false;
   private double totalSpinUpTime = -1;
-
 
   public enum ShooterFlywheelTarget implements GenericRollers.VelocityTarget {
     IDLE(0, ShooterFlywheelConstants.CURRENT_LIMIT_AMPS),
@@ -52,8 +51,6 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
   @Override
   public void periodic() {
     super.periodic();
-
-
   }
 
   public void resetTestState() {
@@ -120,13 +117,21 @@ public class ShooterFlywheel extends GenericRollers<ShooterFlywheel.ShooterFlywh
         sumSupplyCurrent += val;
       }
 
-      double avgSpeed = speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
-      double avgSupplyCurrent = supplyCurrentIntervalReadings.isEmpty() ? 0 : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
+      double avgSpeed =
+          speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
+      double avgSupplyCurrent =
+          supplyCurrentIntervalReadings.isEmpty()
+              ? 0
+              : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
 
       speedIntervalReadings.clear();
       supplyCurrentIntervalReadings.clear();
 
-      return String.format("%.2f", avgSpeed) + "," + String.format("%.2f", avgSupplyCurrent) + "," + String.format("%.2f", totalSpinUpTime);
+      return String.format("%.2f", avgSpeed)
+          + ","
+          + String.format("%.2f", avgSupplyCurrent)
+          + ","
+          + String.format("%.2f", totalSpinUpTime);
     }
     return null;
   }
