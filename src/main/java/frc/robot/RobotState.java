@@ -67,6 +67,8 @@ public class RobotState {
   public static final double fieldSizeX = Units.feetToMeters(57.573);
   public static final double fieldSizeY = Units.feetToMeters(26.417);
 
+  public static final double SHOOT_MULTIPLIER = 1.03;
+
   public record OdometryMeasurement(
       SwerveModulePosition[] wheelPositions, Rotation2d gyroAngle, double timestamp) {}
 
@@ -478,7 +480,9 @@ public class RobotState {
       Logger.recordOutput("Shooting Predictor/Shooter Angle Offset", shooterAngleOffset);
 
       return new TargetShootingState(
-          turretAngle, Degrees.of(adjustedHoodAngle), MetersPerSecond.of(adjustedShooterSpeed));
+          turretAngle,
+          Degrees.of(adjustedHoodAngle),
+          MetersPerSecond.of(adjustedShooterSpeed * SHOOT_MULTIPLIER));
     }
 
     // Simple data class for the LUT
