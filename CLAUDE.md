@@ -150,6 +150,7 @@ See `docs/` for:
 - `docs/robot-description.md` — full subsystem and hardware details
 - `docs/game-info.md` — 2026 game context (field, game pieces, scoring)
 - `docs/ai-prompts.md` — prompt templates for common tasks
+- `docs/rendering-engine.md` — simulated camera streams (`./gradlew simulateJava -Prender`)
 
 See `.claude/commands/` for skills:
 

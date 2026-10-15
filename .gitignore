@@ -195,3 +195,6 @@ compile_commands.json
 # Python bytecode caches
 __pycache__/
 *.pyc
+
+# Coprocessor virtualenv (Torch and friends; never committed)
+coprocessor/.venv/

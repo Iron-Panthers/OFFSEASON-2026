@@ -153,6 +153,24 @@ public class RobotSimState {
   }
 
   /**
+   * The robot frame in the WPILib convention, origin on the floor under the chassis centre, with
+   * the terrain's rise and tilt kept.
+   *
+   * <p>What anything mounted by a robot-relative transform has to be placed from. {@link
+   * #getRobotPose3d()} sits at axle height, a wheel radius above the floor, so a camera placed from
+   * it by {@code ROBOT_TO_CAMERA} ends up that much higher than the constants say, and every floor
+   * range read through it comes out long by the same proportion.
+   */
+  public Pose3d getRobotFramePose3d() {
+    Pose3d body = getRobotPose3d();
+    return new Pose3d(
+        body.getX(),
+        body.getY(),
+        body.getZ() - DriveConstants.DRIVE_CONFIG.wheelRadius(),
+        body.getRotation());
+  }
+
+  /**
    * Updates the terrain contact state from the robot's current simulated pose. Call this once per
    * loop <em>after</em> {@code SimulatedArena.getInstance().simulationPeriodic()}.
    */

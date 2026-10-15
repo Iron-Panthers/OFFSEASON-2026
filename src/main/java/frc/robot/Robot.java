@@ -27,6 +27,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.commands.HappyBirthdayCommand;
 import frc.robot.utility.SimRandom;
 import frc.robot.utility.ab.AbBench;
+import frc.robot.utility.coprocessor.CoprocessorManager;
+import frc.robot.utility.rendering.RenderingEngine;
 import frc.robot.utility.replay.LogInputPlayer;
 import frc.robot.utility.replay.MatchInputs;
 import frc.robot.utility.replay.MatchLogReader;
@@ -46,6 +48,9 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * project.
  */
 public class Robot extends LoggedRobot {
+  /** How long a headless run waits for coprocessor modules to publish before enabling anyway. */
+  private static final double COPROCESSOR_WARMUP_TIMEOUT_SEC = 120.0;
+
   private RobotContainer robotContainer;
 
   private Command autoCommand;
@@ -226,6 +231,15 @@ public class Robot extends LoggedRobot {
               } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
+              }
+              // With -Pcoproc, hold the enable until the detector has published a frame. The
+              // renderer and the model take tens of seconds to load between them, and a match
+              // does not start with its coprocessor still booting.
+              if (!CoprocessorManager.awaitFirstFrames(COPROCESSOR_WARMUP_TIMEOUT_SEC)) {
+                System.err.println(
+                    "[AI] Coprocessor published nothing in "
+                        + COPROCESSOR_WARMUP_TIMEOUT_SEC
+                        + " s; enabling anyway");
               }
               DriverStationSim.setAutonomous(autonomous);
               DriverStationSim.setEnabled(true);
@@ -506,7 +520,16 @@ public class Robot extends LoggedRobot {
 
   /** This function is called once when the robot is first started up. */
   @Override
-  public void simulationInit() {}
+  public void simulationInit() {
+    // Starts the camera renderer when the run asked for it with -Prender, and does nothing
+    // otherwise. Kept here rather than in RobotContainer so the several seconds of field loading
+    // happen once, off the path of anything that runs every loop.
+    RenderingEngine.startIfEnabled();
+
+    // Coprocessor modules, with -Pcoproc=objdetect. Must follow the renderer: the stream URL a
+    // module is handed is the port the renderer actually bound, which is only known once it has.
+    CoprocessorManager.startIfEnabled();
+  }
 
   /** This function is called periodically whilst in simulation. */
   @Override
