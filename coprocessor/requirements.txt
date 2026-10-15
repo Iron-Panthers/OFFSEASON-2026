@@ -1,0 +1,19 @@
+# Coprocessor dependencies. Deliberately separate from scripts/requirements.txt: ultralytics
+# pulls in Torch, which is a ~2.5 GB install that log analysis has no business needing.
+#
+#   python -m venv coprocessor/.venv
+#   coprocessor/.venv/Scripts/pip install -r coprocessor/requirements.txt   (Windows)
+#   coprocessor/.venv/bin/pip install -r coprocessor/requirements.txt       (Linux/macOS)
+#
+# The simulation launcher finds .venv automatically.
+
+ultralytics>=8.3,<9
+opencv-python>=4.9
+numpy>=1.24
+
+# NetworkTables client. Already a dependency of scripts/, listed again so this package stands
+# alone on a coprocessor that has no reason to carry the log tooling.
+pyntcore>=2025.1
+
+# Tests only. The geometry and stream tests import none of the above.
+pytest>=7.4

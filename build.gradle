@@ -206,6 +206,8 @@ dependencies {
 test {
     useJUnitPlatform()
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+    // The rendering engine tests load the full 2026 field: ~4M triangles of geometry plus its BVH.
+    maxHeapSize = '4g'
 }
 
 // Simulation configuration (e.g. environment variables).
@@ -226,6 +228,37 @@ tasks.withType(JavaExec).configureEach {
     if (project.hasProperty('auto.name')) {
         jvmArgs "-Dai.auto.name=${project.getProperty('auto.name')}"
     }
+    // Camera rendering. Serves each simulated camera as MJPEG on 1191, 1192, ...
+    // (not 1181: the PhotonVision simulation in the same process already binds that range)
+    //   ./gradlew simulateJava -Prender                    (fast mode, baked static lighting)
+    //   ./gradlew simulateJava -Prender -Prender.mode=high  (reference path tracer)
+    //   ./gradlew simulateJava -Prender -Prender.width=1280 -Prender.height=800 -Prender.spp=4
+    // The 2026 field is ~4M triangles plus its BVH, so the heap has to be raised to hold it.
+    if (project.hasProperty('render')) {
+        jvmArgs '-Drender.enabled=true'
+        jvmArgs '-Xmx4g'
+        ['mode', 'width', 'height', 'spp', 'bounces', 'transparency', 'denoise', 'gain', 'jpeg', 'port'].each { knob ->
+            if (project.hasProperty("render.${knob}")) {
+                jvmArgs "-Drender.${knob}=${project.getProperty("render.${knob}")}"
+            }
+        }
+    }
+    // Coprocessor modules. Runs the real coprocessor program as its own process beside the
+    // simulation, reading a rendered camera instead of a real one.
+    //   ./gradlew simulateJava -Prender -Pcoproc=objdetect
+    //   ./gradlew simulateJava -Prender -Pcoproc=objdetect -Pcoproc.objdetect.conf=0.4
+    // Requires -Prender, unless -Pcoproc.<module>.source points somewhere else.
+    if (project.hasProperty('coproc')) {
+        jvmArgs "-Dcoproc.modules=${project.getProperty('coproc')}"
+        // Anything of the form -Pcoproc.foo=bar becomes -Dcoproc.foo=bar, so a module's own
+        // options need no plumbing here when one is added.
+        project.properties.each { key, value ->
+            if (key.startsWith('coproc.')) {
+                jvmArgs "-D${key}=${value}"
+            }
+        }
+    }
+
     if (project.hasProperty('teleop.duration')) {
         jvmArgs "-Dai.teleop.duration=${project.getProperty('teleop.duration')}"
     }
