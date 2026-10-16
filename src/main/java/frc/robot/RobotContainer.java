@@ -894,8 +894,6 @@ public class RobotContainer {
     Logger.recordOutput("Rendering/Frames", rendering.framesRendered());
     Logger.recordOutput("Rendering/FrameSeconds", rendering.lastFrameSeconds());
   }
-}
-
     public void printAndClearStoredData() {
         System.out.println("=== Test Mode Combined Data ===");
         System.out.println("Timestamp(s),FW AvgRad/s,FW AvgCurrent(A),FW SpinUpTime(s),Ser AvgRad/s,Ser AvgCurrent(A),Acc AvgRad/s,Acc AvgCurrent(A),Rack AvgRot/s,Rack AvgCurrent(A),Rollers AvgRad/s,Rollers AvgCurrent(A)");
