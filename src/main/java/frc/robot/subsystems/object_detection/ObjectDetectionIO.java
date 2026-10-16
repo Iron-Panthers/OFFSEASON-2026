@@ -29,7 +29,9 @@ public interface ObjectDetectionIO {
 
     /**
      * Box centres in pixels, exactly as the detector reported them before any projection or
-     * filtering. Empty for implementations with no image.
+     * filtering. A Limelight reports angles instead, so for it these are where the simulated camera
+     * would have drawn each box, which lets a robot log and a simulation log be read side by side.
+     * Empty for implementations with no image.
      */
     public double[] pixelU = new double[0];
 

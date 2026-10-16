@@ -58,7 +58,7 @@ class ObjectDetectionIOCoprocessorTest {
           continue;
         }
         Optional<Translation3d> placed =
-            ObjectDetectionIOCoprocessor.projectToBallPlane(
+            BallPlacement.projectToBallPlane(
                 CAMERA, LENS.pixelToRay(pixel.get().getX(), pixel.get().getY()));
         if (placed.isEmpty()) {
           continue; // outside the reported range
@@ -72,20 +72,29 @@ class ObjectDetectionIOCoprocessorTest {
 
   @Test
   void ignoringTheWarpMisplacesBallsNearTheEdge() {
-    // What this whole arrangement exists to prevent. A pinhole model reading the rendered frame
-    // puts a ball out towards the side of the image well away from where it is. Above centre, so
-    // the ball is a few metres out, where a small bearing error becomes a large range error.
+    // Why the IO reads pixels through the lens model rather than as a pinhole. The detection
+    // camera is modelled as one, like the Limelight, so this uses a lens with the barrel warp a
+    // wide M12 has. Read as a pinhole, a ball out towards the side of its image lands well away
+    // from where it is. Above centre, so the ball is a few metres out, where a small bearing error
+    // becomes a large range error.
+    CameraIntrinsics warped =
+        new CameraIntrinsics(480, 360, 374.0, 374.0, 240.0, 180.0, -0.105, 0.021);
     CameraIntrinsics pinhole =
         new CameraIntrinsics(
-            LENS.width(), LENS.height(), LENS.fx(), LENS.fy(), LENS.cx(), LENS.cy(), 0.0, 0.0);
-    double u = LENS.width() * 0.95;
-    double v = LENS.height() * 0.30;
+            warped.width(),
+            warped.height(),
+            warped.fx(),
+            warped.fy(),
+            warped.cx(),
+            warped.cy(),
+            0.0,
+            0.0);
+    double u = warped.width() * 0.95;
+    double v = warped.height() * 0.30;
     Translation3d truth =
-        ObjectDetectionIOCoprocessor.projectToBallPlane(CAMERA, LENS.pixelToRay(u, v))
-            .orElseThrow();
+        BallPlacement.projectToBallPlane(CAMERA, warped.pixelToRay(u, v)).orElseThrow();
     Translation3d naive =
-        ObjectDetectionIOCoprocessor.projectToBallPlane(CAMERA, pinhole.pixelToRay(u, v))
-            .orElseThrow();
+        BallPlacement.projectToBallPlane(CAMERA, pinhole.pixelToRay(u, v)).orElseThrow();
     assertTrue(
         naive.minus(truth).getNorm() > 0.10,
         "expected the warp to matter by more than 10 cm, got " + naive.minus(truth).getNorm());
@@ -93,9 +102,7 @@ class ObjectDetectionIOCoprocessorTest {
 
   @Test
   void aRayAboveTheHorizonIsNotABall() {
-    assertTrue(
-        ObjectDetectionIOCoprocessor.projectToBallPlane(CAMERA, LENS.pixelToRay(LENS.cx(), 0.0))
-            .isEmpty());
+    assertTrue(BallPlacement.projectToBallPlane(CAMERA, LENS.pixelToRay(LENS.cx(), 0.0)).isEmpty());
   }
 
   @Test
@@ -105,6 +112,6 @@ class ObjectDetectionIOCoprocessorTest {
     // detector is trusted.
     Translation3d nearHorizon = new Translation3d(1.0, 0.0, -0.01);
     Translation3d cameraFrame = nearHorizon.rotateBy(CAMERA.getRotation().unaryMinus());
-    assertTrue(ObjectDetectionIOCoprocessor.projectToBallPlane(CAMERA, cameraFrame).isEmpty());
+    assertTrue(BallPlacement.projectToBallPlane(CAMERA, cameraFrame).isEmpty());
   }
 }

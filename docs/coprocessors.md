@@ -144,14 +144,22 @@ It has a resolution (480x360), focal lengths and principal point in pixels, and 
 terms. `HORIZONTAL_FOV_RAD`, `VERTICAL_FOV_RAD` and the diagonal figure handed to the coprocessor
 are all derived from those. Nothing about the lens is written down twice.
 
+The camera is modelled on the Limelight 3 the robot uses for this (see
+[On the robot](#on-the-robot-limelight-3)). The focal length comes from its published 62.5 degree
+horizontal field of view, which with square pixels lands the vertical one on its published 48.9
+degrees. 480x360 is its 640x480 scaled by three quarters, which keeps the view and costs the
+renderer fewer pixels. The warp terms are zero, because the Limelight treats its own lens as a
+pinhole when it reports angles, until it has been through its ChArUco calibration.
+
 The renderer draws this camera from `CAMERA_INTRINSICS` at its own resolution, independent of
 `-Prender.width`, since it is a different sensor from the vision cameras. The warp is applied the
 way `RenderCamera` always applied it, as a polynomial from the distorted pixel to the undistorted
 ray. That is the inverse of OpenCV's convention, so a real calibration from OpenCV or PhotonVision
 would need its k1 and k2 refit before it could go in here.
 
-Ignoring the warp is not a small error. `ObjectDetectionIOCoprocessorTest` checks that a pinhole
-reading of a ball out towards the side of the frame lands more than 10 cm from where it is.
+On a lens that does warp, ignoring it is not a small error. `ObjectDetectionIOCoprocessorTest`
+checks that a pinhole reading of a ball out towards the side of a wide M12's frame lands more than
+10 cm from where it is.
 
 ### The robot frame starts on the floor
 
@@ -209,6 +217,50 @@ time, which is the evidence that frames and poses are lined up.
 Most of the latency is the detector, which runs about three times slower than on an idle machine
 because the renderer is using every other core. The robot compensates by placing each frame with
 its pose at capture, so the latency costs freshness but not accuracy.
+
+## On the robot: Limelight 3
+
+On the real robot the detector is a Limelight 3 with a Google Coral, read by
+`ObjectDetectionIOLimelight`. The Python in `coprocessor/` does not run there. A Limelight runs
+its own neural pipeline, and its Python SnapScripts only get OpenCV and numpy, so there is no
+Torch, no Ultralytics and no way to load the weights.
+
+What carries over is everything after the detector, which is the part that decides where balls
+end up. `BallPlacement` does the placing for both IOs. It looks up the pose at capture, follows
+each bearing down to the plane a resting ball sits on, and drops anything off the field. The only
+difference is where the bearing comes from. In simulation it is a box centre read through
+`CAMERA_INTRINSICS`. On the robot it is the Limelight's own angles, `txnc` and `tync`, turned
+straight into the ray `(1, -tan txnc, tan tync)`. `ObjectDetectionIOLimelightTest` checks that a
+ball reported both ways lands in the same place.
+
+| Limelight key | How it is used |
+| --- | --- |
+| `hb` | Heartbeat, once per frame. A new value is a new frame, even an empty one |
+| `rawdetections` | 12 numbers per box (class, `txnc`, `tync`, area, four corners). Only class and the two angles are read |
+| `tl` + `cl` | Pipeline plus capture latency in ms. Capture time is the heartbeat's arrival less these |
+
+The frame is gated on the heartbeat rather than on the detections changing. An empty result
+repeated frame after frame is a duplicate, and NetworkTables does not resend those, so going by
+the detections would stop the pool from clearing balls the robot has already picked up. Arrival
+is the time NetworkTables received the heartbeat, which is robot time on the roboRIO and the same
+clock the pose history keeps.
+
+For pixel-level debugging, `pixelU` and `pixelV` are filled with where the simulated camera would
+have drawn each box, so a robot log and a simulation log can be read side by side.
+
+Setting the Limelight up
+
+- Name it `limelight`, or change `ObjectDetectionConstants.LIMELIGHT_NAME`.
+- Make the neural detector its default pipeline, so it is running when the robot boots.
+- Mount it where `ROBOT_TO_CAMERA` says (0.30 m behind centre, 0.60 m up, facing the intake,
+  tilted 20 degrees down), or change the constant to match. Every ball is placed from that pose.
+- It may be worth running Limelight's ChArUco calibration. Uncalibrated, its angles ignore the
+  lens warp, which puts balls near the edge of the frame a few percent of their range off.
+
+The model is the open question. Limelight's published 2026 Fuel models are Hailo only, with no
+Coral build, so a Limelight 3 needs a custom `.tflite` from Limelight's trainer. `rebuilt-fuel-v1.pt`
+cannot be loaded as it is. The renderer could produce the training images, since the simulation
+knows where every ball is and `geometry.sphere_bbox` turns each one into an exact box.
 
 ## How range works
 
@@ -312,7 +364,8 @@ Anything that hardcodes a port number is one busy port away from silently readin
 | `CoprocessorModuleTest` | Registry lookup, typos naming the valid options, output ports staying clear of the render range. That the detector defaults to its own camera and never a vision camera, that that camera is pitched *down*, and that the diagonal FOV it is handed lands it on the calibrated focal length. |
 | `CameraIntrinsicsTest` | Pixel to ray to pixel exact across the whole frame, warp included; WPILib camera-frame signs; the warp actually bending edge rays; rescaling to another resolution looking the same way. |
 | `RenderCameraTest` | The renderer's ray through a pixel being the one robot code reconstructs from it, at an arbitrary robot pose. The vision cameras rendering exactly as they did before the shared lens model. |
-| `ObjectDetectionIOCoprocessorTest` | A sweep of known balls projected into the image and recovered to within a micrometre. A pinhole reading of the same frame misplacing an edge ball by more than 10 cm. Rays above the horizon and beyond range dropped. |
+| `ObjectDetectionIOCoprocessorTest` | A sweep of known balls projected into the image and recovered to within a micrometre. A pinhole reading of a warped lens's frame misplacing an edge ball by more than 10 cm. Rays above the horizon and beyond range dropped. |
+| `ObjectDetectionIOLimelightTest` | Limelight angles for a sweep of known balls placed back where they are, and landing exactly where the simulated detector puts the same balls. Limelight sign conventions. Capture time as arrival less `tl` + `cl`. The heartbeat, not the detections, deciding what is a new frame, so a repeated empty frame still clears the pool. Stale and malformed frames dropped, and disconnection after the heartbeat stops. |
 
 ```bash
 cd coprocessor && python -m pytest tests/ -q

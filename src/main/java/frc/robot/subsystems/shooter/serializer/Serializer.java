@@ -7,7 +7,8 @@ import org.littletonrobotics.junction.AutoLogOutput;
 public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
   // for logging the VelocityRadsPerSec and SupplyCurrentAmps every 5 seconds in test mode
   private final java.util.ArrayList<Double> speedIntervalReadings = new java.util.ArrayList<>();
-  private final java.util.ArrayList<Double> supplyCurrentIntervalReadings = new java.util.ArrayList<>();
+  private final java.util.ArrayList<Double> supplyCurrentIntervalReadings =
+      new java.util.ArrayList<>();
 
   public enum SerializerTarget implements GenericRollers.VelocityTarget {
     IDLE(0, SerializerConstants.CURRENT_LIMIT_AMPS),
@@ -80,8 +81,12 @@ public class Serializer extends GenericRollers<Serializer.SerializerTarget> {
         sumSupplyCurrent += val;
       }
 
-      double avgSpeed = speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
-      double avgSupplyCurrent = supplyCurrentIntervalReadings.isEmpty() ? 0 : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
+      double avgSpeed =
+          speedIntervalReadings.isEmpty() ? 0 : sumSpeed / speedIntervalReadings.size();
+      double avgSupplyCurrent =
+          supplyCurrentIntervalReadings.isEmpty()
+              ? 0
+              : sumSupplyCurrent / supplyCurrentIntervalReadings.size();
 
       speedIntervalReadings.clear();
       supplyCurrentIntervalReadings.clear();

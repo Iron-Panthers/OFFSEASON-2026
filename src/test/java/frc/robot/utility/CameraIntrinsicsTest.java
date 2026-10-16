@@ -19,14 +19,23 @@ import org.junit.jupiter.api.Test;
 class CameraIntrinsicsTest {
   private static final CameraIntrinsics LENS = ObjectDetectionConstants.CAMERA_INTRINSICS;
 
+  /**
+   * A lens with real barrel warp, the kind a wide M12 has. The detection camera is modelled as a
+   * pinhole, like the Limelight it stands in for, so the warp is exercised here instead.
+   */
+  private static final CameraIntrinsics WARPED =
+      new CameraIntrinsics(480, 360, 374.0, 374.0, 240.0, 180.0, -0.105, 0.021);
+
   @Test
   void pixelToRayAndBackIsExactAcrossTheWholeFrame() {
-    for (double u = 0; u <= LENS.width(); u += LENS.width() / 12.0) {
-      for (double v = 0; v <= LENS.height(); v += LENS.height() / 9.0) {
-        Optional<Translation2d> back = LENS.rayToPixel(LENS.pixelToRay(u, v));
-        assertTrue(back.isPresent(), "no inverse at " + u + ", " + v);
-        assertEquals(u, back.get().getX(), 1e-9, "u at " + u + ", " + v);
-        assertEquals(v, back.get().getY(), 1e-9, "v at " + u + ", " + v);
+    for (CameraIntrinsics lens : new CameraIntrinsics[] {LENS, WARPED}) {
+      for (double u = 0; u <= lens.width(); u += lens.width() / 12.0) {
+        for (double v = 0; v <= lens.height(); v += lens.height() / 9.0) {
+          Optional<Translation2d> back = lens.rayToPixel(lens.pixelToRay(u, v));
+          assertTrue(back.isPresent(), "no inverse at " + u + ", " + v);
+          assertEquals(u, back.get().getX(), 1e-9, "u at " + u + ", " + v);
+          assertEquals(v, back.get().getY(), 1e-9, "v at " + u + ", " + v);
+        }
       }
     }
   }
@@ -46,22 +55,23 @@ class CameraIntrinsicsTest {
   void theWarpBendsEdgeRaysAwayFromThePinholeOnes() {
     // With the warp the edge pixel looks along a different angle from the pinhole one. If this
     // ever reads equal, the warp has silently stopped being applied.
-    double pinholeHalfAngle = Math.atan((LENS.width() / 2.0) / LENS.fx());
-    double actualHalfAngle = LENS.horizontalFovRad() / 2.0;
+    double pinholeHalfAngle = Math.atan((WARPED.width() / 2.0) / WARPED.fx());
+    double actualHalfAngle = WARPED.horizontalFovRad() / 2.0;
     assertTrue(Math.abs(pinholeHalfAngle - actualHalfAngle) > Math.toRadians(0.5));
   }
 
   @Test
-  void theDetectionCameraSeesWhatItAlwaysHas() {
-    // The intrinsics were chosen so the warped field of view keeps the horizontal figure the pool
-    // and the ground-truth sim were tuned against.
-    assertEquals(63.3, Math.toDegrees(ObjectDetectionConstants.HORIZONTAL_FOV_RAD), 0.05);
+  void theDetectionCameraSeesWhatALimelight3Sees() {
+    // Limelight's hardware comparison gives a Limelight 3 as 62.5 by 48.9 degrees. The simulated
+    // camera, the ground-truth sim and the pool's in-view check all have to agree with it.
+    assertEquals(62.5, Math.toDegrees(ObjectDetectionConstants.HORIZONTAL_FOV_RAD), 0.05);
+    assertEquals(48.9, Math.toDegrees(ObjectDetectionConstants.VERTICAL_FOV_RAD), 0.05);
   }
 
   @Test
   void aDifferentResolutionOfTheSameLensLooksTheSameWay() {
-    CameraIntrinsics doubled = LENS.scaledTo(LENS.width() * 2, LENS.height() * 2);
-    Translation3d original = LENS.pixelToRay(37.0, 301.5);
+    CameraIntrinsics doubled = WARPED.scaledTo(WARPED.width() * 2, WARPED.height() * 2);
+    Translation3d original = WARPED.pixelToRay(37.0, 301.5);
     Translation3d scaled = doubled.pixelToRay(74.0, 603.0);
     assertEquals(0.0, original.minus(scaled).getNorm(), 1e-12);
   }

@@ -10,6 +10,10 @@ public class ObjectDetectionConstants {
   /**
    * Camera mounted on the back of the robot, tilted down to see the floor. It faces the same way as
    * the intake so the robot approaches fuel on the side that can pick it up.
+   *
+   * <p>On the robot this is the Limelight, and it has to be mounted where this says. Every ball is
+   * placed by following its bearing down to the floor from here, so a camera a few centimetres
+   * higher or a degree steeper than this misplaces every ball by the same proportion.
    */
   public static final Transform3d ROBOT_TO_CAMERA =
       new Transform3d(
@@ -17,18 +21,43 @@ public class ObjectDetectionConstants {
           new Rotation3d(0.0, Math.toRadians(20.0), Math.PI)); // positive pitch = down
 
   /**
-   * Frame size the camera is calibrated at. The renderer draws this camera at exactly this size,
-   * independent of {@code -Prender.width}, because it is a different sensor from the vision
-   * cameras. 4:3 so the square-pixel focal lengths below cover the same shape of view.
+   * NetworkTables name of the Limelight running the fuel detector, as set in its web interface. A
+   * Limelight is {@code limelight} until it is renamed.
+   */
+  public static final String LIMELIGHT_NAME = "limelight";
+
+  /**
+   * Class the Limelight's model reports fuel as. Negative keeps every class, which is what a
+   * single-class fuel model wants.
+   */
+  public static final int LIMELIGHT_FUEL_CLASS_ID = -1;
+
+  /**
+   * Horizontal field of view of a Limelight 3, from Limelight's hardware comparison. The camera
+   * below is modelled on it, so the simulation sees what the robot's Limelight sees.
+   */
+  public static final double LIMELIGHT_3_HORIZONTAL_FOV_DEGREES = 62.5;
+
+  /**
+   * Frame size the camera is modelled at. A Limelight 3's 640x480 scaled by three quarters, which
+   * keeps its shape and field of view and saves the renderer 44% of the pixels. Robot code never
+   * depends on it, because the Limelight reports angles rather than pixels. The renderer draws this
+   * camera at exactly this size, independent of {@code -Prender.width}, because it is a different
+   * sensor from the vision cameras.
    */
   public static final int CAMERA_WIDTH_PX = 480;
 
   public static final int CAMERA_HEIGHT_PX = 360;
 
-  /** Focal lengths in pixels at {@link #CAMERA_WIDTH_PX} x {@link #CAMERA_HEIGHT_PX}. */
-  public static final double CAMERA_FX_PX = 374.0;
+  /**
+   * Focal lengths in pixels at {@link #CAMERA_WIDTH_PX} x {@link #CAMERA_HEIGHT_PX}, from the
+   * Limelight 3's horizontal field of view with square pixels. That puts the vertical field of view
+   * at 48.9 degrees, which is the datasheet's other figure.
+   */
+  public static final double CAMERA_FX_PX =
+      (CAMERA_WIDTH_PX / 2.0) / Math.tan(Math.toRadians(LIMELIGHT_3_HORIZONTAL_FOV_DEGREES) / 2.0);
 
-  public static final double CAMERA_FY_PX = 374.0;
+  public static final double CAMERA_FY_PX = CAMERA_FX_PX;
 
   /** Principal point in pixels, where the optical axis meets the sensor. */
   public static final double CAMERA_CX_PX = CAMERA_WIDTH_PX / 2.0;
@@ -38,14 +67,17 @@ public class ObjectDetectionConstants {
   /**
    * Radial lens warp, in {@link CameraIntrinsics}'s undistorting convention (not OpenCV's).
    *
-   * <p>Representative of a wide M12 lens rather than calibrated. The renderer bends every ray it
-   * traces for this camera through these, and {@link ObjectDetectionIOCoprocessor} unbends each
-   * detection through the same numbers, so a ball near the edge of the frame lands where it really
-   * is instead of up to a few percent of its range off.
+   * <p>Zero, because that is how the Limelight models its own lens when it turns a box into the
+   * angles {@link ObjectDetectionIOLimelight} reads, until it has been through Limelight's ChArUco
+   * calibration. The renderer drawing the same pinhole keeps the simulated detector reporting balls
+   * at the bearings the real one would. A measured warp can go here, refit to this convention, to
+   * make the rendered image look like the real lens. The renderer bends its rays through these and
+   * {@link ObjectDetectionIOCoprocessor} unbends each detection through the same numbers, so
+   * placement stays exact either way.
    */
-  public static final double CAMERA_DISTORTION_K1 = -0.105;
+  public static final double CAMERA_DISTORTION_K1 = 0.0;
 
-  public static final double CAMERA_DISTORTION_K2 = 0.021;
+  public static final double CAMERA_DISTORTION_K2 = 0.0;
 
   /** Everything above in one object, which is what the renderer and the IO actually take. */
   public static final CameraIntrinsics CAMERA_INTRINSICS =
@@ -60,7 +92,7 @@ public class ObjectDetectionConstants {
           CAMERA_DISTORTION_K2);
 
   /**
-   * Field of view the camera actually sees, warp included: about 63.3 by 50.4 degrees.
+   * Field of view the camera actually sees, warp included: 62.5 by 48.9 degrees, a Limelight 3's.
    *
    * <p>Derived from the intrinsics rather than written down beside them. A hand-entered figure
    * would be a second description of the lens to keep in step, and when it drifts the ground-truth
@@ -90,7 +122,7 @@ public class ObjectDetectionConstants {
    */
   public static final double MAX_FRAME_AGE_SEC = 1.4;
 
-  /** No frame has arrived for this long and the coprocessor is reported disconnected. */
+  /** No frame has arrived for this long and the detector is reported disconnected. */
   public static final double FRAME_TIMEOUT_SEC = 1.0;
 
   /**

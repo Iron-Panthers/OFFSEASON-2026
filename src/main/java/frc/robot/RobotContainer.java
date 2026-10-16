@@ -59,6 +59,7 @@ import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIO;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOSim;
 import frc.robot.subsystems.intake.intake_rollers.IntakeRollersIOTalonFX;
 import frc.robot.subsystems.object_detection.ObjectDetection;
+import frc.robot.subsystems.object_detection.ObjectDetectionConstants;
 import frc.robot.subsystems.object_detection.ObjectDetectionIO;
 import frc.robot.subsystems.object_detection.ObjectDetectionIOCoprocessor;
 import frc.robot.subsystems.object_detection.ObjectDetectionIOLimelight;
@@ -157,7 +158,6 @@ public class RobotContainer {
 
   private ShootCommandFactory shootCommand;
 
-
   public RobotContainer() {
 
     if (Constants.getRobotMode() != Mode.REPLAY) {
@@ -186,7 +186,9 @@ public class RobotContainer {
           shooterOmniwheel = new ShooterOmniwheel(new ShooterOmniwheelIOTalonFX());
           shooterAccelerator = new ShooterAccelerator(new ShooterAcceleratorIOTalonFX());
           serializer = new Serializer(new SerializerIOTalonFX());
-          objectDetection = new ObjectDetection(new ObjectDetectionIOLimelight());
+          objectDetection =
+              new ObjectDetection(
+                  new ObjectDetectionIOLimelight(ObjectDetectionConstants.LIMELIGHT_NAME));
         }
         case VISION -> {
           swerve =
@@ -760,8 +762,10 @@ public class RobotContainer {
     swerve.setNeutralMode(NeutralModeValue.Brake);
     CommandScheduler.getInstance().schedule(new VibrateHIDCommand(driverB.getHID(), 5, .5));
   }
+
   private double testModeStartTime = -1;
   private final java.util.ArrayList<String> combinedTestData = new java.util.ArrayList<>();
+
   public void testInit() {
     Commands.sequence(
             new IntakeCommand(intakeController, shooterController, serializer),
@@ -775,33 +779,46 @@ public class RobotContainer {
             Commands.runOnce(() -> intakeController.setTargetState(IntakeState.IDLE)),
             new WaitCommand(5.0))
         .schedule();
-    
+
     testModeStartTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
     timeOfLastTransition = testModeStartTime;
   }
+
   private double timeOfLastTransition = 0;
+
   public void testPeriodic() {
     double currentTime = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
     boolean isNextTransition = false;
     if (currentTime - testModeStartTime >= 25) {
-        return;
+      return;
     }
     if (currentTime - timeOfLastTransition >= 5) {
       isNextTransition = true;
       timeOfLastTransition = currentTime;
     }
-    String fwData = shooterFlywheels.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    String fwData =
+        shooterFlywheels.runTestLogger(testModeStartTime, currentTime, isNextTransition);
     String serData = serializer.runTestLogger(testModeStartTime, currentTime, isNextTransition);
-    String accData = shooterAccelerator.runTestLogger(testModeStartTime, currentTime, isNextTransition);
+    String accData =
+        shooterAccelerator.runTestLogger(testModeStartTime, currentTime, isNextTransition);
     String rackData = intakeRack.runTestLogger(testModeStartTime, currentTime, isNextTransition);
     String rolData = intakeRollers.runTestLogger(testModeStartTime, currentTime, isNextTransition);
 
     if (isNextTransition) {
       double relativeTime = currentTime - testModeStartTime;
       combinedTestData.add(
-          String.format("%.1f", relativeTime) + "," + fwData + "," + serData + "," + accData + "," + rackData + "," + rolData);
+          String.format("%.1f", relativeTime)
+              + ","
+              + fwData
+              + ","
+              + serData
+              + ","
+              + accData
+              + ","
+              + rackData
+              + ","
+              + rolData);
     }
-    
   }
 
   public void testExit() {
@@ -894,21 +911,21 @@ public class RobotContainer {
     Logger.recordOutput("Rendering/Frames", rendering.framesRendered());
     Logger.recordOutput("Rendering/FrameSeconds", rendering.lastFrameSeconds());
   }
-}
 
-    public void printAndClearStoredData() {
-        System.out.println("=== Test Mode Combined Data ===");
-        System.out.println("Timestamp(s),FW AvgRad/s,FW AvgCurrent(A),FW SpinUpTime(s),Ser AvgRad/s,Ser AvgCurrent(A),Acc AvgRad/s,Acc AvgCurrent(A),Rack AvgRot/s,Rack AvgCurrent(A),Rollers AvgRad/s,Rollers AvgCurrent(A)");
-        for (String row : combinedTestData) {
-            System.out.println(row);
-        }
-        combinedTestData.clear();
-        shooterFlywheels.resetTestState();
-        serializer.resetTestState();
-        shooterAccelerator.resetTestState();
-        intakeRack.resetTestState();
-        intakeRollers.resetTestState();
+  public void printAndClearStoredData() {
+    System.out.println("=== Test Mode Combined Data ===");
+    System.out.println(
+        "Timestamp(s),FW AvgRad/s,FW AvgCurrent(A),FW SpinUpTime(s),Ser AvgRad/s,Ser"
+            + " AvgCurrent(A),Acc AvgRad/s,Acc AvgCurrent(A),Rack AvgRot/s,Rack"
+            + " AvgCurrent(A),Rollers AvgRad/s,Rollers AvgCurrent(A)");
+    for (String row : combinedTestData) {
+      System.out.println(row);
     }
+    combinedTestData.clear();
+    shooterFlywheels.resetTestState();
+    serializer.resetTestState();
+    shooterAccelerator.resetTestState();
+    intakeRack.resetTestState();
+    intakeRollers.resetTestState();
   }
-
-  
+}

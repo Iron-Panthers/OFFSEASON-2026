@@ -1,7 +1,5 @@
 package frc.robot.subsystems.can_watchdog;
 
-import edu.wpi.first.wpilibj.DriverStation;
-import frc.robot.Constants;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -30,7 +28,7 @@ public class CANWatchdogConstants {
                 + existingName
                 + "\" and \""
                 + name;
-          throw new IllegalStateException(message);
+        throw new IllegalStateException(message);
       }
       devices.add(new CANDevice(id, name));
       ids.add(id);
