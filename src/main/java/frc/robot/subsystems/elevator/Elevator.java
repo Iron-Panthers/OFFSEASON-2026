@@ -21,11 +21,10 @@ public class Elevator extends GenericSuperstructure<Elevator.ElevatorTarget>
   private final java.util.ArrayList<Double> supplyCurrentIntervalReadings = new java.util.ArrayList<>();
 
   public enum ElevatorTarget implements GenericSuperstructure.PositionTarget {
-    INTAKE(11.6, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.empty()),
-    MIDDLE(10.6, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.empty()),
-    SHOOTING_STOW(3, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d)),
+    UP(0, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.empty()),
+    DOWN(0, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.empty()),
     STOW(0, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d)),
-    ACTUAL_MIDDLE(5.8, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d));
+    MIDDLE(0, ElevatorConstants.SUPPLY_CURRENT_LIMIT, Optional.of(6d));
 
     private double position;
     private double supplyCurrentLimit;
@@ -58,7 +57,7 @@ public class Elevator extends GenericSuperstructure<Elevator.ElevatorTarget>
   }
 
   public Elevator(ElevatorIO io) {
-    super("Intake/Intake Rack", io);
+    super("Elevator", io);
     setPositionTarget(ElevatorTarget.STOW);
     setControlMode(ControlMode.STOP);
   }
@@ -98,9 +97,9 @@ public class Elevator extends GenericSuperstructure<Elevator.ElevatorTarget>
       superstructureIO.runPosition(pidController.getSetpoint().position);
     }
     Logger.recordOutput(
-        "Intake/Intake Rack/Position Target Rotations", getPositionTarget().getPosition());
+        "Elevator/Postion Target Rotations", getPositionTarget().getPosition());
     Logger.recordOutput(
-        "Intake/Intake Rack/Position Target Rotations Pid", pidController.getSetpoint().position);
+        "Elevator/Position Target Rotations Pid", pidController.getSetpoint().position);
   }
 
   @Override
@@ -159,11 +158,11 @@ public class Elevator extends GenericSuperstructure<Elevator.ElevatorTarget>
     return null;
   }
 
-  @AutoLogOutput(key = "Intake/Intake Rack/Display Pose3d")
+  @AutoLogOutput(key = "Elevator/Display Pose3d")
   @Override
   public Pose3d getDisplayPose3d() {
     return getParentPosition()
-        .plus(ElevatorConstants.BASE_TO_INTAKE_RACK_TRANSFORM)
+        .plus(ElevatorConstants.BASE_TO_ELEVATOR_TRANSFORM)
         .plus(
             new Transform3d(
                 new Translation3d(0, Units.inchesToMeters(getPosition()), 0), Rotation3d.kZero));
