@@ -8,8 +8,11 @@ public interface ObjectDetectionIO {
   class ObjectDetectionIOInputs {
     public boolean connected = false;
 
-    /** Field relative positions of every ball the camera can currently see. */
-    public Translation2d[] ballPositions = new Translation2d[0];
+    /** Field-relative center of each color blob the camera can currently see. */
+    public Translation2d[] blobPositions = new Translation2d[0];
+
+    /** Estimated number of balls in each corresponding blob. */
+    public int[] blobBallCounts = new int[0];
   }
 
   default void updateInputs(ObjectDetectionIOInputs inputs) {}

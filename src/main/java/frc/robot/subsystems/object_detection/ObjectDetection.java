@@ -44,12 +44,12 @@ public class ObjectDetection extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("ObjectDetection", inputs);
 
-    updatePool(inputs.ballPositions);
+    updatePool(inputs.blobPositions, inputs.blobBallCounts);
     clusters = pool.values().stream().map(c -> new Cluster(c.center(), c.ballCount())).toList();
 
     Logger.recordOutput("ObjectDetection/Camera Pose", getCameraPose());
     Logger.recordOutput("ObjectDetection/Cluster Count", clusters.size());
-    Logger.recordOutput("ObjectDetection/Visible Ball Count", inputs.ballPositions.length);
+    Logger.recordOutput("ObjectDetection/Visible Blob Count", inputs.blobPositions.length);
     Logger.recordOutput(
         "ObjectDetection/Cluster Centers",
         clusters.stream().map(Cluster::center).toArray(Translation2d[]::new));
@@ -82,13 +82,13 @@ public class ObjectDetection extends SubsystemBase {
   }
 
   /**
-   * Folds this frame's detections into the pool. Cells currently in view are replaced with fresh
-   * data (so a cluster the robot just ate stops being a target), cells outside the view keep their
-   * last known value, and anything not seen for a while expires. This is what lets clusters spotted
-   * on the drive to the observing pose — including the back corners it cannot see from there —
-   * still count when the pickup path is generated.
+   * Folds this frame's blob detections into the pool. Each blob carries a field-relative center and
+   * an estimated ball count — the IO layer is responsible for projecting Limelight angles to field
+   * coordinates and sizing the count from the blob's angular area. Cells currently in view are
+   * replaced with fresh data (so a cluster the robot just ate stops being a target), cells outside
+   * the view keep their last known value, and anything not seen for a while expires.
    */
-  private void updatePool(Translation2d[] balls) {
+  private void updatePool(Translation2d[] positions, int[] counts) {
     double now = Timer.getFPGATimestamp();
     Pose2d camera = getCameraPose().toPose2d();
 
@@ -96,14 +96,10 @@ public class ObjectDetection extends SubsystemBase {
         .removeIf(cell -> now - cell.timestamp() > ObjectDetectionConstants.POOL_MEMORY_SEC);
     pool.values().removeIf(cell -> inView(cell.center(), camera));
 
-    for (List<Translation2d> cellBalls : binByCell(balls).values()) {
-      if (cellBalls.size() < ObjectDetectionConstants.MIN_CLUSTER_SIZE) continue;
-      Translation2d sum = new Translation2d();
-      for (Translation2d ball : cellBalls) {
-        sum = sum.plus(ball);
-      }
-      Translation2d center = sum.div(cellBalls.size());
-      pool.put(cellKey(center), new PooledCell(center, cellBalls.size(), now));
+    int len = Math.min(positions.length, counts.length);
+    for (int i = 0; i < len; i++) {
+      if (counts[i] < ObjectDetectionConstants.MIN_CLUSTER_SIZE) continue;
+      pool.put(cellKey(positions[i]), new PooledCell(positions[i], counts[i], now));
     }
   }
 
@@ -132,18 +128,6 @@ public class ObjectDetection extends SubsystemBase {
     return ((long) Math.floor(point.getX() / cell) << 32) ^ (long) Math.floor(point.getY() / cell);
   }
 
-  private Map<Long, List<Translation2d>> binByCell(Translation2d[] balls) {
-    Map<Long, List<Translation2d>> cells = new HashMap<>();
-    for (Translation2d ball : balls) {
-      cells.computeIfAbsent(cellKey(ball), k -> new ArrayList<>()).add(ball);
-    }
-    return cells;
-  }
-
-  /**
-   * Whether a cluster sits in the neutral strip between the two hubs. Fuel past a hub is in an
-   * alliance's own end of the field, and the straight sweep has no way around the obstacles there.
-   */
   /**
    * Picks the clusters to sweep, best first, until {@code ballGoal} balls are covered or the known
    * clusters run out.
